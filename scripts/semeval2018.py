@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 import commandr
 from collections import defaultdict
-from dataset.semeval2018.task3.process import Processor
 from nlp.process import process_tweet
+from dataset.semeval2018.task3.process import Processor
 
 
 @commandr.command
@@ -10,10 +10,10 @@ def build_vocab(out_filename):
     subtask = 'A'
     func_load = [Processor.load_train, Processor.load_test]
 
-    token_count = defaultdict(lambda :0)
+    token_count = defaultdict(lambda: 0)
     for func in func_load:
         dataset = func(subtask)
-        for text, label in dataset:
+        for label, text in dataset:
             tokens = process_tweet(text)
             for token in tokens:
                 token_count[token] += 1

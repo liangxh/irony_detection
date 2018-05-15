@@ -16,7 +16,7 @@ class Processor(object):
                 parts = line.split('\t')
                 text = parts[2]
                 label = int(parts[1])
-                sample = (text, label)
+                sample = (label, text)
                 dataset.append(sample)
         return dataset
 
@@ -47,4 +47,4 @@ class Processor(object):
                 text = parts[-1]
                 texts.append(text)
 
-        return list(zip(texts, labels))
+        return list(zip(labels, texts))

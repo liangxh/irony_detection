@@ -1,0 +1,12 @@
+*.pyc
+*.egg
+*.swo
+*.egg-info/
+*.swp
+*.tmp
+*.bak
+.DS_Store
+
+data/
+.idea/
+

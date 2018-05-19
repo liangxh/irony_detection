@@ -5,7 +5,7 @@ from collections import defaultdict
 
 @commandr.command
 def merge(input_filename_list, output_filename):
-    filename_list = ','.split(input_filename_list)
+    filename_list = input_filename_list.split(',')
 
     token_count = defaultdict(lambda: 0)
     for filename in filename_list:

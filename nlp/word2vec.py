@@ -1,10 +1,67 @@
 # -*- coding: utf-8 -*-
 import numpy as np
 import json
-from nlp.model.config import config
 
 
-class Word2VecBin(object):
+class PlainModelWriter(object):
+    def __init__(self, filename):
+        self.file_obj = open(filename, 'w')
+
+    def add(self, token, vec):
+        self.file_obj.write('{}\t{}'.format(
+            token, '\t'.join(map(str, vec))
+        ))
+
+    def close(self):
+        self.file_obj.close()
+
+
+class PlainModel(object):
+    """
+
+    """
+    def __init__(self, filename_model):
+        self.file_model = open(filename_model, 'r')
+        self.index = self.build_index(filename_model)
+        self.dim = self.get_dim(filename_model)
+
+    @classmethod
+    def build_index(cls, filename_model):
+        index = dict()
+        with open(filename_model, 'r') as file_obj:
+            offset = 0
+            for line in file_obj:
+                parts = line.split('\t', 1)
+                token = parts[0]
+                index[token] = offset
+                offset = file_obj.tell()
+        return index
+
+    @classmethod
+    def get_dim(cls, filename_model):
+        with open(filename_model, 'r') as file_obj:
+            line = file_obj.readline()
+            parts = line.split('\t')
+            dim = len(parts) - 1
+        return dim
+
+    def get(self, vocab):
+        if isinstance(vocab, str):
+            vocab = vocab.decode('utf8')
+
+        offset = self.index.get(vocab)
+        if offset is None:
+            return None
+        else:
+            self.file_model.seek(offset)
+            line = self.file_model.readline()
+            line = line.strip()
+            parts = line.split('\t')
+            vec = map(float, parts[1:])
+            return vec
+
+
+class BinModel(object):
     """
     由于word2ved的bin文件一般比较大, 需要首先为字典建立索引
     """
@@ -13,12 +70,13 @@ class Word2VecBin(object):
         header = self.file_model.readline()
         vocab_size, dim = map(int, header.split())
         self.dim = dim
-        self.index = json.load(open(filename_index, 'r'))
+        self.index = self.load_index(filename_index)
         self._binary_len = np.dtype(np.float32).itemsize * dim
 
     def get(self, vocab):
         if isinstance(vocab, str):
             vocab = vocab.decode('utf8')
+
         offset = self.index.get(vocab)
         if offset is None:
             return None
@@ -36,16 +94,18 @@ class Word2VecBin(object):
                 line = line.strip()
                 if line == '':
                     continue
-                parts = line.strip('\t')
+                parts = line.split('\t')
                 vocab = parts[0]
-                vocab_list.append(vocab)
+                count = int(parts[1])
+                if count > 1:
+                    vocab_list.append(vocab)
         return vocab_list
 
     @classmethod
     def save_index(cls, filename, index):
         with open(filename, 'w') as file_obj:
             for vocab, offset in index.items():
-                file_obj.write('{}\t{}\n').format(vocab, offset)
+                file_obj.write('{}\t{}\n'.format(vocab, offset))
 
     @classmethod
     def load_index(cls, filename):
@@ -62,7 +122,7 @@ class Word2VecBin(object):
         return index
 
     @classmethod
-    def build_index(cls, filename_model, filename_vocab, filename_index):
+    def create(cls, filename_model, filename_vocab, filename_index):
         vocab_list = cls.load_vocab(filename_vocab)
         vocab_set = set(vocab_list)
         index = dict()
@@ -89,3 +149,11 @@ class Word2VecBin(object):
                 file_obj.read(binary_len)
 
         cls.save_index(filename_index, index)
+        return cls(filename_model, filename_index)
+
+    def to_plain(self, filename_output):
+        writer = Writer(filename_output)
+        for token in self.index.keys():
+            vec = self.get(token)
+            writer.add(token, vec)
+        writer.close()

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import commandr
 from collections import defaultdict
-from nlp.process import process_tweet
+from nlp.process import naive_tokenize
 from dataset.semeval2014.task9.process import Processor
 
 
@@ -38,7 +38,7 @@ def build_vocab(out_filename):
     for func in func_load:
         dataset = func()
         for label, text in dataset:
-            tokens = process_tweet(text)
+            tokens = naive_tokenize(text)
             for token in tokens:
                 token_count[token] += 1
 

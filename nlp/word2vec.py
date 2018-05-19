@@ -8,7 +8,7 @@ class PlainModelWriter(object):
         self.file_obj = open(filename, 'w')
 
     def add(self, token, vec):
-        self.file_obj.write('{}\t{}'.format(
+        self.file_obj.write('{}\t{}\n'.format(
             token, '\t'.join(map(str, vec))
         ))
 

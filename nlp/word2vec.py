@@ -152,7 +152,7 @@ class BinModel(object):
         return cls(filename_model, filename_index)
 
     def to_plain(self, filename_output):
-        writer = Writer(filename_output)
+        writer = PlainModelWriter(filename_output)
         for token in self.index.keys():
             vec = self.get(token)
             writer.add(token, vec)

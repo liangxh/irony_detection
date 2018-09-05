@@ -5,6 +5,14 @@ from dataset.semeval2018.task3 import config
 class Processor(object):
     @classmethod
     def load_train(cls, subtask):
+        """
+        :param subtask: string, "A"/"B"
+        :return: list of pair<LABEL, TEXT>
+            LABEL: int
+                若subtask="A", 则 LABEL = 0(not ironic) / 1(ironic)
+                若subtask="B", 则 LABEL = 0(not ironic) / 1(ironic by clash) / 2(situational irony) / 3(other irony)
+            TEXT: string
+        """
         path = config.path_train_emoji.format(subtask=subtask)
         dataset = list()
         with open(path, 'r') as file_obj:
@@ -22,6 +30,14 @@ class Processor(object):
 
     @classmethod
     def load_test(cls, subtask):
+        """
+        :param subtask: string, "A"/"B"
+        :return: list of pair<LABEL, TEXT>
+            LABEL: int
+                若subtask="A", 则 LABEL = 0(not ironic) / 1(ironic)
+                若subtask="B", 则 LABEL = 0(not ironic) / 1(ironic by clash) / 2(situational irony) / 3(other irony)
+            TEXT: string
+        """
         labels = list()
         texts = list()
 

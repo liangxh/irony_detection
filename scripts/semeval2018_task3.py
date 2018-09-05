@@ -7,6 +7,10 @@ from dataset.semeval2018.task3.process import Processor
 
 @commandr.command
 def build_vocab(out_filename):
+    """
+    结合subtask A 的train, test生成字典
+        <token>(tab)<count>
+    """
     subtask = 'A'
     func_load = [Processor.load_train, Processor.load_test]
 

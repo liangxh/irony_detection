@@ -7,6 +7,10 @@ from dataset.semeval2018.task1.process import Processor
 
 @commandr.command
 def build_vocab(out_filename):
+    """
+    结合train, test生成字典
+        <token>(tab)<count>
+    """
     func_load = [Processor.load_train, Processor.load_test]
 
     token_count = defaultdict(lambda: 0)

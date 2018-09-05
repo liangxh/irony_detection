@@ -7,11 +7,15 @@ from dataset.semeval2014.task9.process import Processor
 
 @commandr.command
 def build_origin(infile, outfile):
+    """
+    将SemEval2014 Task9的原始文件转换成
+        <label_id>(tab)<text>
+    """
     label_map = {
         'negative': 0,
         'neutral': 1,
         'positive': 2,
-        'objective': 1,  # 根據官方README, objective在taskB中视为neutral
+        'objective': 1,  # 根据官方README, objective在taskB中视为neutral
     }
 
     with open(infile, 'r') as in_obj, open(outfile, 'w') as out_obj:
@@ -32,6 +36,10 @@ def build_origin(infile, outfile):
 
 @commandr.command
 def build_vocab(out_filename):
+    """
+    结合train, dev, test生成字典
+        <token>(tab)<count>
+    """
     func_load = [Processor.load_train, Processor.load_dev, Processor.load_test]
 
     token_count = defaultdict(lambda: 0)

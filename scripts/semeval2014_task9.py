@@ -2,7 +2,7 @@
 import commandr
 from collections import defaultdict
 from nlp.process import naive_tokenize
-from dataset.semeval2014.task9.process import Processor
+from dataset.semeval2014.task9.process import Processor, config
 
 
 @commandr.command
@@ -32,6 +32,16 @@ def build_origin(infile, outfile):
                 out_obj.write('{}\t{}\n'.format(label_id, text))
             elif label.find('-OR-') < 0:
                 raise Exception('unknown label: {}'.format(label))
+
+
+@commandr.command
+def build_text():
+    path_list = [config.path_train, config.path_dev, config.path_test]
+    for path in path_list:
+        output_path = '{}.text'.format(path)
+        with open(output_path, 'w') as file_obj:
+            for label, text in Processor.load_dataset(path):
+                file_obj.write(text + '\n')
 
 
 @commandr.command

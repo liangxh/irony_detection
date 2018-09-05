@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
+import os
 import commandr
 from collections import defaultdict
 from nlp.process import naive_tokenize
-from dataset.semeval2018.task3.process import Processor
+from dataset.semeval2018.task3.process import Processor, config
 
 
 @commandr.command
@@ -26,6 +27,18 @@ def build_vocab(out_filename):
     with open(out_filename, 'w') as file_obj:
         for token, count in token_count:
             file_obj.write(u'{}\t{}\n'.format(token, count).encode('utf8'))
+
+
+@commandr.command
+def build_text():
+    for mode, func in {'train': Processor.load_train, 'test': Processor.load_test}.items():
+        output_path = os.path.join(
+            os.environ['HOME'],
+            'lab/irony_detection/data/semeval2018_task3/{mode}.text'.format(mode=mode)
+        )
+        with open(output_path, 'w') as file_obj:
+            for _, text in func('A'):
+                file_obj.write(text + '\n')
 
 
 if __name__ == '__main__':

@@ -5,6 +5,13 @@ from collections import defaultdict
 
 @commandr.command
 def merge(input_filename_list, output_filename):
+    """
+    结合多个形如<token>(tab)<count>的字典文件生成单个字典文件
+
+    :param input_filename_list: string, "FILENAME1,FILENAME2,FILENAME1,"
+    :param output_filename:
+    :return:
+    """
     filename_list = input_filename_list.split(',')
 
     token_count = defaultdict(lambda: 0)

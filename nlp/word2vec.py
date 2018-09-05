@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
-import numpy as np
+import os
 import json
+import numpy as np
 
 
 class PlainModelWriter(object):
@@ -74,6 +75,10 @@ class BinModel(object):
         self._binary_len = np.dtype(np.float32).itemsize * dim
 
     def get(self, vocab):
+        """
+        :param vocab: string
+        :return: 若vocab在索引当中则返回词向量(list of float)，否则返回None
+        """
         if isinstance(vocab, str):
             vocab = vocab.decode('utf8')
 
@@ -88,6 +93,10 @@ class BinModel(object):
 
     @classmethod
     def load_vocab(cls, filename):
+        """
+        :param filename: string, 字典文件名, 文件格式形如 <vocab>(tab)xxxxxxxx
+        :return: list of string
+        """
         vocab_list = list()
         with open(filename, 'r') as file_obj:
             for line in file_obj:
@@ -103,12 +112,21 @@ class BinModel(object):
 
     @classmethod
     def save_index(cls, filename, index):
+        """
+        :param filename: string
+        :param index: dict<string, int>, vocab以及其对应文件中的offset
+        :return:
+        """
         with open(filename, 'w') as file_obj:
             for vocab, offset in index.items():
                 file_obj.write('{}\t{}\n'.format(vocab, offset))
 
     @classmethod
     def load_index(cls, filename):
+        """
+        :param filename: string
+        :return: dict<string, int>, vocab以及其对应文件中的offset
+        """
         index = dict()
         with open(filename, 'r') as file_obj:
             for line in file_obj:
@@ -122,7 +140,20 @@ class BinModel(object):
         return index
 
     @classmethod
-    def create(cls, filename_model, filename_vocab, filename_index):
+    def init(cls, filename_model, filename_index, filename_vocab=None):
+        """
+        实例初始化
+        若filename_index未生成 则要求filename_vocab不是空，利用之生成index文件
+        否则直接加载
+
+        :param filename_model: string, 待加载的word2vec的二进制模型文件
+        :param filename_index: string, 生成的索引存储的文件路径
+        :param filename_vocab: string, 待加载的字典文件路径, 文件格式形如 <vocab>(tab)xxxxxxxx
+        :return: BinModel实例
+        """
+        if os.path.exists(filename_index):
+            return cls(filename_model, filename_index)
+
         vocab_list = cls.load_vocab(filename_vocab)
         vocab_set = set(vocab_list)
         index = dict()
@@ -152,6 +183,13 @@ class BinModel(object):
         return cls(filename_model, filename_index)
 
     def to_plain(self, filename_output):
+        """
+        生成PlainModel的文件
+
+        :param filename_output: 输出文件的路径
+        :return:
+        """
+
         writer = PlainModelWriter(filename_output)
         for token in self.index.keys():
             vec = self.get(token)

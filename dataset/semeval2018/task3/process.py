@@ -4,7 +4,7 @@ from dataset.semeval2018.task3 import config
 
 class Processor(object):
     @classmethod
-    def load_train(cls, subtask):
+    def load_origin_train(cls, subtask):
         """
         :param subtask: string, "A"/"B"
         :return: list of pair<LABEL, TEXT>
@@ -29,7 +29,7 @@ class Processor(object):
         return dataset
 
     @classmethod
-    def load_test(cls, subtask):
+    def load_origin_test(cls, subtask):
         """
         :param subtask: string, "A"/"B"
         :return: list of pair<LABEL, TEXT>
@@ -39,8 +39,6 @@ class Processor(object):
             TEXT: string
         """
         labels = list()
-        texts = list()
-
         path = config.path_goldtest.format(subtask=subtask)
         with open(path, 'r') as file_obj:
             file_obj.readline()
@@ -52,6 +50,7 @@ class Processor(object):
                 label = int(parts[1])
                 labels.append(label)
 
+        texts = list()
         path = config.path_test_input_emoji.format(subtask=subtask)
         with open(path, 'r') as file_obj:
             file_obj.readline()
@@ -62,5 +61,4 @@ class Processor(object):
                 parts = line.split('\t')
                 text = parts[-1]
                 texts.append(text)
-
         return list(zip(labels, texts))

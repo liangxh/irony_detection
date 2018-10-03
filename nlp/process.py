@@ -23,3 +23,4 @@ def naive_tokenize(text):
     tokens = map(lambda t: t.lower(), tokens)
     tokens = map(lambda t: t[1:] if len(t) > 1 and t.startswith('#') else t, tokens)
     return tokens
+

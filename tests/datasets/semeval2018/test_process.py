@@ -7,7 +7,7 @@ from dataset.semeval2018.task3.process import Processor
 def load_train():
     loader = Processor()
     for subtask in ['A', 'B']:
-        dataset = loader.load_train(subtask)
+        dataset = loader.load_origin_train(subtask)
         print 'subtask {}: {}'.format(subtask, len(dataset))
 
 
@@ -15,7 +15,7 @@ def load_train():
 def load_test():
     loader = Processor()
     for subtask in ['A', 'B']:
-        dataset = loader.load_test(subtask)
+        dataset = loader.load_origin_test(subtask)
         print 'subtask {}: {}'.format(subtask, len(dataset))
 
 

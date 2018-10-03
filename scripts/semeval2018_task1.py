@@ -1,8 +1,11 @@
 # -*- coding: utf-8 -*-
+import os
 import commandr
 from collections import defaultdict
 from nlp.process import naive_tokenize
-from dataset.semeval2018.task1.process import Processor, config
+from dataset.common.const import *
+from dataset.semeval2018.task1.config import config
+from dataset.semeval2018.task1.process import Processor
 
 
 @commandr.command
@@ -28,13 +31,18 @@ def build_vocab(out_filename):
 
 
 @commandr.command
-def build_text():
-    path_list = [config.path_E_c_train, config.path_E_c_dev]
-    for path in path_list:
-        output_path = '{}.text'.format(path)
-        with open(output_path, 'w') as file_obj:
-            for label, text in Processor.load_dataset(path):
-                file_obj.write(text + '\n')
+def build_text_label():
+    path_list = {
+        TRAIN: config.path_E_c_train,
+        TEST: config.path_E_c_dev
+    }
+    for key, path in path_list.items():
+        text_path = config.path(key, TEXT)
+        label_path = config.path(key, LABEL)
+        with open(text_path, 'w') as text_obj, open(label_path, 'w') as label_obj:
+            for label, text in Processor.load_origin(path):
+                text_obj.write(text + '\n')
+                label_obj.write(str(label) + '\n')
 
 
 @commandr.command

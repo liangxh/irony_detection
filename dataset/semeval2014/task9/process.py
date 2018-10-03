@@ -4,7 +4,7 @@ from dataset.semeval2014.task9 import config
 
 class Processor(object):
     @classmethod
-    def load_dataset(cls, filename):
+    def load_origin(cls, filename):
         """
         加载由scripts.semeval2014_task9.build_origin生成的文件
 
@@ -27,13 +27,5 @@ class Processor(object):
         return samples
 
     @classmethod
-    def load_train(cls):
-        return cls.load_dataset(config.path_train)
-
-    @classmethod
-    def load_dev(cls):
-        return cls.load_dataset(config.path_dev)
-
-    @classmethod
-    def load_test(cls):
-        return cls.load_dataset(config.path_test)
+    def build_vocab(cls):
+        fro

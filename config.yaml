@@ -1,0 +1,20 @@
+nn:
+  seq_len: _
+  embedding:
+    trainable: False
+  rnn:
+    dim: 10
+  learning_rate:
+    init: 0.01
+    decay_steps: 1
+    decay_rate: 0.9
+  l2_reg_lambda: 0.1
+  output:
+    dim: _
+
+train:
+  epoch: 5
+  valid_rate: 0.2
+  batch_size: 100
+  dropout_keep_prob: 0.5
+  use_class_weights: True

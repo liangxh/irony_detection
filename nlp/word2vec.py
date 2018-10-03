@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import commandr
 import os
 import json
 import numpy as np
@@ -18,9 +19,6 @@ class PlainModelWriter(object):
 
 
 class PlainModel(object):
-    """
-
-    """
     def __init__(self, filename_model):
         self.file_model = open(filename_model, 'r')
         self.index = self.build_index(filename_model)
@@ -29,13 +27,19 @@ class PlainModel(object):
     @classmethod
     def build_index(cls, filename_model):
         index = dict()
-        with open(filename_model, 'r') as file_obj:
+
+        with open(filename_model, 'r') as file_obj, open(filename_model, 'r') as _file_obj:
             offset = 0
             for line in file_obj:
-                parts = line.split('\t', 1)
-                token = parts[0]
+                token = line.strip().split('\t', 1)[0].decode('utf-8')
                 index[token] = offset
-                offset = file_obj.tell()
+
+                # 检查index创建是否正确
+                _file_obj.seek(offset)
+                _line = _file_obj.readline()
+                assert _line.strip() == line.strip()
+
+                offset += len(line)
         return index
 
     @classmethod
@@ -104,10 +108,8 @@ class BinModel(object):
                 if line == '':
                     continue
                 parts = line.split('\t')
-                vocab = parts[0]
-                count = int(parts[1])
-                if count > 1:
-                    vocab_list.append(vocab)
+                vocab = parts[0].decode('utf8')
+                vocab_list.append(vocab)
         return vocab_list
 
     @classmethod
@@ -148,7 +150,7 @@ class BinModel(object):
 
         :param filename_model: string, 待加载的word2vec的二进制模型文件
         :param filename_index: string, 生成的索引存储的文件路径
-        :param filename_vocab: string, 待加载的字典文件路径, 文件格式形如 <vocab>(tab)xxxxxxxx
+        :param filename_vocab: string
         :return: BinModel实例
         """
         if os.path.exists(filename_index):
@@ -189,9 +191,20 @@ class BinModel(object):
         :param filename_output: 输出文件的路径
         :return:
         """
-
         writer = PlainModelWriter(filename_output)
         for token in self.index.keys():
             vec = self.get(token)
             writer.add(token, vec)
         writer.close()
+
+
+@commandr.command('index')
+def build_plain(input_filename, vocab_filename, output_filename):
+    """
+    python nlp/word2vec.py index ~/Downloads/GoogleNews-vectors-negative300.bin data/semeval2018_task3/all.vocab.v0 data/semeval2018_task3/all.w2v.google_v0
+    """
+    BinModel.init(input_filename, '_index.tmp', vocab_filename).to_plain(output_filename)
+
+
+if __name__ == '__main__':
+    commandr.Run()

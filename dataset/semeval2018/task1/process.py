@@ -4,7 +4,7 @@ from dataset.semeval2018.task1 import config
 
 class Processor(object):
     @classmethod
-    def load_dataset(cls, filename):
+    def load_origin(cls, filename):
         """
         :param filename: string
         :return: list of pair<LABLE, TEXT>
@@ -39,8 +39,8 @@ class Processor(object):
 
     @classmethod
     def load_train(cls):
-        return cls.load_dataset(config.path_E_c_train)
+        return cls.load_origin(config.path_E_c_train)
 
     @classmethod
     def load_test(cls):
-        return cls.load_dataset(config.path_E_c_dev)
+        return cls.load_origin(config.path_E_c_dev)

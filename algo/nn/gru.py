@@ -14,6 +14,8 @@ class NNConfig(BaseNNConfig):
 
 
 class NNModel(BaseNNModel):
+    name = 'gru'
+
     def __init__(self, config):
         super(NNModel, self).__init__(config=config)
         self.variable_keys += [PROB_PREDICT, ]
@@ -35,13 +37,11 @@ class NNModel(BaseNNModel):
             sequence_length=seq_len,
             dtype=tf.float32
         )
-        dense_input = tf.concat([rnn_last_states, ], axis=1)
+        dense_input = tf.concat([rnn_last_states, ], axis=1, name=HIDDEN_FEAT)
         y, w, b = dense.build(dense_input, self.config.output_dim, output_name=PROB_PREDICT)
 
         # 计算loss
         label_gold = tf.placeholder(tf.int32, [None, ], name=LABEL_GOLD)
-        prob_gold = tf.one_hot(label_gold, self.config.output_dim)
-        #_loss_1 = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=y, labels=prob_gold))
         _loss_1 = tf.reduce_mean(tf.losses.sparse_softmax_cross_entropy(
             logits=y, labels=label_gold, weights=sample_weights))
         _loss_2 = tf.constant(0., dtype=tf.float32)

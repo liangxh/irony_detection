@@ -14,3 +14,9 @@ LEXICON_FEAT = 'lexicon_feat'
 POS = 'pos'
 VOCAB = 'vocab'
 WORD2VEC = 'w2v'
+
+LABEL_PREDICT = 'label_predict'
+HIDDEN_FEAT = 'hidden_feat'
+
+CONFIG = 'conf'
+EVALUATION = 'eval'

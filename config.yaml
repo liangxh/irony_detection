@@ -1,3 +1,5 @@
+module: algo.nn.gru
+
 nn:
   seq_len: _
   embedding:

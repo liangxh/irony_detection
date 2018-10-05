@@ -8,7 +8,7 @@ class BaseNNModel(object):
         self._variables = None
         self.variable_keys = [
             TOKEN_ID_SEQ, SEQ_LEN,
-            LABEL_PREDICT, LABEL_GOLD, SAMPLE_WEIGHTS,
+            LABEL_PREDICT, LABEL_GOLD, SAMPLE_WEIGHTS, HIDDEN_FEAT,
             DROPOUT_KEEP_PROB, LOSS, GLOBAL_STEP, OPTIMIZER,
         ]
 

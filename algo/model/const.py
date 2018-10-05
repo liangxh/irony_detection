@@ -17,6 +17,7 @@ OPTIMIZER = 'optimizer'
 IS_TRAINING = 'is_training'
 SAMPLE_WEIGHTS = 'sample_weights'
 
+HIDDEN_FEAT = 'hidden_feat'
 PROB_PREDICT = 'prob_predict'
 
 

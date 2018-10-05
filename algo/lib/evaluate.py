@@ -57,7 +57,8 @@ def basic_evaluate(gold, pred, pos_label=None):
         PRECISION: precision, RECALL: recall, F1_SCORE: f1,
         PRECISION_COMPONENTS: precision_components,
         RECALL_COMPONENTS: recall_components,
-        F1_SCORE_COMPONENTS: f1_components
+        F1_SCORE_COMPONENTS: f1_components,
+        CONFUSION_MATRIX: matrix.tolist()
     }
 
 

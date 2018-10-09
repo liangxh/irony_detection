@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
-import commandr
-import os
 import re
 from collections import defaultdict
 
+import commandr
+
 from dataset.common.const import *
-from dataset.semeval2014.task9.config import config
-from dataset.semeval2014.task9.process import Processor
+from dataset.semeval2014_task9 import Processor
+from dataset.semeval2014_task9 import config
 
 
 @commandr.command

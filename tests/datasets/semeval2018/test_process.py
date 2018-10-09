@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import commandr
-from dataset.semeval2018.task3.process import Processor
+
+from dataset.semeval2018_task3 import Processor
 
 
 @commandr.command

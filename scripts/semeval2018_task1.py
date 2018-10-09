@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
-import os
-import commandr
 from collections import defaultdict
-from nlp.process import naive_tokenize
-from dataset.common.const import *
+
+import commandr
 from dataset.semeval2018.task1.config import config
-from dataset.semeval2018.task1.process import Processor
+
+from dataset.common.const import *
+from dataset.semeval2018_task1.process import Processor
+from nlp.process import naive_tokenize
 
 
 @commandr.command

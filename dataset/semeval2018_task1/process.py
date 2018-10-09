@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from dataset.semeval2018.task1 import config
+from dataset.semeval2018_task1 import config
 
 
 class Processor(object):

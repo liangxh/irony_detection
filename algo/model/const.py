@@ -3,6 +3,7 @@
 TRAIN = 'train'
 VALID = 'valid'
 TEST = 'test'
+ALL = 'all'
 
 TOKEN_ID_SEQ = 'token_id_seq'
 LABEL_GOLD = 'label_gold'
@@ -19,7 +20,7 @@ SAMPLE_WEIGHTS = 'sample_weights'
 
 HIDDEN_FEAT = 'hidden_feat'
 PROB_PREDICT = 'prob_predict'
-
+VOCAB_ID_MAPPING = 'tid'
 
 LEARNING_RATE_DECAY_STEPS = 'learning_rate_decay_steps'
 LEARNING_RATE_DECAY_RATE = 'learning_rate_decay_rate'

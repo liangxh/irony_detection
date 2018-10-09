@@ -1,12 +1,29 @@
 # -*- coding: utf-8 -*-
+from __future__ import print_function
 import copy
 import random
 import numpy as np
 from algo.model.const import *
 
 
+class SimpleIndexIterator(object):
+    def __init__(self, n_sample):
+        self._n_sample = n_sample
+
+    def n_sample(self):
+        return self._n_sample
+
+    def iterate(self, batch_size):
+        index = range(self._n_sample)
+        n_patch = batch_size - len(index) % batch_size
+        if n_patch < batch_size:
+            index += index[:n_patch]
+        for n in range(len(index) / batch_size):
+            yield index[(n * batch_size): ((n + 1) * batch_size)]
+
+
 class IndexIterator(object):
-    def __init__(self, gold_labels):
+    def __init__(self, gold_labels=None):
         self.gold_labels = np.asarray(gold_labels)
         self._n_sample = self.gold_labels.size
         self.index = np.arange(self._n_sample)
@@ -53,28 +70,37 @@ class IndexIterator(object):
 
 
 if __name__ == '__main__':
-    index_iterator = IndexIterator([0, 0, 0, 0, 0, 1, 1, 1, 1, 1,  1, 1, 1, 1, 1])
+    index_iterator = IndexIterator([0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1])
     index_iterator.split_train_valid(0.4)
 
-    print 'ALL'
-    for batch in index_iterator.iterate(4):
-        print batch
+    print('ALL')
+    for batch in index_iterator.iterate(4, shuffle=True):
+        print(batch)
+    print()
 
-    print 'TRAIN'
-    for batch in index_iterator.iterate_train(4):
-        print batch
+    print('ALL')
+    for batch in index_iterator.iterate(4, shuffle=False):
+        print(batch)
+    print()
 
-    print 'TEST'
-    for batch in index_iterator.iterate_valid(4):
-        print batch
+    print('TRAIN')
+    for batch in index_iterator.iterate(4, mode=TRAIN, shuffle=True):
+        print(batch)
+    print()
+
+    print('TEST')
+    for batch in index_iterator.iterate(4, mode=VALID, shuffle=True):
+        print(batch)
+    print()
 
     index_iterator.split_train_valid(0.4)
 
-    print 'TRAIN'
-    for batch in index_iterator.iterate_train(3):
-        print batch
+    print('TRAIN')
+    for batch in index_iterator.iterate(3, mode=TRAIN, shuffle=True):
+        print(batch)
+    print()
 
-    print 'TEST'
-    for batch in index_iterator.iterate_valid(3):
-        print batch
-
+    print('TEST')
+    for batch in index_iterator.iterate(3, mode=VALID, shuffle=True):
+        print(batch)
+    print()

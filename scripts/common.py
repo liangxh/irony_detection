@@ -1,16 +1,17 @@
 # -*- coding: utf-8 -*-
-import commandr
 import json
 import re
+
+import commandr
 from textblob import TextBlob
-from dataset import semeval2014, semeval2018
+
 from dataset.common.const import *
 
 
 @commandr.command
 def pos():
     for config in [
-            semeval2014.task9.config, semeval2018.task1.config, semeval2018.task3.config]:
+            dataset.task9.config, dataset.task1.config, dataset.task3.config]:
         for mode in [TRAIN, TEST]:
             out_path = config.path(mode, POS)
             text_path = config.path(mode, EK)

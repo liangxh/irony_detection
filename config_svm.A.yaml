@@ -1,0 +1,8 @@
+dataset_key: semeval2018_task3
+label_version: A
+
+feat_keys:
+  - gru_1539056285
+
+train:
+  use_class_weights: True

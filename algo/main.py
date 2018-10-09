@@ -1,104 +1,27 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function
-import json
+import importlib
 import time
 import commandr
+import yaml
 import numpy as np
 import tensorflow as tf
-import yaml
-import importlib
-
+from algo.nn.base import BaseNNModel
+from algo.lib.dataset import IndexIterator, SimpleIndexIterator
+from algo.lib.evaluate import basic_evaluate
 from algo.model.const import *
 from algo.model.train_config import TrainConfig
-from algo.lib.dataset import IndexIterator
-from algo.lib.evaluate import basic_evaluate
 from dataset.common.const import *
-from dataset.semeval2018.task3.config import config as data_config
+from dataset.common.load import *
 from nlp.process import naive_tokenize
-from nlp.word2vec import PlainModel
-
-
-def load_text_list(mode):
-    path = data_config.path(mode, TEXT)
-    text_list = list()
-    with open(path, 'r') as file_obj:
-        for line in file_obj:
-            line = line.strip()
-            if line == '':
-                continue
-            text = line
-            text_list.append(text)
-    return text_list
-
-
-def load_label_list(mode):
-    path = data_config.path(mode, LABEL)
-    label_list = list()
-    with open(path, 'r') as file_obj:
-        for line in file_obj:
-            line = line.strip()
-            if line == '':
-                continue
-            label = int(line)
-            label_list.append(label)
-    return label_list
+from algo.lib.common import print_evaluation, load_lookup_table, tokenized_to_tid_list
 
 
 def load_tokenized_list(mode):
     return map(naive_tokenize, load_text_list(mode))
 
 
-def load_vocab_list(mode):
-    vocab_list = list()
-    path = data_config.path(mode, VOCAB, 'v0')
-    with open(path, 'r') as file_obj:
-        for line in file_obj:
-            line = line.strip()
-            if line == '':
-                continue
-            data = json.loads(line)
-            vocab = data['t']
-            vocab_list.append(vocab)
-    return vocab_list
-
-
-def normalize_lookup_table(table):
-    return (table - table.mean(axis=0)) / table.std(axis=0)
-
-
-def tokenized_to_tid_list(tokenized_list, vocab_id_mapping):
-    tid_list = map(
-        lambda _tokens: filter(
-            lambda _tid: _tid is not None,
-            map(lambda _t: vocab_id_mapping.get(_t), _tokens)
-        ),
-        tokenized_list
-    )
-    return tid_list
-
-
-def load_lookup_table():
-    w2v_model = PlainModel(data_config.path(ALL, WORD2VEC, 'google_v0'))
-    vocab_list = w2v_model.index.keys()
-
-    train_vocabs = set(load_vocab_list(TRAIN))
-    not_supported_vocabs = filter(lambda _vocab: _vocab not in set(vocab_list), train_vocabs)
-    n_not_supported = len(not_supported_vocabs)
-
-    lookup_table_pretrained = np.asarray([w2v_model.get(_vocab) for _vocab in vocab_list])
-    lookup_table_patch = np.random.random((n_not_supported, w2v_model.dim))
-
-    lookup_table = np.concatenate(
-        map(normalize_lookup_table, [lookup_table_pretrained, lookup_table_patch])
-    )
-
-    vocab_list += not_supported_vocabs
-    vocab_id_mapping = {_vocab: _i for _i, _vocab in enumerate(vocab_list)}
-
-    return lookup_table, vocab_id_mapping, w2v_model.dim
-
-
-def load_dataset(vocab_id_mapping):
+def load_dataset(data_config, vocab_id_mapping, with_label=True, label_version=None):
     def seq_to_len_list(seq_list):
         return map(len, seq_list)
 
@@ -108,27 +31,36 @@ def load_dataset(vocab_id_mapping):
     max_seq_len = -1
     datasets = dict()
     for mode in [TRAIN, TEST]:
-        tokenized_list = load_tokenized_list(TRAIN)
-        label_list = load_label_list(TRAIN)
+        text_path = data_config.path(mode, TEXT)
+
+        tokenized_list = load_tokenized_list(text_path)
 
         tid_list = tokenized_to_tid_list(tokenized_list, vocab_id_mapping)
         seq_len_list = seq_to_len_list(tid_list)
         datasets[mode] = {
             TOKEN_ID_SEQ: tid_list,
             SEQ_LEN: np.asarray(seq_len_list),
-            LABEL_GOLD: np.asarray(label_list),
         }
-        _max_seq_len = max(seq_len_list)
-        max_seq_len = _max_seq_len if _max_seq_len > max_seq_len else max_seq_len
+        if with_label:
+            label_path = data_config.path(mode, LABEL, label_version)
+            label_list = load_label_list(label_path)
+            datasets[mode][LABEL_GOLD] = np.asarray(label_list)
+
+    max_seq_len = -1
+    for _dataset in datasets.values():
+        max_seq_len = max(max_seq_len, _dataset[SEQ_LEN].max() + 1)
 
     for mode in [TRAIN, TEST]:
-        datasets[mode][TOKEN_ID_SEQ] = np.asarray(zero_pad_seq_list(datasets[mode][TOKEN_ID_SEQ], max_seq_len + 1))
+        datasets[mode][TOKEN_ID_SEQ] = np.asarray(zero_pad_seq_list(datasets[mode][TOKEN_ID_SEQ], max_seq_len))
 
-    output_dim = max(datasets[TRAIN][LABEL_GOLD]) + 1
-    return datasets, output_dim, max_seq_len
+    if with_label:
+        output_dim = max(datasets[TRAIN][LABEL_GOLD]) + 1
+        return datasets, max_seq_len, output_dim
+    else:
+        return datasets, max_seq_len
 
 
-dataset_key = {
+feed_key = {
     TRAIN: [TOKEN_ID_SEQ, SEQ_LEN, LABEL_GOLD],
     TEST: [TOKEN_ID_SEQ, SEQ_LEN]
 }
@@ -140,63 +72,96 @@ fetch_key = {
 
 
 @commandr.command
-def main():
-    config_data = yaml.load(open('config.yaml'))
+def main(config_path, dataset_key, label_version=None):
+    config_data = yaml.load(open(config_path))
+
+    data_config = getattr(importlib.import_module('dataset.{}.config'.format(dataset_key)), 'config')
+
+    w2v_model_path = data_config.path(ALL, WORD2VEC, 'google_v0')
+    vocab_train_path = data_config.path(TRAIN, VOCAB, 'v0')
+
+    output_key = '{}_{}'.format(config_data['module'].rsplit('.', 1)[1], int(time.time()))
+    if label_version is not None:
+        output_key = '{}_{}'.format(label_version, output_key)
+    print('OUTPUT_KEY: {}'.format(output_key))
+
+    # 准备输出路径的文件夹
+    data_config.prepare_output_folder(output_key=output_key)
+    data_config.prepare_model_folder(output_key=output_key)
+
+    # 根据配置加载模块
     module_relative_path = config_data['module']
     NNModel = getattr(importlib.import_module(module_relative_path), 'NNModel')
     NNConfig = getattr(importlib.import_module(module_relative_path), 'NNConfig')
 
-    output_key = '{}_{}'.format(NNModel.name, int(time.time()))
-    print('OUTPUT_KEY: {}'.format(output_key))
+    # 加载字典集
+    # 在模型中会采用所有模型中支持的词向量, 并为有足够出现次数的单词随机生成词向量
+    vocab_meta_list = load_vocab_list(vocab_train_path)
+    vocabs = [_meta['t'] for _meta in vocab_meta_list if _meta['tf'] >= 2]
 
     # 加载词向量与相关数据
-    lookup_table, vocab_id_mapping, embedding_dim = load_lookup_table()
+    lookup_table, vocab_id_mapping, embedding_dim = load_lookup_table(
+        w2v_model_path=w2v_model_path, vocabs=vocabs)
+    json.dump(vocab_id_mapping, open(data_config.output_path(output_key, ALL, VOCAB_ID_MAPPING), 'w'))
+
     # 加载训练数据
-    datasets, output_dim, max_seq_len = load_dataset(vocab_id_mapping=vocab_id_mapping)
+    datasets, max_seq_len, output_dim = load_dataset(
+        data_config=data_config, vocab_id_mapping=vocab_id_mapping,
+        with_label=True, label_version=label_version
+    )
+
     # 加载配置
     nn_config = NNConfig(config_data['nn'])
     train_config = TrainConfig(config_data['train'])
 
+    # 初始化数据集的检索
     index_iterators = {mode: IndexIterator(datasets[mode][LABEL_GOLD]) for mode in [TRAIN, TEST]}
+    # 按配置将训练数据切割成训练集和验证集
     index_iterators[TRAIN].split_train_valid(train_config.valid_rate)
 
+    # 计算各个类的权重
     if train_config.use_class_weights:
-        label_weight = {_label: 1. / len(_index)
-            for _label, _index in index_iterators[TRAIN].label_index.items()}
+        label_weight = {
+            # 参考 sklearn 中 class_weight='balanced'的公式, 实验显示效果显着
+            _label: float(index_iterators[TRAIN].n_sample()) / (index_iterators[TRAIN].dim * len(_index))
+            for _label, _index in index_iterators[TRAIN].label_index.items()
+        }
     else:
         label_weight = {_label: 1. for _label in index_iterators[TRAIN].dim}
 
     # 基于加载的数据更新配置
     nn_config.set_embedding_dim(embedding_dim)
     nn_config.set_output_dim(output_dim)
-    nn_config.set_seq_len(max_seq_len + 1)
-
+    nn_config.set_seq_len(max_seq_len)
     # 搭建神经网络
     nn = NNModel(config=nn_config)
     nn.build_neural_network(lookup_table=lookup_table)
 
     batch_size = train_config.batch_size
     fetches = {mode: {_key: nn.var(_key) for _key in fetch_key[mode]} for mode in [TRAIN, TEST]}
-
     last_eval = {TRAIN: None, VALID: None, TEST: None}
+
+    model_output_prefix = data_config.model_path(key=output_key) + '/model'
 
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
+        saver = tf.train.Saver(tf.global_variables())
 
         dataset = datasets[TRAIN]
         index_iterator = index_iterators[TRAIN]
 
+        # 训练开始 ##########################################################################
         for epoch in range(train_config.epoch):
             print('== epoch {} =='.format(epoch))
 
-            # TRAIN SET
+            # 利用训练集进行训练
             print('TRAIN')
             n_sample = index_iterator.n_sample(TRAIN)
             labels_predict = list()
             labels_gold = list()
 
             for batch_index in index_iterator.iterate(batch_size, mode=TRAIN, shuffle=True):
-                feed_dict = {nn.var(_key): dataset[_key][batch_index] for _key in dataset_key[TRAIN]}
+                feed_dict = {nn.var(_key): dataset[_key][batch_index] for _key in feed_key[TRAIN]}
                 feed_dict[nn.var(DROPOUT_KEEP_PROB)] = train_config.dropout_keep_prob
                 feed_dict[nn.var(SAMPLE_WEIGHTS)] = map(label_weight.get, feed_dict[nn.var(LABEL_GOLD)])
                 res = sess.run(fetches=fetches[TRAIN], feed_dict=feed_dict)
@@ -207,18 +172,20 @@ def main():
             labels_predict, labels_gold = labels_predict[:n_sample], labels_gold[:n_sample]
             labels_predict, labels_gold = labels_predict[:n_sample], labels_gold[:n_sample]
             res = basic_evaluate(gold=labels_gold, pred=labels_predict)
-            for _key in [F1_SCORE, ACCURACY, PRECISION, RECALL]:
-                print('[{}] {}'.format(_key, res[_key]))
             last_eval[TRAIN] = res
+            print_evaluation(res)
 
-            # VALIDATION SET
+            global_step = tf.train.global_step(sess, nn.var(GLOBAL_STEP))
+            saver.save(sess, save_path=model_output_prefix, global_step=global_step)
+
+            # 计算在验证集上的表现, 不更新模型参数
             print('VALID')
             n_sample = index_iterator.n_sample(VALID)
             labels_predict = list()
             labels_gold = list()
 
             for batch_index in index_iterator.iterate(batch_size, mode=VALID, shuffle=False):
-                feed_dict = {nn.var(_key): dataset[_key][batch_index] for _key in dataset_key[TEST]}
+                feed_dict = {nn.var(_key): dataset[_key][batch_index] for _key in feed_key[TEST]}
                 feed_dict[nn.var(DROPOUT_KEEP_PROB)] = 1.
                 res = sess.run(fetches=fetches[TEST], feed_dict=feed_dict)
                 labels_predict += res[LABEL_PREDICT].tolist()
@@ -226,11 +193,12 @@ def main():
 
             labels_predict, labels_gold = labels_predict[:n_sample], labels_gold[:n_sample]
             res = basic_evaluate(gold=labels_gold, pred=labels_predict)
-            for _key in [F1_SCORE, ACCURACY, PRECISION, RECALL]:
-                print('[{}] {}'.format(_key, res[_key]))
             last_eval[VALID] = res
+            print_evaluation(res)
 
-        data_config.prepare_output_folder()
+        # 训练结束 ##########################################################################
+
+        # 确保输出文件夹存在
 
         for mode in [TRAIN, TEST]:
             dataset = datasets[mode]
@@ -241,27 +209,105 @@ def main():
             labels_gold = list()
             hidden_feats = list()
             for batch_index in index_iterator.iterate(batch_size, shuffle=False):
-                feed_dict = {nn.var(_key): dataset[_key][batch_index] for _key in dataset_key[TEST]}
+                feed_dict = {nn.var(_key): dataset[_key][batch_index] for _key in feed_key[TEST]}
                 feed_dict[nn.var(DROPOUT_KEEP_PROB)] = 1.
                 res = sess.run(fetches=fetches[TEST], feed_dict=feed_dict)
                 labels_predict += res[LABEL_PREDICT].tolist()
                 hidden_feats += res[HIDDEN_FEAT].tolist()
                 labels_gold += dataset[LABEL_GOLD][batch_index].tolist()
 
-            labels_predict, labels_gold = labels_predict[:n_sample], labels_gold[:n_sample]
-            res = basic_evaluate(gold=labels_gold, pred=labels_predict)
-            for _key in [F1_SCORE, ACCURACY, PRECISION, RECALL]:
-                print('[{}] {}'.format(_key, res[_key]))
+            labels_predict = labels_predict[:n_sample]
+            labels_gold = labels_gold[:n_sample]
+            hidden_feats = hidden_feats[:n_sample]
 
             if mode == TEST:
+                res = basic_evaluate(gold=labels_gold, pred=labels_predict)
                 last_eval[TEST] = res
 
+            # 导出隐藏层
             with open(data_config.output_path(output_key, mode, HIDDEN_FEAT), 'w') as file_obj:
-                for feat in hidden_feats:
-                    file_obj.write('\t'.join(map(str, feat)) + '\n')
+                for _feat in hidden_feats:
+                    file_obj.write('\t'.join(map(str, _feat)) + '\n')
+            # 导出预测的label
+            with open(data_config.output_path(output_key, mode, LABEL_PREDICT), 'w') as file_obj:
+                for _label in labels_predict:
+                    file_obj.write('{}\n'.format(_label))
 
+        print('========================= FINAL EVALUATION =========================')
         for mode in [TRAIN, VALID, TEST]:
-            json.dump(last_eval[mode], open(data_config.output_path(output_key, mode, EVALUATION), 'w'))
+            res = last_eval[mode]
+            print(mode)
+            print_evaluation(res)
+
+            json.dump(res, open(data_config.output_path(output_key, mode, EVALUATION), 'w'))
+            print()
+
+    print('OUTPUT_KEY: {}'.format(output_key))
+
+
+@commandr.command('feat')
+def build_feat(dataset_key_src, output_key_src, dataset_key_dest):
+    """
+    :param dataset_key_src: 模型对应的dataset_key
+    :param output_key_src: 模型对应的output_key
+    :param dataset_key_dest: 需要生成特征向量的数据集对应的dataset_key
+    :return:
+    """
+    output_key = '{}.{}'.format(dataset_key_src, output_key_src)
+    print('OUTPUT_KEY: {}'.format(output_key))
+
+    # 获取模型文件所在路径
+    data_src_config = getattr(importlib.import_module('dataset.{}.config'.format(dataset_key_src)), 'config')
+    model_output_prefix = data_src_config.model_path(key=output_key_src)
+    # 加载模型对应字典
+    vocab_id_mapping = json.load(open(data_src_config.output_path(output_key_src, ALL, VOCAB_ID_MAPPING), 'r'))
+
+    # 加载训练数据
+    data_config = getattr(importlib.import_module('dataset.{}.config'.format(dataset_key_dest)), 'config')
+    data_config.prepare_output_folder(output_key=output_key)
+    datasets, _ = load_dataset(data_config=data_config, vocab_id_mapping=vocab_id_mapping, with_label=False)
+
+    batch_size = 200
+
+    with tf.Session() as sess:
+        prefix_checkpoint = tf.train.latest_checkpoint(model_output_prefix)
+        print(prefix_checkpoint)
+        saver = tf.train.import_meta_graph('{}.meta'.format(prefix_checkpoint))
+        saver.restore(sess, prefix_checkpoint)
+
+        nn = BaseNNModel(config=None)
+        nn.set_graph(tf.get_default_graph())
+        fetches = {mode: {_key: nn.var(_key) for _key in [HIDDEN_FEAT, ]} for mode in [TEST, ]}
+
+        for mode in [TRAIN, TEST]:
+            dataset = datasets[mode]
+            index_iterator = SimpleIndexIterator(n_sample=dataset[SEQ_LEN].shape[0])
+            n_sample = index_iterator.n_sample()
+
+            hidden_feats = list()
+            for batch_index in index_iterator.iterate(batch_size):
+                feed_dict = {nn.var(_key): dataset[_key][batch_index] for _key in feed_key[TEST]}
+                feed_dict[nn.var(DROPOUT_KEEP_PROB)] = 1.
+                res = sess.run(fetches=fetches[TEST], feed_dict=feed_dict)
+                hidden_feats += res[HIDDEN_FEAT].tolist()
+            hidden_feats = hidden_feats[:n_sample]
+
+            # 导出隐藏层
+            with open(data_config.output_path(output_key, mode, HIDDEN_FEAT), 'w') as file_obj:
+                for _feat in hidden_feats:
+                    file_obj.write('\t'.join(map(str, _feat)) + '\n')
+
+    print('OUTPUT_KEY: {}'.format(output_key))
+
+
+@commandr.command('eval')
+def show_eval(dataset_key, output_key):
+    data_config = getattr(importlib.import_module('dataset.{}.config'.format(dataset_key)), 'config')
+
+    for mode in [TRAIN, VALID, TEST]:
+        res = json.load(open(data_config.output_path(output_key, mode, EVALUATION)))
+        print(mode)
+        print_evaluation(res)
 
 
 if __name__ == '__main__':

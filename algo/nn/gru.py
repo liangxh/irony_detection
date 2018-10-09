@@ -16,10 +16,6 @@ class NNConfig(BaseNNConfig):
 class NNModel(BaseNNModel):
     name = 'gru'
 
-    def __init__(self, config):
-        super(NNModel, self).__init__(config=config)
-        self.variable_keys += [PROB_PREDICT, ]
-
     def build_neural_network(self, lookup_table):
         token_id_seq = tf.placeholder(tf.int32, [None, self.config.seq_len], name=TOKEN_ID_SEQ)
         seq_len = tf.placeholder(tf.int32, [None, ], name=SEQ_LEN)
@@ -61,4 +57,4 @@ class NNModel(BaseNNModel):
         # Optimizer
         tf.train.AdamOptimizer(learning_rate).minimize(loss, global_step=global_step, name=OPTIMIZER)
 
-        self.preserve_variables(tf.get_default_graph())
+        self.set_graph(graph=tf.get_default_graph())

@@ -1,11 +1,13 @@
 module: algo.nn.gru
+dataset_key: semeval2018_task3
+label_version: A
 
 nn:
   seq_len: _
   embedding:
-    trainable: False
+    trainable: True
   rnn:
-    dim: 10
+    dim: 100
   learning_rate:
     init: 0.01
     decay_steps: 1
@@ -15,7 +17,7 @@ nn:
     dim: _
 
 train:
-  epoch: 5
+  epoch: 1
   valid_rate: 0.2
   batch_size: 100
   dropout_keep_prob: 0.5

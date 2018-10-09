@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-from dataset.semeval2014.task9 import config
 
 
 class Processor(object):

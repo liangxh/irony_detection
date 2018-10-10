@@ -5,7 +5,7 @@ import json
 from collections import defaultdict
 from dataset.semeval2018_task1.config import config
 from dataset.common.const import *
-from dataset.semeval2018_task1.process import Processor
+from dataset.semeval2018_task1.process import Processor, label_names
 from nlp.process import naive_tokenize
 
 
@@ -17,11 +17,18 @@ def build_text_label():
     }
     for key, path in path_list.items():
         text_path = config.path(key, TEXT)
-        label_path = config.path(key, LABEL)
-        with open(text_path, 'w') as text_obj, open(label_path, 'w') as label_obj:
+
+        label_objs = {
+            _label_name: open(config.path(key, LABEL, _label_name), 'w')
+            for _label_name in label_names
+        }
+
+        with open(text_path, 'w') as text_obj:
             for label, text in Processor.load_origin(path):
                 text_obj.write(text + '\n')
-                label_obj.write(str(label) + '\n')
+                for _label_name, _label in label.items():
+                    label_objs[_label_name].write('{}\n'.format(_label))
+        map(lambda _obj: _obj.close(), label_objs.values())
 
 
 @commandr.command

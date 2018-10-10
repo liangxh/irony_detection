@@ -1,6 +1,11 @@
 # -*- coding: utf-8 -*-
 from dataset.semeval2018_task1 import config
 
+label_names = [
+    'anger', 'anticipation', 'disgust', 'fear', 'joy', 'love',
+    'optimism', 'pessimism', 'sadness', 'surprise', 'trust'
+]
+
 
 class Processor(object):
     @classmethod
@@ -22,6 +27,7 @@ class Processor(object):
                 10) trust
             TEXT: string
         """
+
         samples = list()
         with open(filename, 'r') as file_obj:
             file_obj.readline()
@@ -33,7 +39,7 @@ class Processor(object):
                 values = line.split('\t')
                 text = values[1]
                 label = map(int, values[2:])
-                sample = (label, text)
+                sample = (dict(zip(label_names, label)), text)
                 samples.append(sample)
         return samples
 

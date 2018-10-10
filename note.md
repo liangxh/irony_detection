@@ -14,3 +14,18 @@ python algo/main.py feat semeval2014_task9 gru_1539175546 semeval2018_task3
 
 python algo/svm.py main config_svm.yaml semeval2018_task3 A
 
+
+
+```
+python algo/main.py train semeval2018_task3 A
+
+python algo/main.py train semeval2018_task1 love
+python algo/main.py feat semeval2018_task1 love_gru_1539178720
+
+python algo/main.py train semeval2014_task9
+python algo/main.py feat semeval2014_task9 gru_1539175546
+```
+
+```
+python algo/svm.py main semeval2018_task3 A
+```

@@ -48,13 +48,13 @@ def load_dataset(data_config, train_config, label_version=None):
 
 
 @commandr.command
-def main(config_path, dataset_key, label_version=None):
+def main(dataset_key, label_version=None, config_path='config_svm.yaml'):
     """
-    python algo/svm.py main config_svm.yaml semeval2018_task3 A
+    python algo/svm.py main semeval2018_task3 A
 
-    :param config_path:
     :param dataset_key:
     :param label_version:
+    :param config_path:
     :return:
     """
 

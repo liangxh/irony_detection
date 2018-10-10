@@ -78,15 +78,15 @@ fetch_key = {
 
 
 @commandr.command
-def train(config_path, dataset_key, label_version=None):
+def train(dataset_key, label_version=None, config_path='config.yaml'):
     """
-    python algo/main.py train config.yaml semeval2018_task3 A
-    python algo/main.py train config.yaml semeval2018_task1
-    python algo/main.py train config.yaml semeval2014_task9
+    python algo/main.py train semeval2018_task3 A
+    python algo/main.py train semeval2018_task1 love
+    python algo/main.py train semeval2014_task9
 
-    :param config_path:
     :param dataset_key:
     :param label_version:
+    :param config_path:
     :return:
     """
     config_data = yaml.load(open(config_path))
@@ -264,9 +264,10 @@ def train(config_path, dataset_key, label_version=None):
 
 
 @commandr.command('feat')
-def build_feat(dataset_key_src, output_key_src, dataset_key_dest):
+def build_feat(dataset_key_src, output_key_src, dataset_key_dest='semeval2018_task3'):
     """
-    python algo/main.py feat semeval2014_task9 gru_1539175546 semeval2018_task3
+    python algo/main.py feat semeval2014_task9 gru_1539175546
+    python algo/main.py feat semeval2018_task1 love_gru_1539178720
 
     :param dataset_key_src: 模型对应的dataset_key
     :param output_key_src: 模型对应的output_key

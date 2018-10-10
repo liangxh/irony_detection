@@ -1,6 +1,7 @@
 feat_keys:
   - gru_1539056285
-  - semeval2014_task9.gru_1539175546
+  #- semeval2014_task9.gru_1539175546
+  #- semeval2018_task1.love_gru_1539178720
 
 train:
   use_class_weights: True

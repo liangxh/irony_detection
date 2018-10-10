@@ -19,14 +19,6 @@ class Config(object):
         self.data = data
 
     @property
-    def dataset_key(self):
-        return self.data['dataset_key']
-
-    @property
-    def label_version(self):
-        return self.data['label_version']
-
-    @property
     def feat_keys(self):
         return self.data['feat_keys']
 
@@ -56,12 +48,21 @@ def load_dataset(data_config, train_config, label_version=None):
 
 
 @commandr.command
-def main(config_path):
+def main(config_path, dataset_key, label_version=None):
+    """
+    python algo/svm.py main config_svm.yaml semeval2018_task3 A
+
+    :param config_path:
+    :param dataset_key:
+    :param label_version:
+    :return:
+    """
+
     config_data = yaml.load(open(config_path))
     train_config = Config(data=config_data)
 
-    data_config = getattr(importlib.import_module('dataset.{}.config'.format(train_config.dataset_key)), 'config')
-    datasets = load_dataset(data_config, train_config, train_config.label_version)
+    data_config = getattr(importlib.import_module('dataset.{}.config'.format(dataset_key)), 'config')
+    datasets = load_dataset(data_config, train_config, label_version)
 
     if train_config.use_class_weights:
         class_weight = 'balanced'

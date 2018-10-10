@@ -4,6 +4,7 @@ import importlib
 import time
 import commandr
 import yaml
+import shutil
 import numpy as np
 import tensorflow as tf
 from algo.nn.base import BaseNNModel
@@ -15,20 +16,22 @@ from dataset.common.const import *
 from dataset.common.load import *
 from nlp.process import naive_tokenize
 from algo.lib.common import print_evaluation, load_lookup_table, tokenized_to_tid_list
+from dataset.semeval2018_task3.config import config as semeval2018_task3_date_config
+
+MAX_SEQ_LEN = 90
 
 
 def load_tokenized_list(mode):
     return map(naive_tokenize, load_text_list(mode))
 
 
-def load_dataset(data_config, vocab_id_mapping, with_label=True, label_version=None):
+def load_dataset(data_config, vocab_id_mapping, seq_len, with_label=True, label_version=None):
     def seq_to_len_list(seq_list):
         return map(len, seq_list)
 
     def zero_pad_seq_list(seq_list, seq_len):
         return map(lambda _seq: _seq + [0] * (seq_len - len(_seq)), seq_list)
 
-    max_seq_len = -1
     datasets = dict()
     for mode in [TRAIN, TEST]:
         text_path = data_config.path(mode, TEXT)
@@ -50,14 +53,17 @@ def load_dataset(data_config, vocab_id_mapping, with_label=True, label_version=N
     for _dataset in datasets.values():
         max_seq_len = max(max_seq_len, _dataset[SEQ_LEN].max() + 1)
 
+    if seq_len < max_seq_len:
+        raise ValueError('seq_len set as {}, got max seq_len = {}'.format(seq_len, max_seq_len))
+
     for mode in [TRAIN, TEST]:
-        datasets[mode][TOKEN_ID_SEQ] = np.asarray(zero_pad_seq_list(datasets[mode][TOKEN_ID_SEQ], max_seq_len))
+        datasets[mode][TOKEN_ID_SEQ] = np.asarray(zero_pad_seq_list(datasets[mode][TOKEN_ID_SEQ], seq_len))
 
     if with_label:
         output_dim = max(datasets[TRAIN][LABEL_GOLD]) + 1
-        return datasets, max_seq_len, output_dim
+        return datasets, output_dim
     else:
-        return datasets, max_seq_len
+        return datasets
 
 
 feed_key = {
@@ -72,13 +78,23 @@ fetch_key = {
 
 
 @commandr.command
-def main(config_path, dataset_key, label_version=None):
+def train(config_path, dataset_key, label_version=None):
+    """
+    python algo/main.py train config.yaml semeval2018_task3 A
+    python algo/main.py train config.yaml semeval2018_task1
+    python algo/main.py train config.yaml semeval2014_task9
+
+    :param config_path:
+    :param dataset_key:
+    :param label_version:
+    :return:
+    """
     config_data = yaml.load(open(config_path))
 
     data_config = getattr(importlib.import_module('dataset.{}.config'.format(dataset_key)), 'config')
 
-    w2v_model_path = data_config.path(ALL, WORD2VEC, 'google_v0')
-    vocab_train_path = data_config.path(TRAIN, VOCAB, 'v0')
+    w2v_model_path = data_config.path(ALL, WORD2VEC, config_data['version']['w2v'])
+    vocab_train_path = data_config.path(TRAIN, VOCAB, config_data['version']['vocab'])
 
     output_key = '{}_{}'.format(config_data['module'].rsplit('.', 1)[1], int(time.time()))
     if label_version is not None:
@@ -89,6 +105,8 @@ def main(config_path, dataset_key, label_version=None):
     data_config.prepare_output_folder(output_key=output_key)
     data_config.prepare_model_folder(output_key=output_key)
 
+    shutil.copy(config_path, data_config.output_path(output_key, ALL, CONFIG))
+
     # 根据配置加载模块
     module_relative_path = config_data['module']
     NNModel = getattr(importlib.import_module(module_relative_path), 'NNModel')
@@ -97,6 +115,8 @@ def main(config_path, dataset_key, label_version=None):
     # 加载字典集
     # 在模型中会采用所有模型中支持的词向量, 并为有足够出现次数的单词随机生成词向量
     vocab_meta_list = load_vocab_list(vocab_train_path)
+    vocab_meta_list += load_vocab_list(
+        semeval2018_task3_date_config.path(TRAIN, VOCAB, config_data['version']['vocab']))
     vocabs = [_meta['t'] for _meta in vocab_meta_list if _meta['tf'] >= 2]
 
     # 加载词向量与相关数据
@@ -105,10 +125,9 @@ def main(config_path, dataset_key, label_version=None):
     json.dump(vocab_id_mapping, open(data_config.output_path(output_key, ALL, VOCAB_ID_MAPPING), 'w'))
 
     # 加载训练数据
-    datasets, max_seq_len, output_dim = load_dataset(
-        data_config=data_config, vocab_id_mapping=vocab_id_mapping,
-        with_label=True, label_version=label_version
-    )
+    datasets, output_dim = load_dataset(
+        data_config=data_config, vocab_id_mapping=vocab_id_mapping, seq_len=MAX_SEQ_LEN,
+        with_label=True, label_version=label_version)
 
     # 加载配置
     nn_config = NNConfig(config_data['nn'])
@@ -132,7 +151,7 @@ def main(config_path, dataset_key, label_version=None):
     # 基于加载的数据更新配置
     nn_config.set_embedding_dim(embedding_dim)
     nn_config.set_output_dim(output_dim)
-    nn_config.set_seq_len(max_seq_len)
+    nn_config.set_seq_len(MAX_SEQ_LEN)
     # 搭建神经网络
     nn = NNModel(config=nn_config)
     nn.build_neural_network(lookup_table=lookup_table)
@@ -197,7 +216,6 @@ def main(config_path, dataset_key, label_version=None):
             print_evaluation(res)
 
         # 训练结束 ##########################################################################
-
         # 确保输出文件夹存在
 
         for mode in [TRAIN, TEST]:
@@ -248,6 +266,8 @@ def main(config_path, dataset_key, label_version=None):
 @commandr.command('feat')
 def build_feat(dataset_key_src, output_key_src, dataset_key_dest):
     """
+    python algo/main.py feat semeval2014_task9 gru_1539175546 semeval2018_task3
+
     :param dataset_key_src: 模型对应的dataset_key
     :param output_key_src: 模型对应的output_key
     :param dataset_key_dest: 需要生成特征向量的数据集对应的dataset_key
@@ -265,8 +285,8 @@ def build_feat(dataset_key_src, output_key_src, dataset_key_dest):
     # 加载训练数据
     data_config = getattr(importlib.import_module('dataset.{}.config'.format(dataset_key_dest)), 'config')
     data_config.prepare_output_folder(output_key=output_key)
-    datasets, _ = load_dataset(data_config=data_config, vocab_id_mapping=vocab_id_mapping, with_label=False)
-
+    datasets = load_dataset(
+        data_config=data_config, vocab_id_mapping=vocab_id_mapping, seq_len=MAX_SEQ_LEN, with_label=False)
     batch_size = 200
 
     with tf.Session() as sess:

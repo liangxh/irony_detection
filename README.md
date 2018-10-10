@@ -17,3 +17,5 @@ prefix=data/semeval2018_task3
 for mode in {train,test}; do
     ./scripts/affective_tweets_feature.sh -i ${prefix}/${mode}.text -o ${prefix}/${mode}.lexicon_feat
 done
+
+

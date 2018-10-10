@@ -101,15 +101,20 @@ class BinModel(object):
         :param filename: string, 字典文件名, 文件格式形如 <vocab>(tab)xxxxxxxx
         :return: list of string
         """
-        vocab_list = list()
-        with open(filename, 'r') as file_obj:
-            for line in file_obj:
-                line = line.strip()
-                if line == '':
-                    continue
-                parts = line.split('\t')
-                vocab = parts[0].decode('utf8')
-                vocab_list.append(vocab)
+        vocab_list = set()
+        filenames = filename.split(',')
+        print filenames
+
+        for filename in filenames:
+            with open(filename, 'r') as file_obj:
+                for line in file_obj:
+                    line = line.strip()
+                    if line == '':
+                        continue
+                    parts = line.split('\t')
+                    vocab = parts[0].decode('utf8')
+                    vocab_list.add(vocab)
+            print len(vocab_list)
         return vocab_list
 
     @classmethod
@@ -201,7 +206,21 @@ class BinModel(object):
 @commandr.command('index')
 def build_plain(input_filename, vocab_filename, output_filename):
     """
-    python nlp/word2vec.py index ~/Downloads/GoogleNews-vectors-negative300.bin data/semeval2018_task3/all.vocab.v0 data/semeval2018_task3/all.w2v.google_v0
+    python nlp/word2vec.py index \
+        ~/Downloads/GoogleNews-vectors-negative300.bin \
+        data/semeval2018_task3/all.vocab.v0 \
+        data/semeval2018_task3/all.w2v.google_v0
+
+    python nlp/word2vec.py index \
+        ~/Downloads/GoogleNews-vectors-negative300.bin \
+        ../irony_detection_data/semeval2018_task3/all.vocab.v0,../irony_detection_data/semeval2018_task1/all.vocab.v0 \
+        ../irony_detection_data/semeval2018_task1/all.w2v.google_v0
+
+    python nlp/word2vec.py index \
+        ~/Downloads/GoogleNews-vectors-negative300.bin \
+        ../irony_detection_data/semeval2018_task3/all.vocab.v0,../irony_detection_data/semeval2014_task9/all.vocab.v0 \
+        ../irony_detection_data/semeval2014_task9/all.w2v.google_v0
+
     """
     BinModel.init(input_filename, '_index.tmp', vocab_filename).to_plain(output_filename)
 

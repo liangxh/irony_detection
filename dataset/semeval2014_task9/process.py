@@ -24,7 +24,3 @@ class Processor(object):
                 sample = (label, text)
                 samples.append(sample)
         return samples
-
-    @classmethod
-    def build_vocab(cls):
-        fro

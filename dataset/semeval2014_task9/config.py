@@ -5,7 +5,7 @@ from dataset.common.config import BaseConfig
 
 
 class Config(BaseConfig):
-    dataset_key = 'semeval2014_task9_B'
+    dataset_key = 'semeval2014_task9'
 
 
 config = Config()

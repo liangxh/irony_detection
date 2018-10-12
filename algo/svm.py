@@ -57,6 +57,9 @@ def main(dataset_key, label_version=None, config_path='config_svm.yaml'):
     :param config_path:
     :return:
     """
+    pos_label = None
+    if dataset_key == 'semeval2018_task3' and label_version == 'A':
+        pos_label = 1
 
     config_data = yaml.load(open(config_path))
     train_config = Config(data=config_data)
@@ -75,7 +78,7 @@ def main(dataset_key, label_version=None, config_path='config_svm.yaml'):
     for mode in [TRAIN, TEST]:
         labels_predict = clf.predict(X=datasets[mode][FEATS])
         labels_gold = datasets[mode][LABEL_GOLD]
-        res = basic_evaluate(gold=labels_gold, pred=labels_predict)
+        res = basic_evaluate(gold=labels_gold, pred=labels_predict, pos_label=pos_label)
 
         print(mode)
         print_evaluation(res)

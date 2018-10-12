@@ -89,6 +89,10 @@ def train(dataset_key, label_version=None, config_path='config.yaml'):
     :param config_path:
     :return:
     """
+    pos_label = None
+    if dataset_key == 'semeval2018_task3' and label_version == 'A':
+        pos_label = 1
+
     config_data = yaml.load(open(config_path))
 
     data_config = getattr(importlib.import_module('dataset.{}.config'.format(dataset_key)), 'config')
@@ -190,7 +194,7 @@ def train(dataset_key, label_version=None, config_path='config.yaml'):
 
             labels_predict, labels_gold = labels_predict[:n_sample], labels_gold[:n_sample]
             labels_predict, labels_gold = labels_predict[:n_sample], labels_gold[:n_sample]
-            res = basic_evaluate(gold=labels_gold, pred=labels_predict)
+            res = basic_evaluate(gold=labels_gold, pred=labels_predict, pos_label=pos_label)
             last_eval[TRAIN] = res
             print_evaluation(res)
 
@@ -211,7 +215,7 @@ def train(dataset_key, label_version=None, config_path='config.yaml'):
                 labels_gold += dataset[LABEL_GOLD][batch_index].tolist()
 
             labels_predict, labels_gold = labels_predict[:n_sample], labels_gold[:n_sample]
-            res = basic_evaluate(gold=labels_gold, pred=labels_predict)
+            res = basic_evaluate(gold=labels_gold, pred=labels_predict, pos_label=pos_label)
             last_eval[VALID] = res
             print_evaluation(res)
 
@@ -239,7 +243,7 @@ def train(dataset_key, label_version=None, config_path='config.yaml'):
             hidden_feats = hidden_feats[:n_sample]
 
             if mode == TEST:
-                res = basic_evaluate(gold=labels_gold, pred=labels_predict)
+                res = basic_evaluate(gold=labels_gold, pred=labels_predict, pos_label=pos_label)
                 last_eval[TEST] = res
 
             # 导出隐藏层

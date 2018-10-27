@@ -17,6 +17,7 @@ class NNModel(BaseNNModel):
     name = 'gru'
 
     def build_neural_network(self, lookup_table):
+        label_gold = tf.placeholder(tf.int32, [None, ], name=LABEL_GOLD)
         token_id_seq = tf.placeholder(tf.int32, [None, self.config.seq_len], name=TOKEN_ID_SEQ)
         seq_len = tf.placeholder(tf.int32, [None, ], name=SEQ_LEN)
         sample_weights = tf.placeholder(tf.float32, [None, ], name=SAMPLE_WEIGHTS)
@@ -34,27 +35,27 @@ class NNModel(BaseNNModel):
             dtype=tf.float32
         )
         dense_input = tf.concat([rnn_last_states, ], axis=1, name=HIDDEN_FEAT)
-        y, w, b = dense.build(dense_input, self.config.output_dim, output_name=PROB_PREDICT)
 
-        # 计算loss
-        label_gold = tf.placeholder(tf.int32, [None, ], name=LABEL_GOLD)
-        _loss_1 = tf.reduce_mean(tf.losses.sparse_softmax_cross_entropy(
-            logits=y, labels=label_gold, weights=sample_weights))
+        if not self.config.binary_classification:
+            y, w, b = dense.build(dense_input, dim_output=self.config.output_dim, output_name=PROB_PREDICT)
+            # 计算loss
+            _loss_1 = tf.reduce_mean(tf.losses.sparse_softmax_cross_entropy(
+                logits=y, labels=label_gold, weights=sample_weights))
+        else:
+            y, w, b = dense.build(dense_input, dim_output=1, activation=tf.nn.sigmoid)
+            _loss_1 = -tf.reduce_mean(
+                y * tf.log(tf.clip_by_value(label_gold, 1e-10, 1.0))
+                + (1 - y) * tf.log(tf.clip_by_value(1 - label_gold, 1e-10, 1.0))
+            )
+
         _loss_2 = tf.constant(0., dtype=tf.float32)
         if self.config.l2_reg_lambda is not None and self.config.l2_reg_lambda > 0:
             _loss_2 += self.config.l2_reg_lambda * tf.nn.l2_loss(w)
         loss = tf.add(_loss_1, _loss_2, name=LOSS)
 
-        global_step = tf.Variable(0, trainable=False, name=GLOBAL_STEP)
-        learning_rate = tf.train.exponential_decay(
-            self.config.learning_rate_init,
-            global_step=global_step,
-            decay_steps=self.config.learning_rate_decay_steps,
-            decay_rate=self.config.learning_rate_decay_rate
-        )
         # 预测标签
         tf.cast(tf.argmax(y, 1), tf.int32, name=LABEL_PREDICT)
-        # Optimizer
-        tf.train.AdamOptimizer(learning_rate).minimize(loss, global_step=global_step, name=OPTIMIZER)
 
+        # 统一的后处理
+        self.build_optimizer(loss=loss)
         self.set_graph(graph=tf.get_default_graph())

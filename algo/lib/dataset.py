@@ -51,12 +51,13 @@ class IndexIterator(object):
         self.mode_index = {TRAIN: list(), VALID: list()}
         for label, index in self.label_index.items():
             index = index.tolist()
-            random.shuffle(index)
-            n_sample = len(index)
-            n_valid = int(n_sample * valid_rate)
-
-            self.mode_index[TRAIN] += index[:-n_valid]
-            self.mode_index[VALID] += index[-n_valid:]
+            if valid_rate > 0:
+                n_sample = len(index)
+                n_valid = int(n_sample * valid_rate)
+                self.mode_index[TRAIN] += index[:-n_valid]
+                self.mode_index[VALID] += index[-n_valid:]
+            else:
+                self.mode_index[TRAIN] += index
 
     def iterate(self, batch_size, mode=None, shuffle=False):
         index = copy.deepcopy(self.mode_index[mode]) if mode is not None else range(self._n_sample)

@@ -150,7 +150,7 @@ def train(dataset_key, label_version=None, config_path='config.yaml'):
             for _label, _index in index_iterators[TRAIN].label_index.items()
         }
     else:
-        label_weight = {_label: 1. for _label in index_iterators[TRAIN].dim}
+        label_weight = {_label: 1. for _label in range(index_iterators[TRAIN].dim)}
 
     # 基于加载的数据更新配置
     nn_config.set_embedding_dim(embedding_dim)
@@ -201,23 +201,24 @@ def train(dataset_key, label_version=None, config_path='config.yaml'):
             global_step = tf.train.global_step(sess, nn.var(GLOBAL_STEP))
             saver.save(sess, save_path=model_output_prefix, global_step=global_step)
 
-            # 计算在验证集上的表现, 不更新模型参数
-            print('VALID')
-            n_sample = index_iterator.n_sample(VALID)
-            labels_predict = list()
-            labels_gold = list()
+            if train_config.valid_rate > 0.:
+                # 计算在验证集上的表现, 不更新模型参数
+                print('VALID')
+                n_sample = index_iterator.n_sample(VALID)
+                labels_predict = list()
+                labels_gold = list()
 
-            for batch_index in index_iterator.iterate(batch_size, mode=VALID, shuffle=False):
-                feed_dict = {nn.var(_key): dataset[_key][batch_index] for _key in feed_key[TEST]}
-                feed_dict[nn.var(DROPOUT_KEEP_PROB)] = 1.
-                res = sess.run(fetches=fetches[TEST], feed_dict=feed_dict)
-                labels_predict += res[LABEL_PREDICT].tolist()
-                labels_gold += dataset[LABEL_GOLD][batch_index].tolist()
+                for batch_index in index_iterator.iterate(batch_size, mode=VALID, shuffle=False):
+                    feed_dict = {nn.var(_key): dataset[_key][batch_index] for _key in feed_key[TEST]}
+                    feed_dict[nn.var(DROPOUT_KEEP_PROB)] = 1.
+                    res = sess.run(fetches=fetches[TEST], feed_dict=feed_dict)
+                    labels_predict += res[LABEL_PREDICT].tolist()
+                    labels_gold += dataset[LABEL_GOLD][batch_index].tolist()
 
-            labels_predict, labels_gold = labels_predict[:n_sample], labels_gold[:n_sample]
-            res = basic_evaluate(gold=labels_gold, pred=labels_predict, pos_label=pos_label)
-            last_eval[VALID] = res
-            print_evaluation(res)
+                labels_predict, labels_gold = labels_predict[:n_sample], labels_gold[:n_sample]
+                res = basic_evaluate(gold=labels_gold, pred=labels_predict, pos_label=pos_label)
+                last_eval[VALID] = res
+                print_evaluation(res)
 
         # 训练结束 ##########################################################################
         # 确保输出文件夹存在
@@ -257,6 +258,8 @@ def train(dataset_key, label_version=None, config_path='config.yaml'):
 
         print('========================= FINAL EVALUATION =========================')
         for mode in [TRAIN, VALID, TEST]:
+            if mode == VALID and train_config.valid_rate == 0.:
+                continue
             res = last_eval[mode]
             print(mode)
             print_evaluation(res)

@@ -49,3 +49,7 @@ class BaseNNConfig(object):
     @property
     def output_dim(self):
         return self.data['output']['dim']
+
+    @property
+    def binary_classification(self):
+        return self.output_dim == 2 and self.data['binary_classification']

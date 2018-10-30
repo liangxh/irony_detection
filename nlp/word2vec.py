@@ -206,20 +206,39 @@ class BinModel(object):
 @commandr.command('index')
 def build_plain(input_filename, vocab_filename, output_filename):
     """
-    python nlp/word2vec.py index \
-        ~/Downloads/GoogleNews-vectors-negative300.bin \
-        data/semeval2018_task3/all.vocab.v0 \
-        data/semeval2018_task3/all.w2v.google_v0
+    # naive
 
     python nlp/word2vec.py index \
         ~/Downloads/GoogleNews-vectors-negative300.bin \
-        ../irony_detection_data/semeval2018_task3/all.vocab.v0,../irony_detection_data/semeval2018_task1/all.vocab.v0 \
-        ../irony_detection_data/semeval2018_task1/all.w2v.google_v0
+        ../irony_detection_data/semeval2018_task3/all.vocab.naive \
+        ../irony_detection_data/semeval2018_task3/all.w2v.google_naive
 
     python nlp/word2vec.py index \
         ~/Downloads/GoogleNews-vectors-negative300.bin \
-        ../irony_detection_data/semeval2018_task3/all.vocab.v0,../irony_detection_data/semeval2014_task9/all.vocab.v0 \
-        ../irony_detection_data/semeval2014_task9/all.w2v.google_v0
+        ../irony_detection_data/semeval2018_task3/all.vocab.naive,../irony_detection_data/semeval2018_task1/all.vocab.naive \
+        ../irony_detection_data/semeval2018_task1/all.w2v.google_naive
+
+    python nlp/word2vec.py index \
+        ~/Downloads/GoogleNews-vectors-negative300.bin \
+        ../irony_detection_data/semeval2018_task3/all.vocab.naive,../irony_detection_data/semeval2014_task9/all.vocab.naive \
+        ../irony_detection_data/semeval2014_task9/all.w2v.google_naive
+
+    # ek
+
+    python nlp/word2vec.py index \
+        ~/Downloads/GoogleNews-vectors-negative300.bin \
+        ../irony_detection_data/semeval2018_task3/all.vocab.ek \
+        ../irony_detection_data/semeval2018_task3/all.w2v.google_ek
+
+    python nlp/word2vec.py index \
+        ~/Downloads/GoogleNews-vectors-negative300.bin \
+        ../irony_detection_data/semeval2018_task3/all.vocab.ek,../irony_detection_data/semeval2018_task1/all.vocab.ek \
+        ../irony_detection_data/semeval2018_task1/all.w2v.google_ek
+
+    python nlp/word2vec.py index \
+        ~/Downloads/GoogleNews-vectors-negative300.bin \
+        ../irony_detection_data/semeval2018_task3/all.vocab.ek,../irony_detection_data/semeval2014_task9/all.vocab.ek \
+        ../irony_detection_data/semeval2014_task9/all.w2v.google_ek
 
     """
     BinModel.init(input_filename, '_index.tmp', vocab_filename).to_plain(output_filename)

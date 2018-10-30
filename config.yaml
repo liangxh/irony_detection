@@ -1,7 +1,6 @@
 module: algo.nn.gru
 version:
-  w2v: google_v0
-  vocab: v0
+  w2v: google_{text_version}
 
 nn:
   seq_len: _

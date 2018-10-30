@@ -2,6 +2,11 @@
 import json
 
 
+def load_tokenized_list(path):
+    text_list = load_text_list(path)
+    return map(lambda line: line.decode('utf8').split(' '), text_list)
+
+
 def load_text_list(path):
     """
     :param path: string

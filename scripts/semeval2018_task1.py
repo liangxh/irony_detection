@@ -31,44 +31,5 @@ def build_text_label():
         map(lambda _obj: _obj.close(), label_objs.values())
 
 
-@commandr.command
-def build_vocab(version='v0'):
-    all_token = set()
-
-    for key in [TRAIN, TEST]:
-        text_path = config.path(key, TEXT)
-        output_path = config.path(key, VOCAB, version)
-        print(output_path)
-
-        tf = defaultdict(lambda: 0)
-        df = defaultdict(lambda: 0)
-
-        with open(text_path, 'r') as file_obj:
-            for line in file_obj:
-                line = line.strip()
-                if line == '':
-                    continue
-                tokens = naive_tokenize(line)
-                for token in tokens:
-                    tf[token] += 1
-                for token in set(tokens):
-                    df[token] += 1
-
-        token_list = tf.keys()
-        token_list = sorted(token_list, key=lambda _t: (-df[_t], -tf[_t]))
-        with open(output_path, 'w') as file_obj:
-            for token in token_list:
-                data = {'t': token, 'tf': tf[token], 'df': df[token]}
-                file_obj.write('{}\n'.format(json.dumps(data)))
-
-        all_token |= set(token_list)
-
-    output_path = config.path(ALL, VOCAB, version)
-    with open(output_path, 'w') as file_obj:
-        for token in all_token:
-            file_obj.write('{}\n'.format(token.encode('utf8')))
-    print(output_path)
-
-
 if __name__ == '__main__':
     commandr.Run()

@@ -6,6 +6,10 @@ class TrainConfig(object):
         self.data = data
 
     @property
+    def text_type(self):
+        return self.data.get('text_type', 'txt')
+
+    @property
     def epoch(self):
         return self.data['epoch']
 

@@ -14,18 +14,13 @@ from algo.model.const import *
 from algo.model.train_config import TrainConfig
 from dataset.common.const import *
 from dataset.common.load import *
-from nlp.process import naive_tokenize
 from algo.lib.common import print_evaluation, load_lookup_table, tokenized_to_tid_list
 from dataset.semeval2018_task3.config import config as semeval2018_task3_date_config
 
 MAX_SEQ_LEN = 90
 
 
-def load_tokenized_list(mode):
-    return map(naive_tokenize, load_text_list(mode))
-
-
-def load_dataset(data_config, vocab_id_mapping, seq_len, with_label=True, label_version=None):
+def load_dataset(data_config, vocab_id_mapping, seq_len, with_label=True, label_version=None, text_version=TEXT):
     def seq_to_len_list(seq_list):
         return map(len, seq_list)
 
@@ -34,8 +29,7 @@ def load_dataset(data_config, vocab_id_mapping, seq_len, with_label=True, label_
 
     datasets = dict()
     for mode in [TRAIN, TEST]:
-        text_path = data_config.path(mode, TEXT)
-
+        text_path = data_config.path(mode, TEXT, text_version)
         tokenized_list = load_tokenized_list(text_path)
 
         tid_list = tokenized_to_tid_list(tokenized_list, vocab_id_mapping)
@@ -78,15 +72,16 @@ fetch_key = {
 
 
 @commandr.command
-def train(dataset_key, label_version=None, config_path='config.yaml'):
+def train(dataset_key, text_version=TEXT, label_version=None, config_path='config.yaml'):
     """
-    python algo/main.py train semeval2018_task3 A
-    python algo/main.py train semeval2018_task1 love
+    python algo/main.py train semeval2018_task3 -l A -t ek
+    python algo/main.py train semeval2018_task1 -l love
     python algo/main.py train semeval2014_task9
 
-    :param dataset_key:
-    :param label_version:
-    :param config_path:
+    :param dataset_key: string
+    :param text_version: string
+    :param label_version: string
+    :param config_path: string
     :return:
     """
     pos_label = None
@@ -97,10 +92,10 @@ def train(dataset_key, label_version=None, config_path='config.yaml'):
 
     data_config = getattr(importlib.import_module('dataset.{}.config'.format(dataset_key)), 'config')
 
-    w2v_model_path = data_config.path(ALL, WORD2VEC, config_data['version']['w2v'])
-    vocab_train_path = data_config.path(TRAIN, VOCAB, config_data['version']['vocab'])
+    w2v_model_path = data_config.path(ALL, WORD2VEC, config_data['version']['w2v'].format(text_version=text_version))
+    vocab_train_path = data_config.path(TRAIN, VOCAB, text_version)
 
-    output_key = '{}_{}'.format(config_data['module'].rsplit('.', 1)[1], int(time.time()))
+    output_key = '{}_{}_{}'.format(config_data['module'].rsplit('.', 1)[1], text_version, int(time.time()))
     if label_version is not None:
         output_key = '{}_{}'.format(label_version, output_key)
     print('OUTPUT_KEY: {}'.format(output_key))
@@ -119,8 +114,7 @@ def train(dataset_key, label_version=None, config_path='config.yaml'):
     # 加载字典集
     # 在模型中会采用所有模型中支持的词向量, 并为有足够出现次数的单词随机生成词向量
     vocab_meta_list = load_vocab_list(vocab_train_path)
-    vocab_meta_list += load_vocab_list(
-        semeval2018_task3_date_config.path(TRAIN, VOCAB, config_data['version']['vocab']))
+    vocab_meta_list += load_vocab_list(semeval2018_task3_date_config.path(TRAIN, VOCAB, text_version))
     vocabs = [_meta['t'] for _meta in vocab_meta_list if _meta['tf'] >= 2]
 
     # 加载词向量与相关数据
@@ -131,7 +125,7 @@ def train(dataset_key, label_version=None, config_path='config.yaml'):
     # 加载训练数据
     datasets, output_dim = load_dataset(
         data_config=data_config, vocab_id_mapping=vocab_id_mapping, seq_len=MAX_SEQ_LEN,
-        with_label=True, label_version=label_version)
+        with_label=True, label_version=label_version, text_version=text_version)
 
     # 加载配置
     nn_config = NNConfig(config_data['nn'])
@@ -271,7 +265,7 @@ def train(dataset_key, label_version=None, config_path='config.yaml'):
 
 
 @commandr.command('feat')
-def build_feat(dataset_key_src, output_key_src, dataset_key_dest='semeval2018_task3'):
+def build_feat(dataset_key_src, output_key_src, dataset_key_dest='semeval2018_task3', text_version=TEXT):
     """
     python algo/main.py feat semeval2014_task9 gru_1539175546
     python algo/main.py feat semeval2018_task1 love_gru_1539178720
@@ -279,6 +273,7 @@ def build_feat(dataset_key_src, output_key_src, dataset_key_dest='semeval2018_ta
     :param dataset_key_src: 模型对应的dataset_key
     :param output_key_src: 模型对应的output_key
     :param dataset_key_dest: 需要生成特征向量的数据集对应的dataset_key
+    :param text_version:
     :return:
     """
     output_key = '{}.{}'.format(dataset_key_src, output_key_src)
@@ -294,7 +289,9 @@ def build_feat(dataset_key_src, output_key_src, dataset_key_dest='semeval2018_ta
     data_config = getattr(importlib.import_module('dataset.{}.config'.format(dataset_key_dest)), 'config')
     data_config.prepare_output_folder(output_key=output_key)
     datasets = load_dataset(
-        data_config=data_config, vocab_id_mapping=vocab_id_mapping, seq_len=MAX_SEQ_LEN, with_label=False)
+        data_config=data_config, vocab_id_mapping=vocab_id_mapping, seq_len=MAX_SEQ_LEN,
+        with_label=False, text_version=text_version
+    )
     batch_size = 200
 
     with tf.Session() as sess:

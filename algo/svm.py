@@ -11,13 +11,13 @@ from dataset.common.load import *
 from algo.model.const import *
 from algo.lib.evaluate import basic_evaluate
 from algo.lib.common import print_evaluation
-from sklearn.decomposition import TruncatedSVD as SVD
-from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
+from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer, HashingVectorizer
 from nlp.lexicon_feat import extract_tf
 
 FEATS = 'feats'
 TF_IDF = 'tf-idf'
 TF = 'tf'
+TF_C = 'tf_c'
 
 
 class Config(object):
@@ -31,6 +31,15 @@ class Config(object):
     @property
     def use_class_weights(self):
         return self.data['train']['use_class_weights']
+
+
+def normalize_matrix(m):
+    return m
+    m -= m.mean(axis=0)
+    #return m / m.std(axis=0)
+    return m
+    return m / m.max(axis=0)
+    #return (m - m.mean(axis=0)) #/ np.sqrt(m.power(2).sum(axis=0))
 
 
 def load_dataset(data_config, train_config, label_version=None):
@@ -83,6 +92,7 @@ def main(dataset_key, label_version=None, config_path='config_svm.yaml'):
     clf = svm.SVC(class_weight=class_weight)
     #X = hstack([datasets[TRAIN][FEATS], tf[TRAIN]])
     X = datasets[TRAIN][FEATS]
+    X = normalize_matrix(X)
     clf.fit(X=X, y=datasets[TRAIN][LABEL_GOLD])
 
     for mode in [TRAIN, TEST]:
@@ -156,24 +166,16 @@ def tf_idf(dataset_key, text_version, label_version=None, use_class_weights=True
             LABEL: load_label_list(data_config.path(mode, LABEL, label_version))
         }
 
-    decomposition = True
-    pcas = {
-        TF: SVD(n_components=1000),
-    }
     vectorizers = {
-        #TF_IDF: TfidfVectorizer(max_df=0.5),
-        TF: CountVectorizer(ngram_range=(1, 3), min_df=10, )
+        #TF_IDF: TfidfVectorizer(ngram_range=(1, 3), min_df=0.01),
+        TF: CountVectorizer(ngram_range=(1, 3), min_df=0.02),
     }
 
     for key, vectorizer in vectorizers.items():
         feat = vectorizer.fit_transform(datasets[TRAIN][TEXT])
-        if decomposition:
-            feat = pcas[key].fit_transform(X=feat)
         datasets[TRAIN][key] = feat
 
         feat = vectorizer.transform(datasets[TEST][TEXT])
-        if decomposition:
-            feat = pcas[key].transform(X=feat)
         datasets[TEST][key] = feat
 
     if use_class_weights:
@@ -182,13 +184,13 @@ def tf_idf(dataset_key, text_version, label_version=None, use_class_weights=True
         class_weight = None
 
     clf = svm.SVC(class_weight=class_weight)
-    #X = hstack([datasets[TRAIN][k] for k in vectorizers.keys()])
-    X = datasets[TRAIN][TF]
+    X = hstack([datasets[TRAIN][k] for k in vectorizers.keys()])
+    X = normalize_matrix(X)
     clf.fit(X=X, y=datasets[TRAIN][LABEL])
 
     for mode in [TRAIN, TEST]:
-        #X = hstack([datasets[mode][k] for k in vectorizers.keys()])
-        X = datasets[mode][TF]
+        X = hstack([datasets[mode][k] for k in vectorizers.keys()])
+        X = normalize_matrix(X)
         labels_predict = clf.predict(X=X)
         labels_gold = datasets[mode][LABEL]
         res = basic_evaluate(gold=labels_gold, pred=labels_predict, pos_label=pos_label)

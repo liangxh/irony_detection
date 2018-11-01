@@ -43,13 +43,13 @@ class BaseNNConfig(object):
         return self.data['embedding']['dim']
 
     @property
-    def rnn_dim(self):
-        return self.data['rnn']['dim']
-
-    @property
     def output_dim(self):
         return self.data['output']['dim']
 
     @property
     def binary_classification(self):
         return self.output_dim == 2 and self.data['binary_classification']
+
+    @property
+    def batch_size(self):
+        return self.data['batch_size']

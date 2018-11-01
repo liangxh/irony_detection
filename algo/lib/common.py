@@ -43,7 +43,8 @@ def load_lookup_table(w2v_model_path, vocabs):
     lookup_table_patch = np.random.random((n_not_supported, w2v_model.dim))
 
     def normalize_lookup_table(table):
-        return (table - table.mean(axis=0)) / table.std(axis=0)
+        table -= table.mean(axis=0)
+        return table / table.std(axis=0)
 
     lookup_table = np.concatenate(
         map(normalize_lookup_table, [lookup_table_pretrained, lookup_table_patch])

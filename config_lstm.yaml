@@ -1,0 +1,27 @@
+module: algo.nn.lstm
+version:
+  w2v: google_{text_version}
+
+nn:
+  seq_len: _
+  embedding:
+    trainable: False
+  lstm:
+    dim_list:
+      - 50
+  learning_rate:
+    init: 0.01
+    decay_steps: 1
+    decay_rate: 0.9
+  l2_reg_lambda: 0.1
+  output:
+    dim: _
+  binary_classification: False
+  batch_size: 100
+
+train:
+  epoch: 5
+  valid_rate: 0.
+  batch_size: 100
+  dropout_keep_prob: 0.5
+  use_class_weights: True

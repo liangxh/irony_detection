@@ -15,7 +15,5 @@ feat_keys:
   - A_gru_ek_1540912707
   - B_gru_ek_1540913409
 
-
-
 train:
   use_class_weights: True

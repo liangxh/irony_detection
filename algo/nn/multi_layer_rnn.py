@@ -24,7 +24,7 @@ def build_rnn(rnn_config, dropout=None):
 
 
 class NNModel(BaseNNModel):
-    name = 'ml_rnn'
+    name = 'mlr'
 
     def build_neural_network(self, lookup_table):
         label_gold = tf.placeholder(tf.int32, [None, ], name=LABEL_GOLD)

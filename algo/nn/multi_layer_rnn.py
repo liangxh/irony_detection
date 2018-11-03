@@ -9,12 +9,22 @@ from algo.nn.common import dense, rnn_cell
 
 class NNConfig(BaseNNConfig):
     @property
-    def dim_list(self):
-        return self.data['lstm']['dim_list']
+    def rnn_list(self):
+        return self.data['rnn_list']
+
+
+def build_rnn(rnn_config, dropout=None):
+    _dropout_keep_prob = dropout if rnn_config['use_dropout'] else None
+    if rnn_config['type'] == 'gru':
+        return rnn_cell.build_gru(rnn_config['dim'], dropout_keep_prob=_dropout_keep_prob)
+    elif rnn_config['type'] == 'lstm':
+        return rnn_cell.build_lstm(rnn_config['dim'], dropout_keep_prob=_dropout_keep_prob)
+    else:
+        raise ValueError(rnn_config)
 
 
 class NNModel(BaseNNModel):
-    name = 'lstm'
+    name = 'ml_rnn'
 
     def build_neural_network(self, lookup_table):
         label_gold = tf.placeholder(tf.int32, [None, ], name=LABEL_GOLD)
@@ -29,15 +39,15 @@ class NNModel(BaseNNModel):
         embedded = tf.nn.embedding_lookup(lookup_table, token_id_seq)
 
         rnn_cell_list = [
-            rnn_cell.build_lstm(dim=dim, dropout_keep_prob=dropout_keep_prob)
-            for dim in self.config.dim_list
+            build_rnn(rnn_config=rnn_config, dropout=dropout_keep_prob)
+            for rnn_config in self.config.rnn_list
         ]
         multi_rnn_cell = tf.nn.rnn_cell.MultiRNNCell(rnn_cell_list, state_is_tuple=True)
         init_state = multi_rnn_cell.zero_state(self.config.batch_size, tf.float32)
         rnn_outputs, final_state = tf.nn.dynamic_rnn(
             multi_rnn_cell, inputs=embedded, sequence_length=seq_len, initial_state=init_state)
 
-        rnn_last_states = final_state[-1].h
+        rnn_last_states = final_state[-1] #.h
         dense_input = tf.concat([rnn_last_states, ], axis=1, name=HIDDEN_FEAT)
 
         if not self.config.binary_classification:

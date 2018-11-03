@@ -1,4 +1,4 @@
-module: algo.nn.lstm
+module: algo.nn.multi_layer_rnn
 version:
   w2v: google_{text_version}
 
@@ -6,9 +6,10 @@ nn:
   seq_len: _
   embedding:
     trainable: False
-  lstm:
-    dim_list:
-      - 50
+  rnn_list:
+    - type: gru
+      dim: 100
+      use_dropout: True
   learning_rate:
     init: 0.01
     decay_steps: 1

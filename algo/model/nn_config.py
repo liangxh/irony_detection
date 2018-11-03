@@ -3,7 +3,8 @@
 
 class BaseNNConfig(object):
     def __init__(self, data):
-        self.data = data
+        self.full_data = data
+        self.data = data['nn']
 
     def set_embedding_dim(self, dim):
         self.data['embedding']['dim'] = dim
@@ -52,4 +53,4 @@ class BaseNNConfig(object):
 
     @property
     def batch_size(self):
-        return self.data['batch_size']
+        return self.full_data['train']['batch_size']

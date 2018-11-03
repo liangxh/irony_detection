@@ -128,7 +128,7 @@ def train(dataset_key, text_version=TEXT, label_version=None, config_path='confi
         with_label=True, label_version=label_version, text_version=text_version)
 
     # 加载配置
-    nn_config = NNConfig(config_data['nn'])
+    nn_config = NNConfig(config_data)
     train_config = TrainConfig(config_data['train'])
 
     # 初始化数据集的检索

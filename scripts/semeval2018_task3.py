@@ -1,12 +1,9 @@
 # -*- coding: utf-8 -*-
-import json
 import re
 import commandr
-from collections import defaultdict
 from dataset.semeval2018_task3.process import Processor
 from dataset.common.const import *
 from dataset.semeval2018_task3.config import config
-from nlp.process import naive_tokenize
 
 
 @commandr.command

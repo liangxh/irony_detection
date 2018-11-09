@@ -2,12 +2,9 @@
 from __future__ import print_function
 import re
 import commandr
-import json
-from collections import defaultdict
 from dataset.common.const import *
 from dataset.semeval2014_task9.process import Processor
 from dataset.semeval2014_task9.config import config
-from nlp.process import naive_tokenize
 
 
 @commandr.command

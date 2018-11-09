@@ -1,12 +1,9 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function
 import commandr
-import json
-from collections import defaultdict
-from dataset.semeval2018_task1.config import config
 from dataset.common.const import *
+from dataset.semeval2018_task1.config import config
 from dataset.semeval2018_task1.process import Processor, label_names
-from nlp.process import naive_tokenize
 
 
 @commandr.command

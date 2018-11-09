@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 import commandr
 import os
-import json
 import numpy as np
 
 
@@ -223,6 +222,11 @@ def build_plain(input_filename, vocab_filename, output_filename):
         ../irony_detection_data/semeval2018_task3/all.vocab.naive,../irony_detection_data/semeval2014_task9/all.vocab.naive \
         ../irony_detection_data/semeval2014_task9/all.w2v.google_naive
 
+    python nlp/word2vec.py index \
+        ~/Downloads/GoogleNews-vectors-negative300.bin \
+        ../irony_detection_data/semeval2018_task3/all.vocab.naive,../irony_detection_data/semeval2015_task11/all.vocab.naive \
+        ../irony_detection_data/semeval2015_task11/all.w2v.google_naive
+
     # ek
 
     python nlp/word2vec.py index \
@@ -240,8 +244,14 @@ def build_plain(input_filename, vocab_filename, output_filename):
         ../irony_detection_data/semeval2018_task3/all.vocab.ek,../irony_detection_data/semeval2014_task9/all.vocab.ek \
         ../irony_detection_data/semeval2014_task9/all.w2v.google_ek
 
+    python nlp/word2vec.py index \
+        ~/Downloads/GoogleNews-vectors-negative300.bin \
+        ../irony_detection_data/semeval2018_task3/all.vocab.ek,../irony_detection_data/semeval2015_task11/all.vocab.ek \
+        ../irony_detection_data/semeval2015_task11/all.w2v.google_ek
+
     """
     BinModel.init(input_filename, '_index.tmp', vocab_filename).to_plain(output_filename)
+    os.remove('_index.tmp')
 
 
 if __name__ == '__main__':

@@ -1,0 +1,8 @@
+
+# LIWC
+
+* https://www.receptiviti.com/liwc-api-get-started/
+
+# SVM perf
+
+* http://www.cs.cornell.edu/people/tj/svm_light/svm_perf.html

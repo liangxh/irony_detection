@@ -25,6 +25,3 @@ for mode in {train,test}; do
     ./scripts/affective_tweets_feature.sh -i ${prefix}/${mode}.text -o ${prefix}/${mode}.feat.weka
 done
 
-'''
-https://www.receptiviti.com/liwc-api-get-started/
-'''

@@ -47,6 +47,16 @@ class IndexIterator(object):
         else:
             raise NotImplementedError
 
+    def get_subset(self):
+        min_size = int(min(map(len, self.label_index.values())) * 1.)
+
+        index_list = list()
+        for index in self.label_index.values():
+            idx = range(len(index))
+            random.shuffle(idx)
+            index_list += [index[_i] for _i in idx[:min_size]]
+        return index_list
+
     def split_train_valid(self, valid_rate):
         self.mode_index = {TRAIN: list(), VALID: list()}
         for label, index in self.label_index.items():

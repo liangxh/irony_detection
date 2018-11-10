@@ -5,10 +5,12 @@ import importlib
 import yaml
 import numpy as np
 from sklearn import svm
+from sklearn import preprocessing
 from scipy.sparse import hstack
 from dataset.common.const import *
 from dataset.common.load import *
 from algo.model.const import *
+from algo.lib.dataset import IndexIterator
 from algo.lib.evaluate import basic_evaluate
 from algo.lib.common import print_evaluation
 from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer, HashingVectorizer
@@ -31,15 +33,6 @@ class Config(object):
     @property
     def use_class_weights(self):
         return self.data['train']['use_class_weights']
-
-
-def normalize_matrix(m):
-    return m
-    m -= m.mean(axis=0)
-    #return m / m.std(axis=0)
-    return m
-    return m / m.max(axis=0)
-    #return (m - m.mean(axis=0)) #/ np.sqrt(m.power(2).sum(axis=0))
 
 
 def load_dataset(data_config, train_config, label_version=None):
@@ -87,16 +80,11 @@ def main(dataset_key, label_version=None, config_path='config_svm.yaml'):
     else:
         class_weight = None
 
-    #tf = extract_tf(dataset_key, text_version='ek')
-
     clf = svm.SVC(class_weight=class_weight)
-    #X = hstack([datasets[TRAIN][FEATS], tf[TRAIN]])
     X = datasets[TRAIN][FEATS]
-    X = normalize_matrix(X)
     clf.fit(X=X, y=datasets[TRAIN][LABEL_GOLD])
 
     for mode in [TRAIN, TEST]:
-        #X = hstack([datasets[mode][FEATS], tf[mode]])
         X = datasets[mode][FEATS]
         labels_predict = clf.predict(X=X)
         labels_gold = datasets[mode][LABEL_GOLD]
@@ -185,12 +173,13 @@ def tf_idf(dataset_key, text_version, label_version=None, use_class_weights=True
 
     clf = svm.SVC(class_weight=class_weight)
     X = hstack([datasets[TRAIN][k] for k in vectorizers.keys()])
-    X = normalize_matrix(X)
+    #scaler = preprocessing.StandardScaler()
+    #X = scaler.fit_transform(X=X.todense())
     clf.fit(X=X, y=datasets[TRAIN][LABEL])
 
     for mode in [TRAIN, TEST]:
         X = hstack([datasets[mode][k] for k in vectorizers.keys()])
-        X = normalize_matrix(X)
+        #X = scaler.transform(X=X.todense())
         labels_predict = clf.predict(X=X)
         labels_gold = datasets[mode][LABEL]
         res = basic_evaluate(gold=labels_gold, pred=labels_predict, pos_label=pos_label)

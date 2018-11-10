@@ -19,6 +19,8 @@ root_path = os.path.join(os.environ['HOME'], 'lab', 'irony_detection_data', 'Sen
 
 class SentiStrength(object):
     """
+    http://sentistrength.wlv.ac.uk/
+
     正向情感评分为  1 ~ 5
     负向情感评分为 -1 ~ -5
     """

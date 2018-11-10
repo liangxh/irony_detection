@@ -4,7 +4,7 @@ from collections import defaultdict
 from tools.basic import iterate_file
 
 
-data_path = os.path.join(os.environ['HOME'], 'lab', 'SentiWordNet_3.0.txt')
+data_path = os.path.join(os.environ['HOME'], 'lab', 'irony_detection_data', 'SentiWordNet_3.0.txt')
 
 POS = 'POS'
 POS_SCORE = 'PosScore'

@@ -14,7 +14,7 @@ NEGATING_WORDS = 'NegatingWordList'
 QUESTION_WORDS = 'QuestionWords'
 SLANG_LOOK_TABLE = 'SlangLookupTable'
 
-root_path = os.path.join(os.environ['HOME'], 'lab', 'SentiStrength_Data')
+root_path = os.path.join(os.environ['HOME'], 'lab', 'irony_detection_data', 'SentiStrength_Data')
 
 
 class SentiStrength(object):

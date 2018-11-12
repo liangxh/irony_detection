@@ -1,28 +1,34 @@
 feat_keys:
-  #- gru_1539004952
-  #- gru_1539056285
+  nn:
+    #- gru_1539004952
+    #- gru_1539056285
 
-  #- B_gru_1539352680
-  #- A_gru_1539352687
+    #- B_gru_1539352680
+    #- A_gru_1539352687
 
-  #- B_gru_1539353092
-  #- A_gru_1539353088
-  #- semeval2014_task9.gru_1539175546
-  #- semeval2018_task1.love_gru_1539178720
+    #- B_gru_1539353092
+    #- A_gru_1539353088
+    #- semeval2014_task9.gru_1539175546
+    #- semeval2018_task1.love_gru_1539178720
 
-  #- A_gru_naive_1540912745
-  #- B_gru_naive_1540913413
-  #- A_gru_ek_1540912707
-  #- B_gru_ek_1540913409
+    #- A_gru_naive_1540912745
+    #- B_gru_naive_1540913413
+    #- A_gru_ek_1540912707
+    #- B_gru_ek_1540913409
 
-  #- A_lstm_ek_1541078091
-  #- A_lstm_ek_1541078223
+    #- A_lstm_ek_1541078091
+    #- A_lstm_ek_1541078223
 
-  - A_gru_ek_1541081331
-  - A_gru_naive_1541081642
+    #- A_gru_ek_1541081331
+    #- A_gru_naive_1541081642
 
-  - B_gru_ek_1541081942
-  - B_gru_naive_1541081919
+    #- B_gru_ek_1541081942
+    #- B_gru_naive_1541081919
+  offline:
+    - inc_emb
+    - inc_emb_w
+    #- weka
+    - tf
 
 train:
   use_class_weights: True

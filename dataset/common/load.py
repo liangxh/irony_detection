@@ -55,9 +55,10 @@ def load_vocab_list(path):
     return vocab_meta_list
 
 
-def load_feat(path):
+def load_feat(path, separator='\t'):
     """
     :param path: string
+    :param separator: string
     :return:
         vec_list, list of list of float
         dim, float
@@ -69,7 +70,7 @@ def load_feat(path):
             line = line.strip()
             if line == '':
                 continue
-            vec = map(float, line.split('\t'))
+            vec = map(float, line.split(separator))
             if dim is None:
                 dim = len(vec)
             elif len(vec) != dim:

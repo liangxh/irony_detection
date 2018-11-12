@@ -40,15 +40,13 @@ def load_lookup_table(w2v_model_path, vocabs):
     n_not_supported = len(not_supported_vocabs)
 
     lookup_table_pretrained = np.asarray([w2v_model.get(_vocab) for _vocab in vocab_list])
-    lookup_table_patch = np.random.random((n_not_supported, w2v_model.dim))
 
-    def normalize_lookup_table(table):
-        table -= table.mean(axis=0)
-        return table / table.std(axis=0)
+    table_mean = lookup_table_pretrained.mean(axis=0)
+    table_std = (lookup_table_pretrained - table_mean).std(axis=0)
+    lookup_table_patch = np.random.normal(
+        table_mean, table_std, (n_not_supported, w2v_model.dim))
 
-    lookup_table = np.concatenate(
-        map(normalize_lookup_table, [lookup_table_pretrained, lookup_table_patch])
-    )
+    lookup_table = np.concatenate([lookup_table_pretrained, lookup_table_patch])
 
     vocab_list += not_supported_vocabs
     vocab_id_mapping = {_vocab: _i for _i, _vocab in enumerate(vocab_list)}

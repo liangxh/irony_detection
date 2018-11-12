@@ -3,18 +3,15 @@ from __future__ import print_function
 import commandr
 import importlib
 import yaml
+import math
 import numpy as np
 from sklearn import svm
-from sklearn import preprocessing
 from scipy.sparse import hstack
 from dataset.common.const import *
 from dataset.common.load import *
 from algo.model.const import *
-from algo.lib.dataset import IndexIterator
 from algo.lib.evaluate import basic_evaluate
 from algo.lib.common import print_evaluation
-from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer, HashingVectorizer
-from nlp.lexicon_feat import extract_tf
 
 FEATS = 'feats'
 TF_IDF = 'tf-idf'
@@ -39,10 +36,19 @@ def load_dataset(data_config, train_config, label_version=None):
     datasets = dict()
     for mode in [TRAIN, TEST]:
         feats = list()
-        for key in train_config.feat_keys:
-            path = data_config.output_path(key, mode, HIDDEN_FEAT)
-            feat_list, _ = load_feat(path)
-            feats.append(feat_list)
+
+        if train_config.feat_keys['nn'] is not None:
+            for key in train_config.feat_keys['nn']:
+                path = data_config.output_path(key, mode, HIDDEN_FEAT)
+                feat_list, _ = load_feat(path)
+                feats.append(feat_list)
+
+        if train_config.feat_keys['offline'] is not None:
+            for key in train_config.feat_keys['offline']:
+                path = data_config.path(mode, FEAT, key)
+                feat_list, _ = load_feat(path)
+                feats.append(feat_list)
+
         feats = np.concatenate(feats, axis=1) if len(feats) > 1 else np.asarray(feats[0])
 
         label_path = data_config.path(mode, LABEL, label_version)
@@ -56,7 +62,7 @@ def load_dataset(data_config, train_config, label_version=None):
 
 
 @commandr.command
-def main(dataset_key, label_version=None, config_path='config_svm.yaml'):
+def main(dataset_key, label_version=None, config_path='config_svm.yaml', kernel='rbf'):
     """
     python algo/svm.py main semeval2018_task3 A
 
@@ -80,54 +86,20 @@ def main(dataset_key, label_version=None, config_path='config_svm.yaml'):
     else:
         class_weight = None
 
-    clf = svm.SVC(class_weight=class_weight)
+    clf = svm.SVC(class_weight=class_weight, kernel=kernel)
     X = datasets[TRAIN][FEATS]
     clf.fit(X=X, y=datasets[TRAIN][LABEL_GOLD])
 
+    if kernel == 'linear':
+        coef = sorted(
+            list(enumerate(clf.coef_.ravel())),
+            key=lambda _item: math.fabs(_item[1])
+        )
+        coef = map(lambda _item: _item[0], coef)
+        print(coef)
+
     for mode in [TRAIN, TEST]:
         X = datasets[mode][FEATS]
-        labels_predict = clf.predict(X=X)
-        labels_gold = datasets[mode][LABEL_GOLD]
-        res = basic_evaluate(gold=labels_gold, pred=labels_predict, pos_label=pos_label)
-
-        print(mode)
-        print_evaluation(res)
-        print()
-
-
-@commandr.command
-def main2(dataset_key, label_version=None, config_path='config_svm.yaml'):
-    """
-    python algo/svm.py main semeval2018_task3 A
-
-    :param dataset_key:
-    :param label_version:
-    :param config_path:
-    :return:
-    """
-    pos_label = None
-    if dataset_key == 'semeval2018_task3' and label_version == 'A':
-        pos_label = 1
-
-    config_data = yaml.load(open(config_path))
-    train_config = Config(data=config_data)
-
-    data_config = getattr(importlib.import_module('dataset.{}.config'.format(dataset_key)), 'config')
-    datasets = load_dataset(data_config, train_config, label_version)
-
-    if train_config.use_class_weights:
-        class_weight = 'balanced'
-    else:
-        class_weight = None
-
-    tf = extract_tf(dataset_key, text_version='ek')
-
-    clf = svm.SVC(class_weight=class_weight)
-    X = hstack([datasets[TRAIN][FEATS], tf[TRAIN]])
-    clf.fit(X=X, y=datasets[TRAIN][LABEL_GOLD])
-
-    for mode in [TRAIN, TEST]:
-        X = hstack([datasets[mode][FEATS], tf[mode]])
         labels_predict = clf.predict(X=X)
         labels_gold = datasets[mode][LABEL_GOLD]
         res = basic_evaluate(gold=labels_gold, pred=labels_predict, pos_label=pos_label)
@@ -142,6 +114,9 @@ def tf_idf(dataset_key, text_version, label_version=None, use_class_weights=True
     """
     python algo/svm.py tf_idf semeval2018_task3 -t ek -l A
     """
+    from sklearn import preprocessing
+    from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer, HashingVectorizer
+
     data_config = getattr(importlib.import_module('dataset.{}.config'.format(dataset_key)), 'config')
     pos_label = None
     if dataset_key == 'semeval2018_task3' and label_version == 'A':

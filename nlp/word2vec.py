@@ -10,7 +10,7 @@ class PlainModelWriter(object):
 
     def add(self, token, vec):
         self.file_obj.write('{}\t{}\n'.format(
-            token, '\t'.join(map(str, vec))
+            token.encode('utf8'), '\t'.join(map(str, vec))
         ))
 
     def close(self):
@@ -18,19 +18,19 @@ class PlainModelWriter(object):
 
 
 class PlainModel(object):
-    def __init__(self, filename_model):
+    def __init__(self, filename_model, separator='\t'):
+        self.separator = separator
         self.file_model = open(filename_model, 'r')
         self.index = self.build_index(filename_model)
         self.dim = self.get_dim(filename_model)
 
-    @classmethod
-    def build_index(cls, filename_model):
+    def build_index(self, filename_model):
         index = dict()
 
         with open(filename_model, 'r') as file_obj, open(filename_model, 'r') as _file_obj:
             offset = 0
             for line in file_obj:
-                token = line.strip().split('\t', 1)[0].decode('utf-8')
+                token = line.strip().split(self.separator, 1)[0].decode('utf-8')
                 index[token] = offset
 
                 # 检查index创建是否正确
@@ -41,11 +41,10 @@ class PlainModel(object):
                 offset += len(line)
         return index
 
-    @classmethod
-    def get_dim(cls, filename_model):
+    def get_dim(self, filename_model):
         with open(filename_model, 'r') as file_obj:
             line = file_obj.readline()
-            parts = line.split('\t')
+            parts = line.split(self.separator)
             dim = len(parts) - 1
         return dim
 
@@ -60,7 +59,7 @@ class PlainModel(object):
             self.file_model.seek(offset)
             line = self.file_model.readline()
             line = line.strip()
-            parts = line.split('\t')
+            parts = line.split(self.separator)
             vec = map(float, parts[1:])
             return vec
 
@@ -202,22 +201,22 @@ class BinModel(object):
         writer.close()
 
 
-@commandr.command('index')
+@commandr.command('w2v')
 def build_plain(input_filename, vocab_filename, output_filename):
     """
     # naive
 
-    python nlp/word2vec.py index \
+    python nlp/word2vec.py w2v \
         ~/Downloads/GoogleNews-vectors-negative300.bin \
         ../irony_detection_data/semeval2018_task3/all.vocab.naive \
         ../irony_detection_data/semeval2018_task3/all.w2v.google_naive
 
-    python nlp/word2vec.py index \
+    python nlp/word2vec.py w2v \
         ~/Downloads/GoogleNews-vectors-negative300.bin \
         ../irony_detection_data/semeval2018_task3/all.vocab.naive,../irony_detection_data/semeval2018_task1/all.vocab.naive \
         ../irony_detection_data/semeval2018_task1/all.w2v.google_naive
 
-    python nlp/word2vec.py index \
+    python nlp/word2vec.py w2v \
         ~/Downloads/GoogleNews-vectors-negative300.bin \
         ../irony_detection_data/semeval2018_task3/all.vocab.naive,../irony_detection_data/semeval2014_task9/all.vocab.naive \
         ../irony_detection_data/semeval2014_task9/all.w2v.google_naive
@@ -229,22 +228,22 @@ def build_plain(input_filename, vocab_filename, output_filename):
 
     # ek
 
-    python nlp/word2vec.py index \
+    python nlp/word2vec.py w2v \
         ~/Downloads/GoogleNews-vectors-negative300.bin \
         ../irony_detection_data/semeval2018_task3/all.vocab.ek \
         ../irony_detection_data/semeval2018_task3/all.w2v.google_ek
 
-    python nlp/word2vec.py index \
+    python nlp/word2vec.py w2v \
         ~/Downloads/GoogleNews-vectors-negative300.bin \
         ../irony_detection_data/semeval2018_task3/all.vocab.ek,../irony_detection_data/semeval2018_task1/all.vocab.ek \
         ../irony_detection_data/semeval2018_task1/all.w2v.google_ek
 
-    python nlp/word2vec.py index \
+    python nlp/word2vec.py w2v \
         ~/Downloads/GoogleNews-vectors-negative300.bin \
         ../irony_detection_data/semeval2018_task3/all.vocab.ek,../irony_detection_data/semeval2014_task9/all.vocab.ek \
         ../irony_detection_data/semeval2014_task9/all.w2v.google_ek
 
-    python nlp/word2vec.py index \
+    python nlp/word2vec.py w2v \
         ~/Downloads/GoogleNews-vectors-negative300.bin \
         ../irony_detection_data/semeval2018_task3/all.vocab.ek,../irony_detection_data/semeval2015_task11/all.vocab.ek \
         ../irony_detection_data/semeval2015_task11/all.w2v.google_ek
@@ -252,6 +251,26 @@ def build_plain(input_filename, vocab_filename, output_filename):
     """
     BinModel.init(input_filename, '_index.tmp', vocab_filename).to_plain(output_filename)
     os.remove('_index.tmp')
+
+
+@commandr.command('glove')
+def build_glove(input_filename, vocab_filename, output_filename):
+    """
+    dim=25
+    python nlp/word2vec.py glove \
+        ~/lab/glove/twitter.${dim}d.txt \
+        ../irony_detection_data/semeval2018_task3/all.vocab.ek \
+        ../irony_detection_data/semeval2018_task3/all.w2v.glove_${dim}_ek
+    """
+    original_model = PlainModel(input_filename, separator=' ')
+    vocabs = BinModel.load_vocab(vocab_filename)
+
+    writer = PlainModelWriter(output_filename)
+    for vocab in vocabs:
+        vec = original_model.get(vocab)
+        if vec is not None:
+            writer.add(vocab, vec)
+    writer.close()
 
 
 if __name__ == '__main__':

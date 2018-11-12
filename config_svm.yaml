@@ -25,7 +25,7 @@ feat_keys:
     #- B_gru_ek_1541081942
     #- B_gru_naive_1541081919
   offline:
-    - inc_emb
+    #- inc_emb
     - inc_emb_w
     #- weka
     - tf

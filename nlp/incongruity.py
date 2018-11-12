@@ -3,6 +3,7 @@ import commandr
 import importlib
 import math
 import numpy as np
+import string
 from dataset.common.const import *
 from nlp.word2vec import PlainModel
 from dataset.common.load import load_tokenized_list
@@ -85,6 +86,8 @@ def embedding_incongruity(dataset_key, text_version, w2v_version):
     w2v_model_path = data_config.path(ALL, WORD2VEC, w2v_version.format(text_version=text_version))
     w2v_model = PlainModel(w2v_model_path)
 
+    punctuations = set(string.punctuation)
+
     for mode in [TRAIN, TEST]:
         text_path = data_config.path(mode, TEXT, text_version)
         tokenized_list = load_tokenized_list(text_path)
@@ -93,6 +96,8 @@ def embedding_incongruity(dataset_key, text_version, w2v_version):
 
         with open(path_feat, 'w') as fobj, open(path_feat_weighted, 'w') as fobj_weighted:
             for tokens in tokenized_list:
+                tokens = filter(lambda _t: _t not in punctuations, tokens)
+
                 vecs = map(w2v_model.get, tokens)
                 record = SentenceEmbeddingSimilarity(words=tokens, vecs=vecs)
 

@@ -66,9 +66,10 @@ def main(dataset_key, label_version=None, config_path='config_svm.yaml', kernel=
     """
     python algo/svm.py main semeval2018_task3 A
 
-    :param dataset_key:
-    :param label_version:
-    :param config_path:
+    :param dataset_key: string
+    :param label_version: string or None
+    :param config_path: string
+    :param kernel: string
     :return:
     """
     pos_label = None

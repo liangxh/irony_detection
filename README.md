@@ -13,9 +13,11 @@ for mode in {train,test}; do
 done
 
 python -m scripts.semeval2018_task3 build_text_label
+text_version=ek
 prefix=../irony_detection_data/semeval2018_task3
 for mode in {train,test}; do
-    ./scripts/affective_tweets_feature.sh -i ${prefix}/${mode}.text -o ${prefix}/${mode}.feat.weka
+    ./scripts/affective_tweets_feature.sh -i ${prefix}/${mode}.text.${text_version} \
+        -o ${prefix}/${mode}.feat.weka_${text_version}
 done
 
 

@@ -11,23 +11,33 @@ from dataset.common.load import load_tokenized_list
 MAX = 'max'
 MIN = 'min'
 
+DOT = 'dot'
+COS = 'cos'
+DIST = 'dist'
+
 
 class SentenceEmbeddingSimilarity(object):
-    def __init__(self, words, vecs):
+    def __init__(self, words, vecs, mode):
         assert len(words) == len(vecs)
+        self.mode = mode
         self.words = words
-        self.vecs = vecs
+        self.vecs = map(lambda vec: np.asarray(vec) if vec is not None else None, vecs)
         self.length = len(self.words)
         self.sim_cache = dict()
 
-    @classmethod
-    def calculate_similarity(cls, vec1, vec2):
+    def calculate_similarity(self, vec1, vec2):
         if vec1 is None or vec2 is None:
             return None
-        elif vec1 == vec2:
-            return None
         else:
-            return np.dot(vec1, vec2)
+            if self.mode == DOT:
+                return np.dot(vec1, vec2)
+
+            if self.mode == COS:
+                vec1 /= np.sqrt(vec1 ** 2).sum(axis=0)
+                vec2 /= np.sqrt(vec2 ** 2).sum(axis=0)
+                return np.dot(vec1, vec2)
+
+            raise ValueError('unknown mode: {}'.format(self.mode))
 
     def sim(self, i, j, weighted):
         if i == j or self.words[i] == self.words[j]:
@@ -72,18 +82,27 @@ class SentenceEmbeddingSimilarity(object):
 
 
 @commandr.command('embedding')
-def embedding_incongruity(dataset_key, text_version, w2v_version):
+def embedding_incongruity(dataset_key, text_version, w2v_version, sim_mode=COS):
     """
     [Usage]
-    python nlp/incongruity.py embedding -d semeval2018_task3 -t ek -w google_\{text_version\}
+    python nlp/incongruity.py embedding -d semeval2018_task3 -t ek -w google -s dot
+
+    python nlp/incongruity.py embedding -d semeval2018_task3 -t ek -w google
+    python nlp/incongruity.py embedding -d semeval2018_task3 -t ek -w glove_25
+    python nlp/incongruity.py embedding -d semeval2018_task3 -t ek -w glove_50
+    python nlp/incongruity.py embedding -d semeval2018_task3 -t ek -w glove_100
+    python nlp/incongruity.py embedding -d semeval2018_task3 -t ek -w glove_200
 
     :param dataset_key: string
     :param text_version: string
     :param w2v_version: string
+    :param sim_mode: string
     :return:
     """
+    w2v_key = '{}_{}'.format(w2v_version, text_version)
+
     data_config = getattr(importlib.import_module('dataset.{}.config'.format(dataset_key)), 'config')
-    w2v_model_path = data_config.path(ALL, WORD2VEC, w2v_version.format(text_version=text_version))
+    w2v_model_path = data_config.path(ALL, WORD2VEC, w2v_key)
     w2v_model = PlainModel(w2v_model_path)
 
     punctuations = set(string.punctuation)
@@ -91,15 +110,23 @@ def embedding_incongruity(dataset_key, text_version, w2v_version):
     for mode in [TRAIN, TEST]:
         text_path = data_config.path(mode, TEXT, text_version)
         tokenized_list = load_tokenized_list(text_path)
-        path_feat = data_config.path(mode, FEAT, EMBEDDING_INCONGRUITY)
-        path_feat_weighted = data_config.path(mode, FEAT, EMBEDDING_INCONGRUITY_WEIGHTED)
+
+        output_key = '{}.{}'.format(EMBEDDING_INCONGRUITY, w2v_key)
+        if sim_mode != COS:
+            output_key += '_{}'.format(sim_mode)
+        path_feat = data_config.path(mode, FEAT, output_key)
+
+        output_key = '{}.{}'.format(EMBEDDING_INCONGRUITY_WEIGHTED, w2v_key)
+        if sim_mode != COS:
+            output_key += '_{}'.format(sim_mode)
+        path_feat_weighted = data_config.path(mode, FEAT, output_key)
 
         with open(path_feat, 'w') as fobj, open(path_feat_weighted, 'w') as fobj_weighted:
             for tokens in tokenized_list:
                 tokens = filter(lambda _t: _t not in punctuations, tokens)
 
                 vecs = map(w2v_model.get, tokens)
-                record = SentenceEmbeddingSimilarity(words=tokens, vecs=vecs)
+                record = SentenceEmbeddingSimilarity(words=tokens, vecs=vecs, mode=sim_mode)
 
                 similar, dissimilar = record.analyse(weighted=False)
                 feat = [similar[MAX], similar[MIN], dissimilar[MAX], dissimilar[MIN]]

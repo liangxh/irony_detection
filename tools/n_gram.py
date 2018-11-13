@@ -22,16 +22,17 @@ def calculate_tf(dataset_key, text_version):
     for mode in [TRAIN, TEST]:
         texts[mode] = load_text_list(data_config.path(mode, TEXT, text_version))
 
+    output_version = '{}_{}'.format('tf', text_version)
     vectorizer = CountVectorizer(ngram_range=(1, 3), min_df=0.02)
 
     feat = vectorizer.fit_transform(texts[TRAIN])
-    path = data_config.path(TRAIN, FEAT, 'tf')
+    path = data_config.path(TRAIN, FEAT, output_version)
     with open(path, 'w') as file_obj:
         for vec in feat.todense().tolist():
             file_obj.write('\t'.join(map(str, vec)) + '\n')
 
     feat = vectorizer.transform(texts[TEST])
-    path = data_config.path(TEST, FEAT, 'tf')
+    path = data_config.path(TEST, FEAT, output_version)
     with open(path, 'w') as file_obj:
         for vec in feat.todense().tolist():
             file_obj.write('\t'.join(map(str, vec)) + '\n')

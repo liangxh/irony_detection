@@ -329,12 +329,20 @@ def build_feat(dataset_key_src, output_key_src, dataset_key_dest='semeval2018_ta
 
 @commandr.command('eval')
 def show_eval(dataset_key, output_key):
+    """
+    python algo/main.py eval semeval2018_task3 -o A_ntua_ek_1542454066
+
+    :param dataset_key:
+    :param output_key:
+    :return:
+    """
     data_config = getattr(importlib.import_module('dataset.{}.config'.format(dataset_key)), 'config')
 
-    for mode in [TRAIN, VALID, TEST]:
+    for mode in [TRAIN, TEST]:
         res = json.load(open(data_config.output_path(output_key, mode, EVALUATION)))
         print(mode)
         print_evaluation(res)
+        print(res)
 
 
 if __name__ == '__main__':

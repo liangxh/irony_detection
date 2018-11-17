@@ -1,8 +1,5 @@
 feat_keys:
   nn:
-    #- gru_1539004952
-    #- gru_1539056285
-
     #- B_gru_1539352680
     #- A_gru_1539352687
 
@@ -28,6 +25,9 @@ feat_keys:
     #- A_gru_ek_1542446279
     #- A_gru_ek_1542446159
     #- B_gru_ek_1542448031
+
+    #- A_ntua_ek_1542454066
+    - A_ntua_ek_1542454995
 
   offline:
     #- inc_emb.google_ek

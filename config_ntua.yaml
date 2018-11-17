@@ -7,9 +7,9 @@ nn:
   embedding:
     trainable: False
   rnn:
-    dim: 150
+    dim: 50
   attention:
-    dim: 150
+    dim: 50
   learning_rate:
     init: 0.01
     decay_steps: 1
@@ -23,5 +23,5 @@ train:
   epoch: 5
   valid_rate: 0.
   batch_size: 100
-  dropout_keep_prob: 0.8
+  dropout_keep_prob: 0.2
   use_class_weights: True

@@ -11,7 +11,7 @@ def build(inputs, attention_size):
     b = tf.Variable(tf.truncated_normal([1, attention_size], stddev=0.1))
     u = tf.Variable(tf.truncated_normal([attention_size, 1], stddev=0.1))
 
-    v = tf.tanh(tf.matmul(tf.reshape(inputs, [-1, hidden_size]), w)) + b  # [batch_size*seq_len, attention_size]
+    v = tf.tanh(tf.matmul(tf.reshape(inputs, [-1, hidden_size]), w) + b)  # [batch_size*seq_len, attention_size]
     vu = tf.matmul(v, u)  # [batch_size * seq_len, 1]
     exps = tf.reshape(tf.exp(vu), [-1, seq_length])  # [batch_size, seq_len]
     alphas = exps / tf.reshape(tf.reduce_sum(exps, 1), [-1, 1])  # /[batch_size] -> [batch_size, seq_len]

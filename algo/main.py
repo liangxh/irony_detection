@@ -75,6 +75,7 @@ fetch_key = {
 def train(dataset_key, text_version=TEXT, label_version=None, config_path='config.yaml'):
     """
     python algo/main.py train semeval2018_task3 -l A -t ek
+    python algo/main.py train semeval2018_task3 -l A -t ek -c config_ntua.yaml
     python algo/main.py train semeval2018_task1 -l love
     python algo/main.py train semeval2014_task9
 
@@ -92,7 +93,8 @@ def train(dataset_key, text_version=TEXT, label_version=None, config_path='confi
 
     data_config = getattr(importlib.import_module('dataset.{}.config'.format(dataset_key)), 'config')
 
-    w2v_model_path = data_config.path(ALL, WORD2VEC, config_data['version']['w2v'].format(text_version=text_version))
+    w2v_key = '{}_{}'.format(config_data['version']['w2v'], text_version)
+    w2v_model_path = data_config.path(ALL, WORD2VEC, w2v_key)
     vocab_train_path = data_config.path(TRAIN, VOCAB, text_version)
 
     output_key = '{}_{}_{}'.format(config_data['module'].rsplit('.', 1)[1], text_version, int(time.time()))

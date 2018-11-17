@@ -24,3 +24,9 @@ def naive_tokenize(text):
     tokens = map(lambda t: t[1:] if len(t) > 1 and t.startswith('#') else t, tokens)
     return tokens
 
+
+default_tokenizer_pattern = re.compile(r"(?u)\b\w\w+\b")
+
+
+def default_tokenize(text):
+    return default_tokenizer_pattern.findall(text)

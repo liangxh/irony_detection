@@ -24,6 +24,11 @@ feat_keys:
 
     #- B_gru_ek_1541081942
     #- B_gru_naive_1541081919
+
+    #- A_gru_ek_1542446279
+    #- A_gru_ek_1542446159
+    #- B_gru_ek_1542448031
+
   offline:
     #- inc_emb.google_ek
     #- inc_emb.glove_25_ek
@@ -31,10 +36,10 @@ feat_keys:
     #- inc_emb.glove_100_ek
     #- inc_emb.glove_200_ek
 
-    - inc_emb_w.google_ek_dot
+    #- inc_emb_w.google_ek_dot
 
-    - inc_emb_w.google_ek
-    - inc_emb_w.glove_25_ek
+    #- inc_emb_w.google_ek
+    #- inc_emb_w.glove_25_ek
     #- inc_emb_w.glove_50_ek
     #- inc_emb_w.glove_100_ek
     #- inc_emb_w.glove_200_ek
@@ -42,8 +47,19 @@ feat_keys:
     #- weka
     #- weka_ek
 
-    - tf_ek
+    #- tf_ek
     #- tf_naive
+
+    #- inc_emb.ntua_ek
+    #- inc_emb_w.ntua_ek
+
+    #- nbow_google_ek_max
+    #- nbow_google_ek_min
+    #- nbow_google_ek_mean
+    #- nbow_google_ek_sum
+
+    #- nbow_ntua_ek_mean
+
 
 train:
   use_class_weights: True

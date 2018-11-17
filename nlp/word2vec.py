@@ -30,7 +30,13 @@ class PlainModel(object):
         with open(filename_model, 'r') as file_obj, open(filename_model, 'r') as _file_obj:
             offset = 0
             for line in file_obj:
-                token = line.strip().split(self.separator, 1)[0].decode('utf-8')
+                parts = line.strip().split(self.separator)
+                if len(parts) == 0:
+                    # 部分模型文件头会带 n_vocab, n_dim, 直接跳过
+                    offset += len(line)
+                    continue
+
+                token = parts[0].decode('utf-8')
                 index[token] = offset
 
                 # 检查index创建是否正确
@@ -261,6 +267,11 @@ def build_glove(input_filename, vocab_filename, output_filename):
         ~/lab/glove/twitter.${dim}d.txt \
         ../irony_detection_data/semeval2018_task3/all.vocab.ek \
         ../irony_detection_data/semeval2018_task3/all.w2v.glove_${dim}_ek
+
+    python nlp/word2vec.py glove \
+        ~/Downloads/ntua_twitter_300.txt \
+        ../irony_detection_data/semeval2018_task3/all.vocab.ek \
+        ../irony_detection_data/semeval2018_task3/all.w2v.ntua_ek
     """
     original_model = PlainModel(input_filename, separator=' ')
     vocabs = BinModel.load_vocab(vocab_filename)

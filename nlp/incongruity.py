@@ -4,8 +4,8 @@ import importlib
 import math
 import numpy as np
 import string
-from dataset.common.const import *
 from nlp.word2vec import PlainModel
+from dataset.common.const import *
 from dataset.common.load import load_tokenized_list
 
 MAX = 'max'
@@ -92,6 +92,9 @@ def embedding_incongruity(dataset_key, text_version, w2v_version, sim_mode=COS):
     python nlp/incongruity.py embedding -d semeval2018_task3 -t ek -w glove_50
     python nlp/incongruity.py embedding -d semeval2018_task3 -t ek -w glove_100
     python nlp/incongruity.py embedding -d semeval2018_task3 -t ek -w glove_200
+
+    python nlp/incongruity.py embedding -d semeval2018_task3 -t ek -w ntua
+
 
     :param dataset_key: string
     :param text_version: string

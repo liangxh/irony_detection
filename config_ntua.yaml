@@ -1,13 +1,15 @@
-module: algo.nn.gru
+module: algo.nn.ntua
 version:
-  w2v: google
+  w2v: ntua
 
 nn:
   seq_len: _
   embedding:
-    trainable: True
+    trainable: False
   rnn:
-    dim: 100
+    dim: 150
+  attention:
+    dim: 150
   learning_rate:
     init: 0.01
     decay_steps: 1
@@ -21,5 +23,5 @@ train:
   epoch: 5
   valid_rate: 0.
   batch_size: 100
-  dropout_keep_prob: 0.5
+  dropout_keep_prob: 0.2
   use_class_weights: True

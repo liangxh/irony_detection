@@ -20,6 +20,10 @@ class NNConfig(BaseNNConfig):
 class NNModel(BaseNNModel):
     name = 'ntua'
 
+    def __init__(self, *args, **kwargs):
+        super(NNModel, self).__init__(*args, **kwargs)
+        self.optimizer = None
+
     def build_neural_network(self, lookup_table):
         label_gold = tf.placeholder(tf.int32, [None, ], name=LABEL_GOLD)
         token_id_seq = tf.placeholder(tf.int32, [None, self.config.seq_len], name=TOKEN_ID_SEQ)
@@ -80,7 +84,6 @@ class NNModel(BaseNNModel):
         # 统一的后处理
         self.build_optimizer(loss=loss)
         self.set_graph(graph=tf.get_default_graph())
-        print self.var(OPTIMIZER)
 
     def build_optimizer(self, loss):
         # 计算loss
@@ -96,9 +99,9 @@ class NNModel(BaseNNModel):
         optimizer = tf.train.AdamOptimizer(learning_rate)
         gvs = optimizer.compute_gradients(loss)
         capped_gvs = [(tf.clip_by_value(grad, -1., 1.), var) for grad, var in gvs]
-        self.opt = optimizer.apply_gradients(capped_gvs, name=OPTIMIZER)
+        self.optimizer = optimizer.apply_gradients(capped_gvs, name=OPTIMIZER)
 
     def var(self, key):
         if key == OPTIMIZER:
-            return self.opt
+            return self.optimizer
         return self.graph.get_operation_by_name(key).outputs[0]

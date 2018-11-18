@@ -27,7 +27,8 @@ feat_keys:
     #- B_gru_ek_1542448031
 
     #- A_ntua_ek_1542454066
-    - A_ntua_ek_1542454995
+    #- A_ntua_ek_1542454995
+    - A_ntua_ek_1542468547
 
   offline:
     #- inc_emb.google_ek

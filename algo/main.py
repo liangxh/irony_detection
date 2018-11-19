@@ -131,7 +131,7 @@ def train(dataset_key, text_version, label_version=None, config_path='config.yam
         # 在模型中会采用所有模型中支持的词向量, 并为有足够出现次数的单词随机生成词向量
         vocab_meta_list = load_vocab_list(vocab_train_path)
         vocab_meta_list += load_vocab_list(semeval2018_task3_date_config.path(TRAIN, VOCAB, text_version))
-        vocabs = [_meta['t'] for _meta in vocab_meta_list if _meta['tf'] >= data_config['word']['min_tf']]
+        vocabs = [_meta['t'] for _meta in vocab_meta_list if _meta['tf'] >= config_data[WORD]['min_tf']]
 
         # 加载词向量与相关数据
         lookup_table, vocab_id_mapping, embedding_dim = load_lookup_table(
@@ -188,8 +188,8 @@ def train(dataset_key, text_version, label_version=None, config_path='config.yam
 
     model_output_prefix = data_config.model_path(key=output_key) + '/model'
 
-    best_valid_f1 = None
-    no_update_count = 0
+    best_res = {mode: None for mode in [TRAIN, VALID]}
+    no_update_count = {mode: 0 for mode in [TRAIN, VALID]}
     max_no_update_count = 20
 
     with tf.Session() as sess:
@@ -225,9 +225,17 @@ def train(dataset_key, text_version, label_version=None, config_path='config.yam
             print_evaluation(res)
 
             global_step = tf.train.global_step(sess, nn.var(GLOBAL_STEP))
-            saver.save(sess, save_path=model_output_prefix, global_step=global_step)
 
-            if train_config.valid_rate > 0.:
+            if train_config.valid_rate == 0.:
+                if best_res[TRAIN] is None or res[F1_SCORE] > best_res[TRAIN][F1_SCORE]:
+                    best_res[TRAIN] = res
+                    no_update_count[TRAIN] = 0
+                    saver.save(sess, save_path=model_output_prefix, global_step=global_step)
+            else:
+                if best_res[TRAIN] is None or res[F1_SCORE] > best_res[TRAIN][F1_SCORE]:
+                    best_res[TRAIN] = res
+                    no_update_count[VALID] = 0
+
                 # 计算在验证集上的表现, 不更新模型参数
                 print('VALID')
                 n_sample = index_iterator.n_sample(VALID)
@@ -247,13 +255,15 @@ def train(dataset_key, text_version, label_version=None, config_path='config.yam
                 print_evaluation(res)
 
                 # Early Stop
-                if best_valid_f1 is None or res[F1_SCORE] > best_valid_f1:
-                    best_valid_f1 = res[F1_SCORE]
-                    no_update_count = 0
+                if best_res[VALID] is None or res[F1_SCORE] > best_res[VALID][F1_SCORE]:
+                    saver.save(sess, save_path=model_output_prefix, global_step=global_step)
+                    best_res[VALID] = res
+                    no_update_count[VALID] = 0
                 else:
-                    no_update_count += 1
-                    if no_update_count >= max_no_update_count:
-                        break
+                    no_update_count[VALID] += 1
+
+            if no_update_count[TRAIN] >= max_no_update_count:
+                break
 
         # 训练结束 ##########################################################################
         # 确保输出文件夹存在
@@ -304,11 +314,50 @@ def train(dataset_key, text_version, label_version=None, config_path='config.yam
 
     print('OUTPUT_KEY: {}'.format(output_key))
 
+    print('========================= BEST ROUND EVALUATION =========================')
+
+    with tf.Session() as sess:
+        prefix_checkpoint = tf.train.latest_checkpoint(data_config.model_path(key=output_key))
+        saver = tf.train.import_meta_graph('{}.meta'.format(prefix_checkpoint))
+        saver.restore(sess, prefix_checkpoint)
+
+        nn = BaseNNModel(config=None)
+        nn.set_graph(tf.get_default_graph())
+
+        for mode in [TEST, ]:
+            dataset = datasets[mode]
+            index_iterator = index_iterators[mode]
+            n_sample = index_iterator.n_sample()
+
+            labels_predict = list()
+            labels_gold = list()
+            for batch_index in index_iterator.iterate(batch_size, shuffle=False):
+                feed_dict = {nn.var(_key): dataset[_key][batch_index] for _key in feed_key[TEST]}
+                feed_dict[nn.var(DROPOUT_KEEP_PROB)] = 1.
+                res = sess.run(fetches=fetches[TEST], feed_dict=feed_dict)
+                labels_predict += res[LABEL_PREDICT].tolist()
+                labels_gold += dataset[LABEL_GOLD][batch_index].tolist()
+
+            labels_predict = labels_predict[:n_sample]
+            labels_gold = labels_gold[:n_sample]
+
+            best_res[TEST] = basic_evaluate(gold=labels_gold, pred=labels_predict, pos_label=pos_label)
+
+            for mode in [TRAIN, VALID, TEST]:
+                if mode == VALID and train_config.valid_rate == 0.:
+                    continue
+                res = best_res[mode]
+                print(mode)
+                print_evaluation(res)
+
+                json.dump(res, open(data_config.output_path(output_key, mode, EVALUATION), 'w'))
+                print()
+
 
 @commandr.command('feat')
 def build_feat(dataset_key_src, output_key_src, dataset_key_dest='semeval2018_task3', text_version=TEXT):
     """
-    python algo/main.py feat semeval2014_task9 gru_1539175546
+    python algo/main.py feat semeval2014_task9 A_gru_ek_1541081331
     python algo/main.py feat semeval2018_task1 love_gru_1539178720
 
     :param dataset_key_src: 模型对应的dataset_key
@@ -337,7 +386,6 @@ def build_feat(dataset_key_src, output_key_src, dataset_key_dest='semeval2018_ta
 
     with tf.Session() as sess:
         prefix_checkpoint = tf.train.latest_checkpoint(model_output_prefix)
-        print(prefix_checkpoint)
         saver = tf.train.import_meta_graph('{}.meta'.format(prefix_checkpoint))
         saver.restore(sess, prefix_checkpoint)
 

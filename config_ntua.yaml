@@ -1,5 +1,5 @@
 module: algo.nn.ntua
-analyzer: char
+analyzer: word
 word:
   w2v_version: ntua
   randomize_not_supported: True
@@ -26,7 +26,7 @@ nn:
 
 train:
   epoch: 80
-  valid_rate: 0.1
-  batch_size: 32
+  valid_rate: 0.
+  batch_size: 100
   dropout_keep_prob: 0.2
   use_class_weights: True

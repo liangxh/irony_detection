@@ -10,7 +10,7 @@ char:
 nn:
   seq_len: _
   embedding:
-    trainable: False
+    trainable: True
   rnn:
     dim: 50
   attention:
@@ -26,7 +26,7 @@ nn:
 
 train:
   epoch: 80
-  valid_rate: 0.1
+  valid_rate: 0.
   batch_size: 32
   dropout_keep_prob: 0.2
   use_class_weights: True

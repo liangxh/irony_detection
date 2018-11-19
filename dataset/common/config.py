@@ -45,3 +45,9 @@ class BaseConfig(object):
             path = os.path.join(paths[-1], output_key)
             paths.append(path)
         self.prepare_folder(paths)
+
+    def output_folder(self, output_key):
+        return os.path.join(self.path_output, self.dataset_key, output_key)
+
+    def model_folder(self, output_key):
+        return os.path.join(self.path_model, self.dataset_key, output_key)

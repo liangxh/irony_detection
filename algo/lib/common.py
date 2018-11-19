@@ -53,3 +53,10 @@ def load_lookup_table(w2v_model_path, vocabs):
 
     embedding_dim = w2v_model.dim
     return lookup_table, vocab_id_mapping, embedding_dim
+
+
+def build_random_lookup_table(vocabs, dim):
+    vocab_list = list(vocabs)
+    lookup_table = np.random.normal(0, 1, (len(vocabs), dim))
+    vocab_id_mapping = {_vocab: _i for _i, _vocab in enumerate(vocab_list)}
+    return lookup_table, vocab_id_mapping, dim

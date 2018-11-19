@@ -14,13 +14,16 @@ from algo.model.const import *
 from algo.model.train_config import TrainConfig
 from dataset.common.const import *
 from dataset.common.load import *
-from algo.lib.common import print_evaluation, load_lookup_table, tokenized_to_tid_list
+from algo.lib.common import print_evaluation, load_lookup_table, tokenized_to_tid_list, build_random_lookup_table
 from dataset.semeval2018_task3.config import config as semeval2018_task3_date_config
 
-MAX_SEQ_LEN = 90
+MAX_WORD_SEQ_LEN = 90
+MAX_CHAR_SEQ_LEN = 170
+CHAR = 'char'
+WORD = 'word'
 
 
-def load_dataset(data_config, vocab_id_mapping, seq_len, with_label=True, label_version=None, text_version=TEXT):
+def load_dataset(data_config, analyzer, vocab_id_mapping, seq_len, with_label=True, label_version=None, text_version=None):
     def seq_to_len_list(seq_list):
         return map(len, seq_list)
 
@@ -29,11 +32,19 @@ def load_dataset(data_config, vocab_id_mapping, seq_len, with_label=True, label_
 
     datasets = dict()
     for mode in [TRAIN, TEST]:
-        text_path = data_config.path(mode, TEXT, text_version)
-        tokenized_list = load_tokenized_list(text_path)
+        if analyzer == WORD:
+            text_path = data_config.path(mode, TEXT, text_version)
+            tokenized_list = load_tokenized_list(text_path)
+        elif analyzer == CHAR:
+            text_path = data_config.path(mode, TEXT)
+            text_list = load_text_list(text_path)
+            tokenized_list = map(list, text_list)
+        else:
+            raise ValueError('invalid analyzer, got {}'.format(analyzer))
 
         tid_list = tokenized_to_tid_list(tokenized_list, vocab_id_mapping)
         seq_len_list = seq_to_len_list(tid_list)
+
         datasets[mode] = {
             TOKEN_ID_SEQ: tid_list,
             SEQ_LEN: np.asarray(seq_len_list),
@@ -72,10 +83,12 @@ fetch_key = {
 
 
 @commandr.command
-def train(dataset_key, text_version=TEXT, label_version=None, config_path='config.yaml'):
+def train(dataset_key, text_version, label_version=None, config_path='config.yaml'):
     """
     python algo/main.py train semeval2018_task3 -l A -t ek
     python algo/main.py train semeval2018_task3 -l A -t ek -c config_ntua.yaml
+    python algo/main.py train semeval2018_task3 -l A -t raw -c config_ntua_char.yaml
+
     python algo/main.py train semeval2018_task1 -l love
     python algo/main.py train semeval2014_task9
 
@@ -93,10 +106,6 @@ def train(dataset_key, text_version=TEXT, label_version=None, config_path='confi
 
     data_config = getattr(importlib.import_module('dataset.{}.config'.format(dataset_key)), 'config')
 
-    w2v_key = '{}_{}'.format(config_data['version']['w2v'], text_version)
-    w2v_model_path = data_config.path(ALL, WORD2VEC, w2v_key)
-    vocab_train_path = data_config.path(TRAIN, VOCAB, text_version)
-
     output_key = '{}_{}_{}'.format(config_data['module'].rsplit('.', 1)[1], text_version, int(time.time()))
     if label_version is not None:
         output_key = '{}_{}'.format(label_version, output_key)
@@ -113,20 +122,37 @@ def train(dataset_key, text_version=TEXT, label_version=None, config_path='confi
     NNModel = getattr(importlib.import_module(module_relative_path), 'NNModel')
     NNConfig = getattr(importlib.import_module(module_relative_path), 'NNConfig')
 
-    # 加载字典集
-    # 在模型中会采用所有模型中支持的词向量, 并为有足够出现次数的单词随机生成词向量
-    vocab_meta_list = load_vocab_list(vocab_train_path)
-    vocab_meta_list += load_vocab_list(semeval2018_task3_date_config.path(TRAIN, VOCAB, text_version))
-    vocabs = [_meta['t'] for _meta in vocab_meta_list if _meta['tf'] >= 2]
+    if config_data['analyzer'] == WORD:
+        w2v_key = '{}_{}'.format(config_data['word']['w2v_version'], text_version)
+        w2v_model_path = data_config.path(ALL, WORD2VEC, w2v_key)
+        vocab_train_path = data_config.path(TRAIN, VOCAB, text_version)
 
-    # 加载词向量与相关数据
-    lookup_table, vocab_id_mapping, embedding_dim = load_lookup_table(
-        w2v_model_path=w2v_model_path, vocabs=vocabs)
-    json.dump(vocab_id_mapping, open(data_config.output_path(output_key, ALL, VOCAB_ID_MAPPING), 'w'))
+        # 加载字典集
+        # 在模型中会采用所有模型中支持的词向量, 并为有足够出现次数的单词随机生成词向量
+        vocab_meta_list = load_vocab_list(vocab_train_path)
+        vocab_meta_list += load_vocab_list(semeval2018_task3_date_config.path(TRAIN, VOCAB, text_version))
+        vocabs = [_meta['t'] for _meta in vocab_meta_list if _meta['tf'] >= data_config['word']['min_tf']]
+
+        # 加载词向量与相关数据
+        lookup_table, vocab_id_mapping, embedding_dim = load_lookup_table(
+            w2v_model_path=w2v_model_path, vocabs=vocabs)
+        json.dump(vocab_id_mapping, open(data_config.output_path(output_key, ALL, VOCAB_ID_MAPPING), 'w'))
+        max_seq_len = MAX_WORD_SEQ_LEN
+    elif config_data['analyzer'] == CHAR:
+        texts = load_text_list(data_config.path(TRAIN, TEXT))
+        char_set = set()
+        for text in texts:
+            char_set |= set(text)
+        lookup_table, vocab_id_mapping, embedding_dim = build_random_lookup_table(
+            vocabs=char_set, dim=config_data['char']['embedding_dim'])
+        max_seq_len = MAX_CHAR_SEQ_LEN
+    else:
+        raise ValueError('invalid analyzer: {}'.format(config_data['analyzer']))
 
     # 加载训练数据
     datasets, output_dim = load_dataset(
-        data_config=data_config, vocab_id_mapping=vocab_id_mapping, seq_len=MAX_SEQ_LEN,
+        data_config=data_config, analyzer=config_data['analyzer'],
+        vocab_id_mapping=vocab_id_mapping, seq_len=max_seq_len,
         with_label=True, label_version=label_version, text_version=text_version)
 
     # 加载配置
@@ -151,7 +177,7 @@ def train(dataset_key, text_version=TEXT, label_version=None, config_path='confi
     # 基于加载的数据更新配置
     nn_config.set_embedding_dim(embedding_dim)
     nn_config.set_output_dim(output_dim)
-    nn_config.set_seq_len(MAX_SEQ_LEN)
+    nn_config.set_seq_len(max_seq_len)
     # 搭建神经网络
     nn = NNModel(config=nn_config)
     nn.build_neural_network(lookup_table=lookup_table)
@@ -161,6 +187,10 @@ def train(dataset_key, text_version=TEXT, label_version=None, config_path='confi
     last_eval = {TRAIN: None, VALID: None, TEST: None}
 
     model_output_prefix = data_config.model_path(key=output_key) + '/model'
+
+    best_valid_f1 = None
+    no_update_count = 0
+    max_no_update_count = 20
 
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
@@ -215,6 +245,15 @@ def train(dataset_key, text_version=TEXT, label_version=None, config_path='confi
                 res = basic_evaluate(gold=labels_gold, pred=labels_predict, pos_label=pos_label)
                 last_eval[VALID] = res
                 print_evaluation(res)
+
+                # Early Stop
+                if best_valid_f1 is None or res[F1_SCORE] > best_valid_f1:
+                    best_valid_f1 = res[F1_SCORE]
+                    no_update_count = 0
+                else:
+                    no_update_count += 1
+                    if no_update_count >= max_no_update_count:
+                        break
 
         # 训练结束 ##########################################################################
         # 确保输出文件夹存在
@@ -291,7 +330,7 @@ def build_feat(dataset_key_src, output_key_src, dataset_key_dest='semeval2018_ta
     data_config = getattr(importlib.import_module('dataset.{}.config'.format(dataset_key_dest)), 'config')
     data_config.prepare_output_folder(output_key=output_key)
     datasets = load_dataset(
-        data_config=data_config, vocab_id_mapping=vocab_id_mapping, seq_len=MAX_SEQ_LEN,
+        data_config=data_config, analyzer=WORD, vocab_id_mapping=vocab_id_mapping, seq_len=MAX_SEQ_LEN,
         with_label=False, text_version=text_version
     )
     batch_size = 200
@@ -330,10 +369,11 @@ def build_feat(dataset_key_src, output_key_src, dataset_key_dest='semeval2018_ta
 @commandr.command('eval')
 def show_eval(dataset_key, output_key):
     """
+    [Usage]
     python algo/main.py eval semeval2018_task3 -o A_ntua_ek_1542454066
 
-    :param dataset_key:
-    :param output_key:
+    :param dataset_key: string
+    :param output_key: string
     :return:
     """
     data_config = getattr(importlib.import_module('dataset.{}.config'.format(dataset_key)), 'config')
@@ -343,6 +383,27 @@ def show_eval(dataset_key, output_key):
         print(mode)
         print_evaluation(res)
         print(res)
+
+
+@commandr.command('clear')
+def clear_output(dataset_key, output_key):
+    """
+    [Usage]
+    python algo/main.py clear semeval2018_task3 A_ntua_ek_1542595525
+
+    :param dataset_key: string
+    :param output_key: string
+    :return:
+    """
+    data_config = getattr(importlib.import_module('dataset.{}.config'.format(dataset_key)), 'config')
+
+    o = raw_input('make sure that you are trying to delete: {}, input y/n: '.format(output_key))
+    if o == 'y':
+        shutil.rmtree(data_config.output_folder(output_key))
+        shutil.rmtree(data_config.model_folder(output_key))
+        print('deleted')
+    else:
+        print('got input {}, nothing done'.format(o))
 
 
 if __name__ == '__main__':

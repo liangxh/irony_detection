@@ -78,7 +78,7 @@ feed_key = {
 
 fetch_key = {
     TRAIN: [OPTIMIZER, LOSS, LABEL_PREDICT],
-    TEST: [LABEL_PREDICT, HIDDEN_FEAT]
+    TEST: [LABEL_PREDICT, PROB_PREDICT, HIDDEN_FEAT]
 }
 
 
@@ -211,7 +211,6 @@ def train(dataset_key, text_version, label_version=None, config_path='config.yam
 
             for batch_index in index_iterator.iterate(batch_size, mode=TRAIN, shuffle=True):
                 feed_dict = {nn.var(_key): dataset[_key][batch_index] for _key in feed_key[TRAIN]}
-                feed_dict[nn.var(DROPOUT_KEEP_PROB)] = train_config.dropout_keep_prob
                 feed_dict[nn.var(SAMPLE_WEIGHTS)] = map(label_weight.get, feed_dict[nn.var(LABEL_GOLD)])
                 feed_dict[nn.var(TEST_MODE)] = 0
                 res = sess.run(fetches=fetches[TRAIN], feed_dict=feed_dict)
@@ -245,7 +244,6 @@ def train(dataset_key, text_version, label_version=None, config_path='config.yam
 
                 for batch_index in index_iterator.iterate(batch_size, mode=VALID, shuffle=False):
                     feed_dict = {nn.var(_key): dataset[_key][batch_index] for _key in feed_key[TEST]}
-                    feed_dict[nn.var(DROPOUT_KEEP_PROB)] = 1.
                     feed_dict[nn.var(TEST_MODE)] = 1
                     res = sess.run(fetches=fetches[TEST], feed_dict=feed_dict)
                     labels_predict += res[LABEL_PREDICT].tolist()
@@ -270,53 +268,6 @@ def train(dataset_key, text_version, label_version=None, config_path='config.yam
         # 训练结束 ##########################################################################
         # 确保输出文件夹存在
 
-        for mode in [TRAIN, TEST]:
-            dataset = datasets[mode]
-            index_iterator = index_iterators[mode]
-            n_sample = index_iterator.n_sample()
-
-            labels_predict = list()
-            labels_gold = list()
-            hidden_feats = list()
-            for batch_index in index_iterator.iterate(batch_size, shuffle=False):
-                feed_dict = {nn.var(_key): dataset[_key][batch_index] for _key in feed_key[TEST]}
-                feed_dict[nn.var(DROPOUT_KEEP_PROB)] = 1.
-                feed_dict[nn.var(TEST_MODE)] = 1
-                res = sess.run(fetches=fetches[TEST], feed_dict=feed_dict)
-                labels_predict += res[LABEL_PREDICT].tolist()
-                hidden_feats += res[HIDDEN_FEAT].tolist()
-                labels_gold += dataset[LABEL_GOLD][batch_index].tolist()
-
-            labels_predict = labels_predict[:n_sample]
-            labels_gold = labels_gold[:n_sample]
-            hidden_feats = hidden_feats[:n_sample]
-
-            if mode == TEST:
-                res = basic_evaluate(gold=labels_gold, pred=labels_predict, pos_label=pos_label)
-                last_eval[TEST] = res
-
-            # 导出隐藏层
-            with open(data_config.output_path(output_key, mode, HIDDEN_FEAT), 'w') as file_obj:
-                for _feat in hidden_feats:
-                    file_obj.write('\t'.join(map(str, _feat)) + '\n')
-            # 导出预测的label
-            with open(data_config.output_path(output_key, mode, LABEL_PREDICT), 'w') as file_obj:
-                for _label in labels_predict:
-                    file_obj.write('{}\n'.format(_label))
-
-        print('========================= FINAL EVALUATION =========================')
-        for mode in [TRAIN, VALID, TEST]:
-            if mode == VALID and train_config.valid_rate == 0.:
-                continue
-            res = last_eval[mode]
-            print(mode)
-            print_evaluation(res)
-
-            json.dump(res, open(data_config.output_path(output_key, mode, EVALUATION), 'w'))
-            print()
-
-    print('OUTPUT_KEY: {}'.format(output_key))
-
     print('========================= BEST ROUND EVALUATION =========================')
 
     with tf.Session() as sess:
@@ -327,35 +278,57 @@ def train(dataset_key, text_version, label_version=None, config_path='config.yam
         nn = BaseNNModel(config=None)
         nn.set_graph(tf.get_default_graph())
 
-        for mode in [TEST, ]:
+        for mode in [TRAIN, TEST]:
             dataset = datasets[mode]
             index_iterator = index_iterators[mode]
             n_sample = index_iterator.n_sample()
 
+            prob_predict = list()
             labels_predict = list()
             labels_gold = list()
+            hidden_feats = list()
+
             for batch_index in index_iterator.iterate(batch_size, shuffle=False):
                 feed_dict = {nn.var(_key): dataset[_key][batch_index] for _key in feed_key[TEST]}
-                feed_dict[nn.var(DROPOUT_KEEP_PROB)] = 1.
                 feed_dict[nn.var(TEST_MODE)] = 1
                 res = sess.run(fetches=fetches[TEST], feed_dict=feed_dict)
+                prob_predict += res[PROB_PREDICT].tolist()
                 labels_predict += res[LABEL_PREDICT].tolist()
+                hidden_feats += res[HIDDEN_FEAT].tolist()
                 labels_gold += dataset[LABEL_GOLD][batch_index].tolist()
 
+            prob_predict = prob_predict[:n_sample]
             labels_predict = labels_predict[:n_sample]
             labels_gold = labels_gold[:n_sample]
+            hidden_feats = hidden_feats[:n_sample]
 
-            best_res[TEST] = basic_evaluate(gold=labels_gold, pred=labels_predict, pos_label=pos_label)
+            if mode == TEST:
+                res = basic_evaluate(gold=labels_gold, pred=labels_predict, pos_label=pos_label)
+                best_res[TEST] = res
 
-            for mode in [TRAIN, VALID, TEST]:
-                if mode == VALID and train_config.valid_rate == 0.:
-                    continue
-                res = best_res[mode]
-                print(mode)
-                print_evaluation(res)
+            # 导出隐藏层
+            with open(data_config.output_path(output_key, mode, HIDDEN_FEAT), 'w') as file_obj:
+                for _feat in hidden_feats:
+                    file_obj.write('\t'.join(map(str, _feat)) + '\n')
+            # 导出预测的label
+            with open(data_config.output_path(output_key, mode, LABEL_PREDICT), 'w') as file_obj:
+                for _label in labels_predict:
+                    file_obj.write('{}\n'.format(_label))
+            with open(data_config.output_path(output_key, mode, PROB_PREDICT), 'w') as file_obj:
+                for _prob in prob_predict:
+                    file_obj.write('\t'.join(map(str, _prob)) + '\n')
 
-                json.dump(res, open(data_config.output_path(output_key, mode, EVALUATION), 'w'))
-                print()
+        for mode in [TRAIN, VALID, TEST]:
+            if mode == VALID and train_config.valid_rate == 0.:
+                continue
+            res = best_res[mode]
+            print(mode)
+            print_evaluation(res)
+
+            json.dump(res, open(data_config.output_path(output_key, mode, EVALUATION), 'w'))
+            print()
+
+    print('OUTPUT_KEY: {}'.format(output_key))
 
 
 @commandr.command('feat')
@@ -405,7 +378,6 @@ def build_feat(dataset_key_src, output_key_src, dataset_key_dest='semeval2018_ta
             hidden_feats = list()
             for batch_index in index_iterator.iterate(batch_size):
                 feed_dict = {nn.var(_key): dataset[_key][batch_index] for _key in feed_key[TEST]}
-                feed_dict[nn.var(DROPOUT_KEEP_PROB)] = 1.
                 res = sess.run(fetches=fetches[TEST], feed_dict=feed_dict)
                 hidden_feats += res[HIDDEN_FEAT].tolist()
             hidden_feats = hidden_feats[:n_sample]

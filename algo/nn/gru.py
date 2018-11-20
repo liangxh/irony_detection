@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 import tensorflow as tf
-
 from algo.model.const import *
 from algo.model.nn_config import BaseNNConfig
 from algo.nn.base import BaseNNModel
 from algo.nn.common import dense, rnn_cell
+from algo.nn.common.common import add_gaussian_noise_layer, build_dropout_keep_prob
 
 
 class NNConfig(BaseNNConfig):
@@ -21,12 +21,15 @@ class NNModel(BaseNNModel):
         token_id_seq = tf.placeholder(tf.int32, [None, self.config.seq_len], name=TOKEN_ID_SEQ)
         seq_len = tf.placeholder(tf.int32, [None, ], name=SEQ_LEN)
         sample_weights = tf.placeholder(tf.float32, [None, ], name=SAMPLE_WEIGHTS)
-        dropout_keep_prob = tf.placeholder(tf.float32, name=DROPOUT_KEEP_PROB)
+
         lookup_table = tf.Variable(
             lookup_table, dtype=tf.float32, name=LOOKUP_TABLE,
             trainable=self.config.embedding_trainable
         )
         embedded = tf.nn.embedding_lookup(lookup_table, token_id_seq)
+
+        embedded = add_gaussian_noise_layer(embedded, stddev=self.config.embedding_noise_stddev, test_mode=test_mode)
+        dropout_keep_prob = build_dropout_keep_prob(keep_prob=self.config.dropout_keep_prob, test_mode=test_mode)
 
         rnn_outputs, rnn_last_states = tf.nn.dynamic_rnn(
             rnn_cell.build_gru(self.config.rnn_dim, dropout_keep_prob=dropout_keep_prob),

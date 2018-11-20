@@ -54,3 +54,7 @@ class BaseNNConfig(object):
     @property
     def batch_size(self):
         return self.full_data['train']['batch_size']
+
+    @property
+    def dropout_keep_prob(self):
+        return self.data['dropout_keep_prob']

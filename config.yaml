@@ -1,11 +1,17 @@
 module: algo.nn.gru
+analyzer: word
 version:
   w2v: google
+  randomize_not_supported: True
+  min_tf: 2.
+char:
+  embedding_dim: 25
 
 nn:
   seq_len: _
   embedding:
     trainable: True
+    noise_stddev: 0.1
   rnn:
     dim: 100
   learning_rate:
@@ -15,11 +21,11 @@ nn:
   l2_reg_lambda: 0.1
   output:
     dim: _
+  dropout_keep_prob: 0.2
   binary_classification: False
 
 train:
   epoch: 5
   valid_rate: 0.
   batch_size: 100
-  dropout_keep_prob: 0.5
   use_class_weights: True

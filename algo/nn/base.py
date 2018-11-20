@@ -7,6 +7,7 @@ class BaseNNModel(object):
     def __init__(self, config):
         self.config = config
         self.graph = None
+        self.optimizer = None
 
     def var(self, key):
         return self.graph.get_operation_by_name(key).outputs[0]
@@ -24,4 +25,13 @@ class BaseNNModel(object):
             decay_rate=self.config.learning_rate_decay_rate
         )
         # Optimizer
-        tf.train.AdamOptimizer(learning_rate).minimize(loss, global_step=global_step, name=OPTIMIZER)
+
+        optimizer = tf.train.AdamOptimizer(learning_rate)
+        gvs = optimizer.compute_gradients(loss)
+        capped_gvs = [(tf.clip_by_value(grad, -1., 1.), var) for grad, var in gvs]
+        self.optimizer = optimizer.apply_gradients(capped_gvs, name=OPTIMIZER)
+
+    def var(self, key):
+        if key == OPTIMIZER:
+            return self.optimizer
+        return self.graph.get_operation_by_name(key).outputs[0]

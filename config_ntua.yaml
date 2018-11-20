@@ -23,11 +23,11 @@ nn:
   l2_reg_lambda: 0.1
   output:
     dim: _
+  dropout_keep_prob: 0.2
   binary_classification: False
 
 train:
   epoch: 80
   valid_rate: 0.
   batch_size: 100
-  dropout_keep_prob: 0.2
   use_class_weights: True

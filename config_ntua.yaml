@@ -11,6 +11,7 @@ nn:
   seq_len: _
   embedding:
     trainable: False
+    noise_stddev: 0.1
   rnn:
     dim: 50
   attention:

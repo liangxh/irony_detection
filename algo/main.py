@@ -213,6 +213,7 @@ def train(dataset_key, text_version, label_version=None, config_path='config.yam
                 feed_dict = {nn.var(_key): dataset[_key][batch_index] for _key in feed_key[TRAIN]}
                 feed_dict[nn.var(DROPOUT_KEEP_PROB)] = train_config.dropout_keep_prob
                 feed_dict[nn.var(SAMPLE_WEIGHTS)] = map(label_weight.get, feed_dict[nn.var(LABEL_GOLD)])
+                feed_dict[nn.var(TEST_MODE)] = 0
                 res = sess.run(fetches=fetches[TRAIN], feed_dict=feed_dict)
 
                 labels_predict += res[LABEL_PREDICT].tolist()
@@ -245,6 +246,7 @@ def train(dataset_key, text_version, label_version=None, config_path='config.yam
                 for batch_index in index_iterator.iterate(batch_size, mode=VALID, shuffle=False):
                     feed_dict = {nn.var(_key): dataset[_key][batch_index] for _key in feed_key[TEST]}
                     feed_dict[nn.var(DROPOUT_KEEP_PROB)] = 1.
+                    feed_dict[nn.var(TEST_MODE)] = 1
                     res = sess.run(fetches=fetches[TEST], feed_dict=feed_dict)
                     labels_predict += res[LABEL_PREDICT].tolist()
                     labels_gold += dataset[LABEL_GOLD][batch_index].tolist()
@@ -279,6 +281,7 @@ def train(dataset_key, text_version, label_version=None, config_path='config.yam
             for batch_index in index_iterator.iterate(batch_size, shuffle=False):
                 feed_dict = {nn.var(_key): dataset[_key][batch_index] for _key in feed_key[TEST]}
                 feed_dict[nn.var(DROPOUT_KEEP_PROB)] = 1.
+                feed_dict[nn.var(TEST_MODE)] = 1
                 res = sess.run(fetches=fetches[TEST], feed_dict=feed_dict)
                 labels_predict += res[LABEL_PREDICT].tolist()
                 hidden_feats += res[HIDDEN_FEAT].tolist()
@@ -334,6 +337,7 @@ def train(dataset_key, text_version, label_version=None, config_path='config.yam
             for batch_index in index_iterator.iterate(batch_size, shuffle=False):
                 feed_dict = {nn.var(_key): dataset[_key][batch_index] for _key in feed_key[TEST]}
                 feed_dict[nn.var(DROPOUT_KEEP_PROB)] = 1.
+                feed_dict[nn.var(TEST_MODE)] = 1
                 res = sess.run(fetches=fetches[TEST], feed_dict=feed_dict)
                 labels_predict += res[LABEL_PREDICT].tolist()
                 labels_gold += dataset[LABEL_GOLD][batch_index].tolist()

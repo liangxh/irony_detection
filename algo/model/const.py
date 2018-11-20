@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+TEST_MODE = 'test_mode'
+
 TRAIN = 'train'
 VALID = 'valid'
 TEST = 'test'

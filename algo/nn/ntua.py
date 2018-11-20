@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 import tensorflow as tf
-
 from algo.model.const import *
 from algo.model.nn_config import BaseNNConfig
 from algo.nn.base import BaseNNModel
 from algo.nn.common import dense, rnn_cell, attention
+from algo.nn.common.common import add_gaussian_noise_layer
 
 
 class NNConfig(BaseNNConfig):
@@ -16,6 +16,10 @@ class NNConfig(BaseNNConfig):
     def attention_dim(self):
         return self.data['attention']['dim']
 
+    @property
+    def embedding_noise_stddev(self):
+        return self.data['embedding']['noise_stddev']
+
 
 class NNModel(BaseNNModel):
     name = 'ntua'
@@ -25,8 +29,10 @@ class NNModel(BaseNNModel):
         self.optimizer = None
 
     def build_neural_network(self, lookup_table):
+        test_mode = tf.placeholder(tf.int8, None, name=TEST_MODE)
+
         label_gold = tf.placeholder(tf.int32, [None, ], name=LABEL_GOLD)
-        token_id_seq = tf.placeholder(tf.int32, [None, self.config.seq_len], name=TOKEN_ID_SEQ)
+        token_id_seq = tf.placeholder(tf.int32, [self.config.batch_size, self.config.seq_len], name=TOKEN_ID_SEQ)
         seq_len = tf.placeholder(tf.int32, [None, ], name=SEQ_LEN)
         sample_weights = tf.placeholder(tf.float32, [None, ], name=SAMPLE_WEIGHTS)
         dropout_keep_prob = tf.placeholder(tf.float32, name=DROPOUT_KEEP_PROB)
@@ -35,6 +41,9 @@ class NNModel(BaseNNModel):
             trainable=self.config.embedding_trainable
         )
         embedded = tf.nn.embedding_lookup(lookup_table, token_id_seq)
+
+        if self.config.embedding_noise_stddev != 0.:
+            embedded = add_gaussian_noise_layer(embedded, stddev=self.config.embedding_noise_stddev, test_mode=test_mode)
 
         with tf.variable_scope("blstm_layer_1") as scope:
             cell_fw = rnn_cell.build_lstm(self.config.rnn_dim, dropout_keep_prob=dropout_keep_prob)

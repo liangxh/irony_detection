@@ -28,6 +28,6 @@ nn:
 
 train:
   epoch: 80
-  valid_rate: 0.
+  valid_rate: 0.1
   batch_size: 100
   use_class_weights: True

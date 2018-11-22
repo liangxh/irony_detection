@@ -1,7 +1,7 @@
-module: algo.nn.gru
+module: algo.nn.ntua
 analyzer: word
 word:
-  w2v_version: ntua
+  w2v_version: google
   randomize_not_supported: True
   min_tf: 2.
 char:
@@ -13,7 +13,9 @@ nn:
     trainable: False
     noise_stddev: 0.1
   rnn:
-    dim: 150
+    dim: 50
+  attention:
+    dim: 50
   learning_rate:
     init: 0.01
     decay_steps: 1
@@ -25,7 +27,7 @@ nn:
   binary_classification: False
 
 train:
-  epoch: 20
+  epoch: 80
   valid_rate: 0.1
   batch_size: 100
   use_class_weights: True

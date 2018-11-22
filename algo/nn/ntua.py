@@ -16,10 +16,6 @@ class NNConfig(BaseNNConfig):
     def attention_dim(self):
         return self.data['attention']['dim']
 
-    @property
-    def embedding_noise_stddev(self):
-        return self.data['embedding']['noise_stddev']
-
 
 class NNModel(BaseNNModel):
     name = 'ntua'

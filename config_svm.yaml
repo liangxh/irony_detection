@@ -32,8 +32,10 @@ feat_keys:
 
     #- A_ntua_ek_1542619872
     #- A_ntua_raw_1542625610
-    - A_ntua_ek_1542708338
-    - A_ntua_raw_1542715848
+    #- A_ntua_ek_1542708338
+    #- A_ntua_raw_1542715848
+
+    - A_gru_ek_1542868460
 
   offline:
     #- inc_emb.google_ek

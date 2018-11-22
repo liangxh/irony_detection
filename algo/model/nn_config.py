@@ -58,3 +58,8 @@ class BaseNNConfig(object):
     @property
     def dropout_keep_prob(self):
         return self.data['dropout_keep_prob']
+
+    @property
+    def embedding_noise_stddev(self):
+        return self.data['embedding']['noise_stddev']
+

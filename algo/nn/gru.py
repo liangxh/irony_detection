@@ -17,8 +17,10 @@ class NNModel(BaseNNModel):
     name = 'gru'
 
     def build_neural_network(self, lookup_table):
+        test_mode = tf.placeholder(tf.int8, None, name=TEST_MODE)
+
         label_gold = tf.placeholder(tf.int32, [None, ], name=LABEL_GOLD)
-        token_id_seq = tf.placeholder(tf.int32, [None, self.config.seq_len], name=TOKEN_ID_SEQ)
+        token_id_seq = tf.placeholder(tf.int32, [self.config.batch_size, self.config.seq_len], name=TOKEN_ID_SEQ)
         seq_len = tf.placeholder(tf.int32, [None, ], name=SEQ_LEN)
         sample_weights = tf.placeholder(tf.float32, [None, ], name=SAMPLE_WEIGHTS)
 

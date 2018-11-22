@@ -9,9 +9,6 @@ class BaseNNModel(object):
         self.graph = None
         self.optimizer = None
 
-    def var(self, key):
-        return self.graph.get_operation_by_name(key).outputs[0]
-
     def set_graph(self, graph):
         self.graph = graph
 

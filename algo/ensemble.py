@@ -4,15 +4,21 @@ import commandr
 import importlib
 import numpy as np
 import yaml
+import time
 from algo.model.const import *
 from dataset.common.const import *
 from dataset.common.load import *
 from algo.lib.evaluate import basic_evaluate
 from algo.lib.common import print_evaluation
+from algo.lib.common import generate_wrong_prediction_report
 
 MAJORITY_VOTING = 'mv'
 WEIGHTED_MAJORITY_VOTE = 'wmv'
 SOFT_VOTING = 'sv'
+
+
+ANALYSIS = 'analysis'
+WRONG_PREDICT = 'wrong_predict'
 
 
 class Config(object):
@@ -35,17 +41,21 @@ def argmax(value_list):
 
 
 @commandr.command
-def main(dataset_key, label_version, ensemble_mode, config_path='config_ensemble.yaml'):
+def main(dataset_key, label_version, ensemble_mode, config_path='config_ensemble.yaml', build_analysis=False):
     """
     [Usage]
-    python algo/ensemble.py main -d semeval2018_task3 -l A -e sv
-    
+    python algo/ensemble.py main -d semeval2018_task3 -l A -e mv
+    python algo/ensemble.py main -d semeval2018_task3 -l A -e mv --build-analysis
+
     :param dataset_key: 
     :param label_version: 
     :param ensemble_mode: 
-    :param config_path: 
+    :param config_path:
+    :param build_analysis: bool
     :return: 
     """
+    output_key = 'ensemble_{}_{}'.format(ensemble_mode, int(time.time()))
+
     pos_label = None
     if dataset_key == 'semeval2018_task3' and label_version == 'A':
         pos_label = 1
@@ -62,8 +72,6 @@ def main(dataset_key, label_version, ensemble_mode, config_path='config_ensemble
         labels_gold[mode] = load_label_list(label_path)
         n_sample[mode] = len(labels_gold[mode])
     output_dim = max(labels_gold[TEST]) + 1
-
-    print(n_sample.items())
 
     if ensemble_mode == SOFT_VOTING:
         for mode in [TRAIN, TEST]:
@@ -88,7 +96,6 @@ def main(dataset_key, label_version, ensemble_mode, config_path='config_ensemble
                     prob += np.asarray(prob_list[i])
                 labels.append(np.argmax(prob))
             labels_predict[mode] = labels
-            print(len(labels))
 
     elif ensemble_mode == MAJORITY_VOTING:
         components = dict()
@@ -114,7 +121,6 @@ def main(dataset_key, label_version, ensemble_mode, config_path='config_ensemble
                     prob[label] += 1
                 labels.append(np.argmax(prob))
             labels_predict[mode] = labels
-            print(len(labels))
 
     elif ensemble_mode == WEIGHTED_MAJORITY_VOTE:
         raise NotImplementedError
@@ -126,6 +132,16 @@ def main(dataset_key, label_version, ensemble_mode, config_path='config_ensemble
         print(mode)
         print_evaluation(res)
         print()
+
+        if build_analysis:
+            output_path = data_config.path(mode, ANALYSIS, WRONG_PREDICT)
+            text_list = load_text_list(data_config.path(mode, TEXT))
+            res = generate_wrong_prediction_report(
+                labels_gold=labels_gold[mode], labels_predict=labels_predict[mode], text_list=text_list)
+            with open(output_path, 'w') as file_obj:
+                file_obj.write('gold\tpredict\ttext')
+                for l_gold, l_predict, t in res:
+                    file_obj.write('{} {} {}\n'.format(l_gold, l_predict, t))
 
 
 if __name__ == '__main__':

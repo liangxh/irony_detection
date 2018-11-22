@@ -60,3 +60,12 @@ def build_random_lookup_table(vocabs, dim):
     lookup_table = np.random.normal(0, 1, (len(vocabs), dim))
     vocab_id_mapping = {_vocab: _i for _i, _vocab in enumerate(vocab_list)}
     return lookup_table, vocab_id_mapping, dim
+
+
+def generate_wrong_prediction_report(labels_gold, labels_predict, text_list):
+    res = list()
+    for l_gold, l_predict, t in zip(labels_gold, labels_predict, text_list):
+        if l_predict != l_gold:
+            res.append((l_gold, l_predict, t))
+    res = sorted(res, key=lambda _item: (_item[0], _item[1]))
+    return res

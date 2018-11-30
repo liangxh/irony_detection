@@ -36,7 +36,7 @@ def load_lookup_table(w2v_model_path, vocabs):
     w2v_model = PlainModel(w2v_model_path)
     vocab_list = w2v_model.index.keys()
 
-    not_supported_vocabs = filter(lambda _vocab: _vocab not in set(vocab_list), vocabs)
+    not_supported_vocabs = list(filter(lambda _vocab: _vocab not in set(vocab_list), vocabs))
     n_not_supported = len(not_supported_vocabs)
 
     lookup_table_pretrained = np.asarray([w2v_model.get(_vocab) for _vocab in vocab_list])

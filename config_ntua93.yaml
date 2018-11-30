@@ -1,0 +1,33 @@
+module: algo.nn.ntua
+analyzer: word
+word:
+  w2v_version: ntua
+  randomize_not_supported: True
+  min_tf: 2.
+char:
+  embedding_dim: 25
+
+nn:
+  seq_len: _
+  embedding:
+    trainable: False
+    noise_stddev: 0.1
+  rnn:
+    dim: 50
+  attention:
+    dim: 50
+  learning_rate:
+    init: 0.1
+    decay_steps: 1
+    decay_rate: 0.9
+  l2_reg_lambda: 0.1
+  output:
+    dim: _
+  dropout_keep_prob: 0.5
+  binary_classification: False
+
+train:
+  epoch: 80
+  valid_rate: 0.1
+  batch_size: 100
+  use_class_weights: True

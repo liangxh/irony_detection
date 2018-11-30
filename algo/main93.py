@@ -125,7 +125,7 @@ def train(dataset_key, text_version, label_version=None, config_path='config.yam
         # 加载字典集
         # 在模型中会采用所有模型中支持的词向量, 并为有足够出现次数的单词随机生成词向量
         vocab_meta_list = load_vocab_list(vocab_train_path)
-        vocab_meta_list += load_vocab_list(semeval2018_task3_date_config.path(TRAIN, VOCAB, text_version))
+        # vocab_meta_list += load_vocab_list(semeval2018_task3_date_config.path(TRAIN, VOCAB, text_version))
         vocabs = [_meta['t'] for _meta in vocab_meta_list if _meta['tf'] >= config_data[WORD]['min_tf']]
 
         # 加载词向量与相关数据

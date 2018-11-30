@@ -70,7 +70,7 @@ class IndexIterator(object):
                 self.mode_index[TRAIN] += index
 
     def iterate(self, batch_size, mode=None, shuffle=False):
-        index = copy.deepcopy(self.mode_index[mode]) if mode is not None else range(self._n_sample)
+        index = copy.deepcopy(self.mode_index[mode]) if mode is not None else list(range(self._n_sample))
         if shuffle:
             random.shuffle(index)
         n_patch = batch_size - len(index) % batch_size

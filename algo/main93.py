@@ -406,10 +406,11 @@ def show_eval(dataset_key, output_key):
 
 
 @commandr.command('clear')
-def clear_output(dataset_key, output_key):
+def clear_output(output_key, dataset_key='semeval2019_task3_dev'):
     """
     [Usage]
     python algo/main.py clear semeval2018_task3 A_ntua_ek_1542595525
+    python3 algo.main clear xxxxxxx
 
     :param dataset_key: string
     :param output_key: string

@@ -18,7 +18,7 @@ class SimpleIndexIterator(object):
         n_patch = batch_size - len(index) % batch_size
         if n_patch < batch_size:
             index += index[:n_patch]
-        for n in range(len(index) / batch_size):
+        for n in range(int(len(index) / batch_size)):
             yield index[(n * batch_size): ((n + 1) * batch_size)]
 
 
@@ -76,7 +76,7 @@ class IndexIterator(object):
         n_patch = batch_size - len(index) % batch_size
         if n_patch < batch_size:
             index += index[:n_patch]
-        for n in range(len(index) / batch_size):
+        for n in range(int(len(index) / batch_size)):
             yield index[(n * batch_size): ((n + 1) * batch_size)]
 
 

@@ -85,7 +85,7 @@ def main(dataset_key, label_version, ensemble_mode, config_path='config_ensemble
                         line = line.strip()
                         if line == '':
                             continue
-                        prob = map(float, line.split('\t'))
+                        prob = list(map(float, line.split('\t')))
                         prob_list.append(prob)
                 components[output_key] = prob_list
 

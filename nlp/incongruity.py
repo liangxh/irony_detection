@@ -21,7 +21,7 @@ class SentenceEmbeddingSimilarity(object):
         assert len(words) == len(vecs)
         self.mode = mode
         self.words = words
-        self.vecs = map(lambda vec: np.asarray(vec) if vec is not None else None, vecs)
+        self.vecs = list(map(lambda vec: np.asarray(vec) if vec is not None else None, vecs))
         self.length = len(self.words)
         self.sim_cache = dict()
 
@@ -128,7 +128,7 @@ def embedding_incongruity(dataset_key, text_version, w2v_version, sim_mode=COS):
             for tokens in tokenized_list:
                 tokens = filter(lambda _t: _t not in punctuations, tokens)
 
-                vecs = map(w2v_model.get, tokens)
+                vecs = list(map(w2v_model.get, tokens))
                 record = SentenceEmbeddingSimilarity(words=tokens, vecs=vecs, mode=sim_mode)
 
                 similar, dissimilar = record.analyse(weighted=False)

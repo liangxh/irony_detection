@@ -48,7 +48,7 @@ class IndexIterator(object):
             raise NotImplementedError
 
     def get_subset(self):
-        min_size = int(min(map(len, self.label_index.values())) * 1.)
+        min_size = int(min(list(map(len, self.label_index.values()))) * 1.)
 
         index_list = list()
         for index in self.label_index.values():

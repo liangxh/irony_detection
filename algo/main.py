@@ -25,10 +25,10 @@ WORD = 'word'
 
 def load_dataset(data_config, analyzer, vocab_id_mapping, seq_len, with_label=True, label_version=None, text_version=None):
     def seq_to_len_list(seq_list):
-        return map(len, seq_list)
+        return list(map(len, seq_list))
 
     def zero_pad_seq_list(seq_list, seq_len):
-        return map(lambda _seq: _seq + [0] * (seq_len - len(_seq)), seq_list)
+        return list(map(lambda _seq: _seq + [0] * (seq_len - len(_seq)), seq_list))
 
     datasets = dict()
     for mode in [TRAIN, TEST]:
@@ -38,7 +38,7 @@ def load_dataset(data_config, analyzer, vocab_id_mapping, seq_len, with_label=Tr
         elif analyzer == CHAR:
             text_path = data_config.path(mode, TEXT)
             text_list = load_text_list(text_path)
-            tokenized_list = map(list, text_list)
+            tokenized_list = list(map(list, text_list))
         else:
             raise ValueError('invalid analyzer, got {}'.format(analyzer))
 
@@ -213,7 +213,7 @@ def train(dataset_key, text_version, label_version=None, config_path='config.yam
 
             for batch_index in index_iterator.iterate(batch_size, mode=TRAIN, shuffle=True):
                 feed_dict = {nn.var(_key): dataset[_key][batch_index] for _key in feed_key[TRAIN]}
-                feed_dict[nn.var(SAMPLE_WEIGHTS)] = map(label_weight.get, feed_dict[nn.var(LABEL_GOLD)])
+                feed_dict[nn.var(SAMPLE_WEIGHTS)] = list(map(label_weight.get, feed_dict[nn.var(LABEL_GOLD)]))
                 feed_dict[nn.var(TEST_MODE)] = 0
                 res = sess.run(fetches=fetches[TRAIN], feed_dict=feed_dict)
 

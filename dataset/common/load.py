@@ -4,7 +4,10 @@ import json
 
 def load_tokenized_list(path):
     text_list = load_text_list(path)
-    return map(lambda line: line.decode('utf8').split(' '), text_list)
+    if hasattr(str, 'decode'):
+        return list(map(lambda line: line.decode('utf8').split(' '), text_list))
+    else:
+        return list(map(lambda line: line.split(' '), text_list))
 
 
 def load_text_list(path):
@@ -70,7 +73,7 @@ def load_feat(path, separator='\t'):
             line = line.strip()
             if line == '':
                 continue
-            vec = map(float, line.split(separator))
+            vec = list(map(float, line.split(separator)))
             if dim is None:
                 dim = len(vec)
             elif len(vec) != dim:

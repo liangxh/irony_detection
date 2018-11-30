@@ -73,7 +73,7 @@ class PlainModel(object):
             line = self.file_model.readline()
             line = line.strip()
             parts = line.split(self.separator)
-            vec = map(float, parts[1:])
+            vec = list(map(float, parts[1:]))
             return vec
 
 
@@ -84,7 +84,7 @@ class BinModel(object):
     def __init__(self, filename_model, filename_index):
         self.file_model = open(filename_model, 'r')
         header = self.file_model.readline()
-        vocab_size, dim = map(int, header.split())
+        vocab_size, dim = list(map(int, header.split()))
         self.dim = dim
         self.index = self.load_index(filename_index)
         self._binary_len = np.dtype(np.float32).itemsize * dim
@@ -180,7 +180,7 @@ class BinModel(object):
 
         with open(filename_model, 'r') as file_obj:
             header = file_obj.readline().decode('utf8')
-            vocab_size, dim = map(int, header.split())  # throws for invalid file format
+            vocab_size, dim = list(map(int, header.split()))  # throws for invalid file format
             binary_len = np.dtype(np.float32).itemsize * dim
             for _ in xrange(vocab_size):
                 ch_list = []

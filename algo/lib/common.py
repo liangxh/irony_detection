@@ -7,19 +7,19 @@ keys = [ACCURACY, PRECISION, RECALL, F1_SCORE]
 
 
 def print_evaluation(res):
-    values = map(res.get, keys)
-    print('\t'.join(map(lambda _k: _k + ' ' * (10 - len(_k)), keys)))
-    print('\t'.join(map(str, values)))
+    values = list(map(res.get, keys))
+    print('\t'.join(list(map(lambda _k: _k + ' ' * (10 - len(_k)), keys))))
+    print('\t'.join(list(map(str, values))))
 
 
 def tokenized_to_tid_list(tokenized_list, vocab_id_mapping):
-    tid_list = map(
+    tid_list = list(map(
         lambda _tokens: filter(
             lambda _tid: _tid is not None,
-            map(lambda _t: vocab_id_mapping.get(_t), _tokens)
+            list(map(lambda _t: vocab_id_mapping.get(_t), _tokens))
         ),
         tokenized_list
-    )
+    ))
     return tid_list
 
 

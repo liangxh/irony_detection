@@ -71,12 +71,12 @@ def build_dev_submit(output_path, path_labels=None):
 
         lines = open(config.path_dev_no_labels).read().strip().split('\n')
         lines = lines[1:]
-        lines = map(lambda l: l.strip(), lines)
+        lines = list(map(lambda l: l.strip(), lines))
 
         if path_labels is not None:
             labels = open(path_labels, 'r').read().strip().split('\n')
-            labels = map(int, labels)
-            labels = map(lambda l: label_str[l], labels)
+            labels = list(map(int, labels))
+            labels = list(map(lambda l: label_str[l], labels))
             assert len(labels) == len(lines)
         else:
             labels = ['others'] * len(lines)

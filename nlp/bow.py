@@ -74,7 +74,7 @@ def calculate_nbow(dataset_key, text_version, w2v_version, nbow_mode):
 
         with open(path_feat, 'w') as fobj:
             for tokens in tokenized_list:
-                vecs = map(w2v_model.get, tokens)
+                vecs = list(map(w2v_model.get, tokens))
                 vecs = filter(lambda _v: _v is not None, vecs)
 
                 if len(vecs) == 0:

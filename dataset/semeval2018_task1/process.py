@@ -38,7 +38,7 @@ class Processor(object):
                     continue
                 values = line.split('\t')
                 text = values[1]
-                label = map(int, values[2:])
+                label = list(map(int, values[2:]))
                 sample = (dict(zip(label_names, label)), text)
                 samples.append(sample)
         return samples

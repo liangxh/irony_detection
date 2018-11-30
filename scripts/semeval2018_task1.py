@@ -25,7 +25,7 @@ def build_text_label():
                 text_obj.write(text + '\n')
                 for _label_name, _label in label.items():
                     label_objs[_label_name].write('{}\n'.format(_label))
-        map(lambda _obj: _obj.close(), label_objs.values())
+        list(map(lambda _obj: _obj.close(), label_objs.values()))
 
 
 if __name__ == '__main__':

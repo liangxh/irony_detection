@@ -100,7 +100,7 @@ def main(dataset_key, label_version=None, config_path='config_svm.yaml', kernel=
             list(enumerate(clf.coef_.ravel())),
             key=lambda _item: math.fabs(_item[1])
         )
-        coef = map(lambda _item: _item[0], coef)
+        coef = list(map(lambda _item: _item[0], coef))
         print(coef)
 
     for mode in [TRAIN, TEST]:

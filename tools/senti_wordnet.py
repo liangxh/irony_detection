@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from __future__ import print_function
 from nltk.corpus import sentiwordnet as swn
 
 
@@ -15,4 +16,4 @@ class SentiWordNet(object):
 senti_wordnet = SentiWordNet()
 
 if __name__ == '__main__':
-    print senti_wordnet.get('happy', 'a')
+    print(senti_wordnet.get('happy', 'a'))

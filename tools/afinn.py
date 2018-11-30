@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from __future__ import print_function
 import os
 
 
@@ -36,4 +37,4 @@ class AFinn(object):
 afinn = AFinn()
 
 if __name__ == '__main__':
-    print afinn.get_score('LOVE')
+    print(afinn.get_score('LOVE'))

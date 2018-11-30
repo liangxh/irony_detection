@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from __future__ import print_function
 from dataset.semeval2019_task3_dev.config import config
 
 label_str = ['happy', 'angry', 'sad', 'others']
@@ -39,7 +40,7 @@ class Processor(object):
                     continue
                 parts = line.split('\t')
                 if not len(parts) == 4:
-                    print parts
+                    print(parts)
                     raise Exception
                 turn_1 = parts[1].strip()
                 turn_2 = parts[2].strip()

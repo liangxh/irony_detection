@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from __future__ import print_function
 import re
 import commandr
 import importlib
@@ -61,8 +62,8 @@ def pos(dataset_key):
                 try:
                     tags = blob.tags
                 except UnicodeDecodeError:
-                    print tags
-                    print out_path
+                    print(tags)
+                    print(out_path)
                 out_obj.write(json.dumps(tags) + '\n')
 
 

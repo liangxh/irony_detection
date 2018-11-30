@@ -2,6 +2,7 @@
 """
 http://sentistrength.wlv.ac.uk/results.php?text=alas&submit=Detect+Sentiment
 """
+from __future__ import print_function
 import os
 from tools.basic import iterate_file
 
@@ -134,11 +135,11 @@ senti_strength = SentiStrength()
 
 
 if __name__ == '__main__':
-    print len(senti_strength.words)
-    print senti_strength.boosters
-    print senti_strength.negating_words
-    print senti_strength.question_words
-    print senti_strength.slang_lookup_table
-    print senti_strength.idiom_lookup_table
-    print len(senti_strength.emoticon_lookup_table)
-    print len(senti_strength.emotion_lookup_table)
+    print(len(senti_strength.words))
+    print(senti_strength.boosters)
+    print(senti_strength.negating_words)
+    print(senti_strength.question_words)
+    print(senti_strength.slang_lookup_table)
+    print(senti_strength.idiom_lookup_table)
+    print(len(senti_strength.emoticon_lookup_table))
+    print(len(senti_strength.emotion_lookup_table))

@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from __future__ import print_function
 import commandr
 import os
 import numpy as np
@@ -107,7 +108,7 @@ class BinModel(object):
         """
         vocab_list = set()
         filenames = filename.split(',')
-        print filenames
+        print(filenames)
 
         for filename in filenames:
             with open(filename, 'r') as file_obj:
@@ -118,7 +119,7 @@ class BinModel(object):
                     parts = line.split('\t')
                     vocab = parts[0].decode('utf8')
                     vocab_list.add(vocab)
-            print len(vocab_list)
+            print(len(vocab_list))
         return vocab_list
 
     @classmethod

@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from __future__ import print_function
 import os
 
 POSITIVE = 'positive'
@@ -46,7 +47,7 @@ class LexiconLiu05(object):
 
 if __name__ == '__main__':
     lexicons = LexiconLiu05.get_positive_lexicons()
-    print len(lexicons)
+    print(len(lexicons))
 
     lexicons = LexiconLiu05.get_negative_lexicons()
-    print len(lexicons)
+    print(len(lexicons))

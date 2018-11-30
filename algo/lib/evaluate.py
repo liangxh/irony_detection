@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from __future__ import print_function
 import numpy as np
 from algo.model.const import *
 
@@ -66,8 +67,8 @@ if __name__ == '__main__':
     gold = [0, 0, 1, 1, 1, 2, 2, 2, 2]
     pred = [2, 0, 0, 1, 1, 0, 1, 2, 2]
     res = basic_evaluate(gold, pred)
-    print res
-    print
+    print(res)
+    print()
 
     res = basic_evaluate(gold, pred, pos_label=0)
-    print res
+    print(res)

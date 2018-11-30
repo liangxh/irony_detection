@@ -64,7 +64,16 @@ def build_ek():
 
 
 @commandr.command
-def build_dev_submit(output_path, path_labels=None):
+def build_dev_submit(output_key=None):
+    """
+    python -m scripts.semeval2019_task3_dev build_dev_submit -o gru_ek_1543492018
+    python3 -m scripts.semeval2019_task3_dev build_dev_submit  -o
+
+    :param output_key: string
+    :return:
+    """
+    output_path = 'test.txt'
+
     first_line = open(config.path_train, 'r').readline()
     with open(output_path, 'w') as o_obj:
         o_obj.write(first_line)
@@ -73,7 +82,9 @@ def build_dev_submit(output_path, path_labels=None):
         lines = lines[1:]
         lines = list(map(lambda l: l.strip(), lines))
 
-        if path_labels is not None:
+        if output_key is not None:
+            path_labels = config.output_path(output_key, TEST, LABEL_PREDICT)
+
             labels = open(path_labels, 'r').read().strip().split('\n')
             labels = list(map(int, labels))
             labels = list(map(lambda l: label_str[l], labels))

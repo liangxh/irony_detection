@@ -37,7 +37,9 @@ class PlainModel(object):
                     offset += len(line)
                     continue
 
-                token = parts[0].decode('utf-8')
+                token = parts[0]
+                if hasattr(str, 'decode'):
+                    token = token.decode('utf8')
                 index[token] = offset
 
                 # 检查index创建是否正确

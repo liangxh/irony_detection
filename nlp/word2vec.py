@@ -29,8 +29,12 @@ class PlainModel(object):
         index = dict()
 
         with open(filename_model, 'r') as file_obj, open(filename_model, 'r') as _file_obj:
-            offset = 0
-            for line in file_obj:
+            while True:
+                offset = file_obj.tell()
+                line = file_obj.readline()
+                if line == '':
+                    break
+
                 parts = line.strip().split(self.separator)
                 if len(parts) == 0:
                     # 部分模型文件头会带 n_vocab, n_dim, 直接跳过
@@ -292,6 +296,11 @@ def build_glove(input_filename, vocab_filename, output_filename):
         if vec is not None:
             writer.add(vocab, vec)
     writer.close()
+
+
+@commandr.command('test_glove')
+def test_glove(filename):
+    PlainModel(filename)
 
 
 if __name__ == '__main__':

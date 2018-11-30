@@ -17,7 +17,7 @@ from dataset.common.load import *
 from algo.lib.common import print_evaluation, load_lookup_table, tokenized_to_tid_list, build_random_lookup_table
 from dataset.semeval2018_task3.config import config as semeval2018_task3_date_config
 
-MAX_WORD_SEQ_LEN = 90
+MAX_WORD_SEQ_LEN = 170
 MAX_CHAR_SEQ_LEN = 170
 CHAR = 'char'
 WORD = 'word'
@@ -85,14 +85,7 @@ fetch_key = {
 @commandr.command
 def train(dataset_key, text_version, label_version=None, config_path='config.yaml'):
     """
-    python algo/main.py train semeval2018_task3 -l A -t ek
-    python algo/main.py train semeval2018_task3 -l A -t ek -c config_ntua.yaml
-    python algo/main.py train semeval2018_task3 -l A -t raw -c config_ntua_char.yaml
-
-    python algo/main.py train semeval2019_task3_dev -t ek
-
-    python algo/main.py train semeval2018_task1 -l love
-    python algo/main.py train semeval2014_task9
+    python algo/main93.py train semeval2019_task3_dev -t ek
 
     :param dataset_key: string
     :param text_version: string

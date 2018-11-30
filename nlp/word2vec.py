@@ -272,6 +272,11 @@ def build_glove(input_filename, vocab_filename, output_filename):
         ~/Downloads/ntua_twitter_300.txt \
         ../irony_detection_data/semeval2018_task3/all.vocab.ek \
         ../irony_detection_data/semeval2018_task3/all.w2v.ntua_ek
+
+    python nlp/word2vec.py glove \
+        ~/Downloads/ntua_twitter_300.txt \
+        ../irony_detection_data/semeval2019_task3_dev/all.vocab.ek \
+        ../irony_detection_data/semeval2019_task3_dev/all.w2v.ntua_ek
     """
     original_model = PlainModel(input_filename, separator=' ')
     vocabs = BinModel.load_vocab(vocab_filename)

@@ -71,7 +71,7 @@ class SentenceEmbeddingSimilarity(object):
 
         for i in range(self.length):
             sim_list = [self.sim(i, j, weighted=weighted) for j in range(self.length)]
-            sim_list = filter(lambda _v: _v is not None, sim_list)
+            sim_list = list(filter(lambda _v: _v is not None, sim_list))
             if len(sim_list) == 0.:
                 continue
             max_value, min_value = max(sim_list), min(sim_list)
@@ -126,7 +126,7 @@ def embedding_incongruity(dataset_key, text_version, w2v_version, sim_mode=COS):
 
         with open(path_feat, 'w') as fobj, open(path_feat_weighted, 'w') as fobj_weighted:
             for tokens in tokenized_list:
-                tokens = filter(lambda _t: _t not in punctuations, tokens)
+                tokens = list(filter(lambda _t: _t not in punctuations, tokens))
 
                 vecs = list(map(w2v_model.get, tokens))
                 record = SentenceEmbeddingSimilarity(words=tokens, vecs=vecs, mode=sim_mode)

@@ -14,10 +14,10 @@ def print_evaluation(res):
 
 def tokenized_to_tid_list(tokenized_list, vocab_id_mapping):
     tid_list = list(map(
-        lambda _tokens: filter(
+        lambda _tokens: list(filter(
             lambda _tid: _tid is not None,
             list(map(lambda _t: vocab_id_mapping.get(_t), _tokens))
-        ),
+        )),
         tokenized_list
     ))
     return tid_list

@@ -34,7 +34,7 @@ def load_lookup_table(w2v_model_path, vocabs):
         embedding_dim: int
     """
     w2v_model = PlainModel(w2v_model_path)
-    vocab_list = w2v_model.index.keys()
+    vocab_list = list(w2v_model.index.keys())
 
     not_supported_vocabs = list(filter(lambda _vocab: _vocab not in set(vocab_list), vocabs))
     n_not_supported = len(not_supported_vocabs)

@@ -192,7 +192,7 @@ def train(dataset_key, text_version, label_version=None, config_path='config.yam
 
     best_res = {mode: None for mode in [TRAIN, VALID]}
     no_update_count = {mode: 0 for mode in [TRAIN, VALID]}
-    max_no_update_count = 20
+    max_no_update_count = 10
 
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
@@ -233,10 +233,14 @@ def train(dataset_key, text_version, label_version=None, config_path='config.yam
                     best_res[TRAIN] = res
                     no_update_count[TRAIN] = 0
                     saver.save(sess, save_path=model_output_prefix, global_step=global_step)
+                else:
+                    no_update_count[TRAIN] += 1
             else:
                 if best_res[TRAIN] is None or res[F1_SCORE] > best_res[TRAIN][F1_SCORE]:
                     best_res[TRAIN] = res
-                    no_update_count[VALID] = 0
+                    no_update_count[TRAIN] = 0
+                else:
+                    no_update_count[TRAIN] += 1
 
                 # 计算在验证集上的表现, 不更新模型参数
                 print('VALID')

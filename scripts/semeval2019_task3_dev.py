@@ -67,7 +67,7 @@ def build_ek():
 def build_dev_submit(output_key=None):
     """
     python -m scripts.semeval2019_task3_dev build_dev_submit -o gru_ek_1543492018
-    python3 -m scripts.semeval2019_task3_dev build_dev_submit  -o
+    python3 -m scripts.semeval2019_task3_dev build_dev_submit -o
 
     :param output_key: string
     :return:

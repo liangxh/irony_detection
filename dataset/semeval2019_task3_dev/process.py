@@ -2,7 +2,7 @@
 from __future__ import print_function
 from dataset.semeval2019_task3_dev.config import config
 
-label_str = ['happy', 'angry', 'sad', 'others']
+label_str = ['others', 'happy', 'sad', 'angry']
 label_to_idx = {v: i for i, v in enumerate(label_str)}
 
 

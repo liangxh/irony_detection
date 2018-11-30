@@ -88,7 +88,7 @@ class BinModel(object):
         :param vocab: string
         :return: 若vocab在索引当中则返回词向量(list of float)，否则返回None
         """
-        if isinstance(vocab, str):
+        if isinstance(vocab, str) and hasattr(str, 'decode'):
             vocab = vocab.decode('utf8')
 
         offset = self.index.get(vocab)
@@ -117,7 +117,9 @@ class BinModel(object):
                     if line == '':
                         continue
                     parts = line.split('\t')
-                    vocab = parts[0].decode('utf8')
+                    vocab = parts[0]
+                    if hasattr(str, 'decode'):
+                        vocab = vocab.decode('utf8')
                     vocab_list.add(vocab)
             print(len(vocab_list))
         return vocab_list

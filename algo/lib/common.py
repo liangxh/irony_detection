@@ -40,6 +40,8 @@ def load_lookup_table(w2v_model_path, vocabs):
     n_not_supported = len(not_supported_vocabs)
 
     lookup_table_pretrained = np.asarray([w2v_model.get(_vocab) for _vocab in vocab_list])
+    print('n supported: {}'.format(lookup_table_pretrained.shape[0]))
+    print('n not supported: {}'.format(n_not_supported))
 
     table_mean = lookup_table_pretrained.mean(axis=0)
     table_std = (lookup_table_pretrained - table_mean).std(axis=0)

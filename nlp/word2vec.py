@@ -62,7 +62,7 @@ class PlainModel(object):
         return dim
 
     def get(self, vocab):
-        if isinstance(vocab, str):
+        if isinstance(vocab, str) and hasattr(str, 'decode'):
             vocab = vocab.decode('utf8')
 
         offset = self.index.get(vocab)

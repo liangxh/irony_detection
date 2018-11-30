@@ -85,6 +85,7 @@ fetch_key = {
 @commandr.command
 def train(dataset_key, text_version, label_version=None, config_path='config.yaml'):
     """
+    python -m algo.main93 train semeval2019_task3_dev -t ek
     python3 -m algo.main93 train semeval2019_task3_dev -t ek
 
     :param dataset_key: string

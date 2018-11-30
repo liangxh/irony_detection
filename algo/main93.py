@@ -417,14 +417,8 @@ def clear_output(output_key, dataset_key='semeval2019_task3_dev'):
     :return:
     """
     data_config = getattr(importlib.import_module('dataset.{}.config'.format(dataset_key)), 'config')
-
-    o = raw_input('make sure that you are trying to delete: {}, input y/n: '.format(output_key))
-    if o == 'y':
-        shutil.rmtree(data_config.output_folder(output_key))
-        shutil.rmtree(data_config.model_folder(output_key))
-        print('deleted')
-    else:
-        print('got input {}, nothing done'.format(o))
+    shutil.rmtree(data_config.output_folder(output_key))
+    shutil.rmtree(data_config.model_folder(output_key))
 
 
 if __name__ == '__main__':

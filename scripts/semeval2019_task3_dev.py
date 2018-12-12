@@ -2,6 +2,7 @@
 import re
 import commandr
 from dataset.common.const import *
+from dataset.common.load import load_label_list
 from dataset.semeval2019_task3_dev.process import Processor, label_str
 from dataset.semeval2019_task3_dev.config import config
 
@@ -61,6 +62,31 @@ def build_ek():
             for turn_1, turn_2, turn_3 in zip(*text_ek_turns):
                 text = '{} <turn> {} <turn> {}'.format(turn_1, turn_2, turn_3)
                 file_obj.write(text + '\n')
+
+
+@commandr.command
+def build_data_split():
+    filenames = ['{}.csv'.format(label) for label in label_str]
+    file_objs = map(lambda _f: open(_f, 'w'), filenames)
+
+    mode = TRAIN
+    text_ek_turns = []
+    labels = load_label_list(config.path(TRAIN, LABEL))
+    for i in range(3):
+        path = config.path(mode, 'turn', '{}.ek'.format(i))
+        texts = open(path).read().strip().split('\n')
+        text_ek_turns.append(texts)
+
+    n_sample = len(text_ek_turns[0])
+    for texts in text_ek_turns:
+        assert len(texts) == n_sample
+
+    for label, turn_1, turn_2, turn_3 in zip(labels, *text_ek_turns):
+        text = '{} || {} || {}'.format(turn_1, turn_2, turn_3)
+        file_objs[label].write(text + '\n')
+
+    for obj in file_objs:
+        obj.close()
 
 
 @commandr.command

@@ -215,6 +215,26 @@ class BinModel(object):
             writer.add(token, vec)
         writer.close()
 
+    @classmethod
+    def extract_vocab(cls, filename_model, filename_output):
+        with open(filename_model, 'r') as file_obj, open(filename_output, 'w') as out_obj:
+            header = file_obj.readline().decode('utf8')
+            vocab_size, dim = list(map(int, header.split()))  # throws for invalid file format
+            binary_len = np.dtype(np.float32).itemsize * dim
+            for _ in xrange(vocab_size):
+                ch_list = []
+                while True:
+                    ch = file_obj.read(1)
+                    if ch == b' ':
+                        break
+                    if ch != b'\n':  # ignore newlines in front of words (some binary files have newline, some don't)
+                        ch_list.append(ch)
+                file_obj.read(binary_len)
+
+                token = unicode(b''.join(ch_list), encoding='latin-1')
+                out_obj.write(token.encode('utf8') + '\n')
+                out_obj.flush()
+
 
 @commandr.command('w2v')
 def build_plain(input_filename, vocab_filename, output_filename):
@@ -273,6 +293,18 @@ def build_plain(input_filename, vocab_filename, output_filename):
     os.remove('_index.tmp')
 
 
+@commandr.command('w2v_vocab')
+def build_w2v_vocab(input_filename, output_filename):
+    """
+     python nlp/word2vec.py w2v_vocab ~/Downloads/GoogleNews-vectors-negative300.bin out/google_vocabs.txt
+
+    :param input_filename:
+    :param output_filename:
+    :return:
+    """
+    BinModel.extract_vocab(input_filename, output_filename)
+
+
 @commandr.command('glove')
 def build_glove(input_filename, vocab_filename, output_filename):
     """
@@ -301,6 +333,20 @@ def build_glove(input_filename, vocab_filename, output_filename):
         if vec is not None:
             writer.add(vocab, vec)
     writer.close()
+
+
+@commandr.command('glove_vocab')
+def build_glove_voacb(input_filename, output_filename):
+    """
+    python nlp/word2vec.py glove_vocab ~/Downloads/ntua_twitter_300.txt out/ntua_vocabs.txt
+
+    :param input_filename:
+    :param output_filename:
+    :return:
+    """
+    original_model = PlainModel(input_filename, separator=' ')
+    vocabs = original_model.index.keys()
+    open(output_filename, 'w').write(u'\n'.join(vocabs).encode('utf-8'))
 
 
 @commandr.command('test_glove')

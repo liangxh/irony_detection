@@ -1,8 +1,12 @@
 # -*- coding: utf-8 -*-
 import re
+import emoji
+import json
 import commandr
+from string import punctuation
+from collections import defaultdict
 from dataset.common.const import *
-from dataset.common.load import load_label_list
+from dataset.common.load import load_label_list, load_tokenized_list, load_vocab_list
 from dataset.semeval2019_task3_dev.process import Processor, label_str
 from dataset.semeval2019_task3_dev.config import config
 
@@ -120,6 +124,51 @@ def build_dev_submit(output_key=None):
 
         for line, label in zip(lines, labels):
             o_obj.write('{}\t{}\n'.format(line, label))
+
+
+@commandr.command('analyse_slang')
+def analyse_slang(filename_vocab, key, mode=TRAIN):
+    """
+    python scripts/semeval2019_task3_dev.py analyse_slang out/google_vocabs.txt --key google
+    python scripts/semeval2019_task3_dev.py analyse_slang out/google_vocabs.txt --key google --mode test
+
+    python scripts/semeval2019_task3_dev.py analyse_slang out/ntua_vocabs.txt --key ntua
+    python scripts/semeval2019_task3_dev.py analyse_slang out/ntua_vocabs.txt --key ntua --mode test
+
+    :param filename_vocab:
+    :return:
+    """
+    slang_count = defaultdict(lambda: 0)
+    label_count = defaultdict(lambda: 0)
+
+    vocabs = open(filename_vocab, 'r').read().strip().split('\n')
+    vocabs = set(vocabs)
+    labels = load_label_list(config.path(mode, LABEL))
+    tokenized_list = load_tokenized_list(config.path(mode, TEXT, EK))
+    for tokens, label in zip(tokenized_list, labels):
+        contain_slang = False
+        for token in tokens:
+            if token.startswith('<') and token.endswith('>'):
+                continue
+            if token in emoji.UNICODE_EMOJI or token in punctuation:
+                continue
+            if not re.match('^[a-zA-Z]+$', token):
+                continue
+
+            if token in {'to', 'a', 'and', 'of'}:
+                continue
+
+            if token not in vocabs and token.replace('our', 'or') not in vocabs and token.replace('ise', 'ize') not in vocabs:
+                slang_count[token] += 1
+                contain_slang = True
+        if contain_slang:
+            label_count[label] += 1
+
+    slang_count = sorted(slang_count.items(), key=lambda _item: _item[1], reverse=True)
+    with open('out/{}_{}_slang_tf.txt'.format(key, mode), 'w') as file_obj:
+        for slang, count in slang_count:
+            file_obj.write(u'{}\t{}\n'.format(count, slang).encode('utf8'))
+    json.dump(label_count, open('out/{}_{}_slang_label.json'.format(key, mode), 'w'))
 
 
 if __name__ == '__main__':

@@ -91,7 +91,7 @@ def test():
     res = getMetrics(labels_predict, labels_gold)
     print()
     print(*res[1:])
-    print(microPrecision, microRecall, microF1)
+    print(my_res[PRECISION], my_res[RECALL], my_res[F1_SCORE])
 
 
 def basic_evaluate(gold, pred):

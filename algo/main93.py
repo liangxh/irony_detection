@@ -9,13 +9,12 @@ import numpy as np
 import tensorflow as tf
 from algo.nn.base import BaseNNModel
 from algo.lib.dataset import IndexIterator, SimpleIndexIterator
-from algo.lib.evaluate import basic_evaluate
+from algo.lib.evaluate93 import basic_evaluate
 from algo.model.const import *
 from algo.model.train_config import TrainConfig
 from dataset.common.const import *
 from dataset.common.load import *
 from algo.lib.common import print_evaluation, load_lookup_table, tokenized_to_tid_list, build_random_lookup_table
-from dataset.semeval2018_task3.config import config as semeval2018_task3_date_config
 
 MAX_WORD_SEQ_LEN = 170
 MAX_CHAR_SEQ_LEN = 170
@@ -94,10 +93,6 @@ def train(dataset_key, text_version, label_version=None, config_path='config.yam
     :param config_path: string
     :return:
     """
-    pos_label = None
-    if dataset_key == 'semeval2018_task3' and label_version == 'A':
-        pos_label = 1
-
     config_data = yaml.load(open(config_path))
 
     data_config = getattr(importlib.import_module('dataset.{}.config'.format(dataset_key)), 'config')
@@ -216,7 +211,7 @@ def train(dataset_key, text_version, label_version=None, config_path='config.yam
 
             labels_predict, labels_gold = labels_predict[:n_sample], labels_gold[:n_sample]
             labels_predict, labels_gold = labels_predict[:n_sample], labels_gold[:n_sample]
-            res = basic_evaluate(gold=labels_gold, pred=labels_predict, pos_label=pos_label)
+            res = basic_evaluate(gold=labels_gold, pred=labels_predict)
             last_eval[TRAIN] = res
             print_evaluation(res)
 
@@ -250,7 +245,7 @@ def train(dataset_key, text_version, label_version=None, config_path='config.yam
                     labels_gold += dataset[LABEL_GOLD][batch_index].tolist()
 
                 labels_predict, labels_gold = labels_predict[:n_sample], labels_gold[:n_sample]
-                res = basic_evaluate(gold=labels_gold, pred=labels_predict, pos_label=pos_label)
+                res = basic_evaluate(gold=labels_gold, pred=labels_predict)
                 last_eval[VALID] = res
                 print_evaluation(res)
 
@@ -303,7 +298,7 @@ def train(dataset_key, text_version, label_version=None, config_path='config.yam
             hidden_feats = hidden_feats[:n_sample]
 
             if mode == TEST:
-                res = basic_evaluate(gold=labels_gold, pred=labels_predict, pos_label=pos_label)
+                res = basic_evaluate(gold=labels_gold, pred=labels_predict)
                 best_res[TEST] = res
 
             # 导出隐藏层
@@ -331,70 +326,11 @@ def train(dataset_key, text_version, label_version=None, config_path='config.yam
     print('OUTPUT_KEY: {}'.format(output_key))
 
 
-@commandr.command('feat')
-def build_feat(dataset_key_src, output_key_src, dataset_key_dest='semeval2018_task3', text_version=TEXT):
-    """
-    python algo/main.py feat semeval2014_task9 A_gru_ek_1541081331
-    python algo/main.py feat semeval2018_task1 love_gru_1539178720
-
-    :param dataset_key_src: 模型对应的dataset_key
-    :param output_key_src: 模型对应的output_key
-    :param dataset_key_dest: 需要生成特征向量的数据集对应的dataset_key
-    :param text_version:
-    :return:
-    """
-    output_key = '{}.{}'.format(dataset_key_src, output_key_src)
-    print('OUTPUT_KEY: {}'.format(output_key))
-
-    # 获取模型文件所在路径
-    data_src_config = getattr(importlib.import_module('dataset.{}.config'.format(dataset_key_src)), 'config')
-    model_output_prefix = data_src_config.model_path(key=output_key_src)
-    # 加载模型对应字典
-    vocab_id_mapping = json.load(open(data_src_config.output_path(output_key_src, ALL, VOCAB_ID_MAPPING), 'r'))
-
-    # 加载训练数据
-    data_config = getattr(importlib.import_module('dataset.{}.config'.format(dataset_key_dest)), 'config')
-    data_config.prepare_output_folder(output_key=output_key)
-    datasets = load_dataset(
-        data_config=data_config, analyzer=WORD, vocab_id_mapping=vocab_id_mapping, seq_len=MAX_SEQ_LEN,
-        with_label=False, text_version=text_version
-    )
-    batch_size = 200
-
-    with tf.Session() as sess:
-        prefix_checkpoint = tf.train.latest_checkpoint(model_output_prefix)
-        saver = tf.train.import_meta_graph('{}.meta'.format(prefix_checkpoint))
-        saver.restore(sess, prefix_checkpoint)
-
-        nn = BaseNNModel(config=None)
-        nn.set_graph(tf.get_default_graph())
-        fetches = {mode: {_key: nn.var(_key) for _key in [HIDDEN_FEAT, ]} for mode in [TEST, ]}
-
-        for mode in [TRAIN, TEST]:
-            dataset = datasets[mode]
-            index_iterator = SimpleIndexIterator(n_sample=dataset[SEQ_LEN].shape[0])
-            n_sample = index_iterator.n_sample()
-
-            hidden_feats = list()
-            for batch_index in index_iterator.iterate(batch_size):
-                feed_dict = {nn.var(_key): dataset[_key][batch_index] for _key in feed_key[TEST]}
-                res = sess.run(fetches=fetches[TEST], feed_dict=feed_dict)
-                hidden_feats += res[HIDDEN_FEAT].tolist()
-            hidden_feats = hidden_feats[:n_sample]
-
-            # 导出隐藏层
-            with open(data_config.output_path(output_key, mode, HIDDEN_FEAT), 'w') as file_obj:
-                for _feat in hidden_feats:
-                    file_obj.write('\t'.join(map(str, _feat)) + '\n')
-
-    print('OUTPUT_KEY: {}'.format(output_key))
-
-
 @commandr.command('eval')
 def show_eval(dataset_key, output_key):
     """
     [Usage]
-    python algo/main.py eval semeval2018_task3 -o A_ntua_ek_1542454066
+    python algo/main.py eval semeval2019_task3_dev -o A_ntua_ek_1542454066
 
     :param dataset_key: string
     :param output_key: string
@@ -413,7 +349,7 @@ def show_eval(dataset_key, output_key):
 def clear_output(output_key, dataset_key='semeval2019_task3_dev'):
     """
     [Usage]
-    python algo/main.py clear semeval2018_task3 A_ntua_ek_1542595525
+    python algo/main.py clear A_ntua_ek_1542595525
     python3 algo.main clear xxxxxxx
 
     :param dataset_key: string

@@ -102,13 +102,11 @@ def basic_evaluate(gold, pred):
 
     match = predictions * ground
 
-    idx = np.asarray(range(n_sample))
+    base = float(predictions[:, 1:].sum())
+    microPrecision = float(match[:, 1:].sum()) / base if base != 0. else 0.
 
-    print(match[:, 1:].sum(), predictions[:, 1:].sum())
-    print(match[:, 1:].sum(), ground[:, 1:].sum())
-
-    microPrecision = float(match[:, 1:].sum()) / float(predictions[:, 1:].sum())
-    microRecall = float(match[:, 1:].sum()) / float(ground[:, 1:].sum())
+    base = float(ground[:, 1:].sum())
+    microRecall = float(match[:, 1:].sum()) / base if base != 0. else 0.
 
     microF1 = (2 * microRecall * microPrecision) / (microPrecision + microRecall) if (microPrecision + microRecall) > 0 else 0
     accuracy = float(match.sum()) / n_sample

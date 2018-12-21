@@ -95,6 +95,11 @@ def test():
 
 
 def basic_evaluate(gold, pred):
+    dim = max(gold + pred) + 1
+    matrix = np.zeros((dim, dim))
+    for g, p in zip(gold, pred):
+        matrix[g][p] += 1
+
     n_sample = len(gold)
 
     predictions = np.asarray(list(map(label_to_one_hot, pred)))
@@ -115,7 +120,8 @@ def basic_evaluate(gold, pred):
         ACCURACY: accuracy,
         PRECISION: microPrecision,
         RECALL: microRecall,
-        F1_SCORE: microF1
+        F1_SCORE: microF1,
+        CONFUSION_MATRIX: matrix.tolist()
     }
 
 

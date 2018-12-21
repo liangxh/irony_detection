@@ -32,11 +32,11 @@ def build_basic():
 
     labels = list()
     text_turns = [[] for _ in range(3)]
-    for turn_1, turn_2, turn_3 in Processor.load_origin_dev_no_labels():
+    for turn_1, turn_2, turn_3, label_idx in Processor.load_origin_dev():
         turns = [turn_1, turn_2, turn_3]
         for i, r in enumerate(turns):
             text_turns[i].append(r)
-        labels.append(0)
+        labels.append(label_idx)
 
     for i, texts in enumerate(text_turns):
         path = config.path(TEST, 'turn', str(i))

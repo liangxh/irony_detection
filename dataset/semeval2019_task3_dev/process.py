@@ -8,8 +8,7 @@ label_to_idx = {v: i for i, v in enumerate(label_str)}
 
 class Processor(object):
     @classmethod
-    def load_origin_train(cls):
-        path = config.path_train
+    def load_origin(cls, path):
         dataset = list()
         with open(path, 'r') as file_obj:
             file_obj.readline()
@@ -27,6 +26,14 @@ class Processor(object):
                 sample = (turn_1, turn_2, turn_3, label_idx)
                 dataset.append(sample)
         return dataset
+
+    @classmethod
+    def load_origin_train(cls):
+        return cls.load_origin(config.path_train)
+
+    @classmethod
+    def load_origin_dev(cls):
+        return cls.load_origin(config.path_dev)
 
     @classmethod
     def load_origin_dev_no_labels(cls):

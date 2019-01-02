@@ -57,7 +57,7 @@ def load_dataset(data_config, train_config, label_version=None):
         labels_gold = load_label_list(label_path)
 
         datasets[mode] = {
-            LABEL_GOLD: np.asarray(labels_gold),
+            LABEL_GOLD: labels_gold,
             FEATS: feats
         }
     return datasets

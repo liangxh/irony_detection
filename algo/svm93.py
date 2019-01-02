@@ -74,10 +74,6 @@ def main(dataset_key, label_version=None, config_path='config_svm93.yaml', kerne
     :param kernel: string
     :return:
     """
-    pos_label = None
-    if dataset_key == 'semeval2018_task3' and label_version == 'A':
-        pos_label = 1
-
     config_data = yaml.load(open(config_path))
     train_config = Config(data=config_data)
 
@@ -110,6 +106,7 @@ def main(dataset_key, label_version=None, config_path='config_svm93.yaml', kerne
         res = basic_evaluate(gold=labels_gold, pred=labels_predict)
 
         print(mode)
+        print(res)
         print_evaluation(res)
         print()
 

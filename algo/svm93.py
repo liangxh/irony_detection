@@ -64,9 +64,9 @@ def load_dataset(data_config, train_config, label_version=None):
 
 
 @commandr.command
-def main(dataset_key, label_version=None, config_path='config_svm.yaml', kernel='rbf'):
+def main(dataset_key, label_version=None, config_path='config_svm93.yaml', kernel='rbf'):
     """
-    python algo/svm.py main semeval2018_task3 A
+    python3 -m algo.svm93 main semeval2019_task3_dev
 
     :param dataset_key: string
     :param label_version: string or None
@@ -107,7 +107,7 @@ def main(dataset_key, label_version=None, config_path='config_svm.yaml', kernel=
         X = datasets[mode][FEATS]
         labels_predict = clf.predict(X=X)
         labels_gold = datasets[mode][LABEL_GOLD]
-        res = basic_evaluate(gold=labels_gold, pred=labels_predict, pos_label=pos_label)
+        res = basic_evaluate(gold=labels_gold, pred=labels_predict)
 
         print(mode)
         print_evaluation(res)

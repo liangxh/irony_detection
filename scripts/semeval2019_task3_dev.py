@@ -179,5 +179,47 @@ def analyse_slang(filename_vocab, key, mode=TRAIN):
     json.dump(label_count, open('out/{}_{}_slang_label.json'.format(key, mode), 'w'))
 
 
+@commandr.command
+def analyse_cover():
+    train_tokenized_list = load_tokenized_list(config.path(TRAIN, TEXT, EK))
+    test_tokenized_list = load_tokenized_list(config.path(TEST, TEXT, EK))
+    test_labels = load_label_list(config.path(TEST, LABEL))
+
+    train_vocab = set()
+    for tokens in train_tokenized_list:
+        train_vocab |= set(tokens)
+
+    unknown_vocab_dist = defaultdict(lambda: defaultdict(lambda: list()))
+    unknown_sample = defaultdict(lambda: 0)
+
+    test_vocab = set()
+    for tokens, label in zip(test_tokenized_list, test_labels):
+        line = ' '.join(tokens)
+        tokens = set(tokens)
+        test_vocab |= tokens
+        unknown = tokens - train_vocab
+        if len(unknown) > 0:
+            unknown_sample[label] += 1
+            for token in unknown:
+                unknown_vocab_dist[label][token] += [line, ]
+
+    print len(train_vocab - test_vocab)
+    print len(test_vocab - train_vocab)
+    new_vocab = test_vocab - train_vocab
+    with open('out/new_vocab_in_test.txt', 'w') as file_obj:
+        file_obj.write(u'\n'.join(new_vocab).encode('utf8'))
+
+    with open('out/new_vocab_dist.txt', 'w') as file_obj:
+        for i in range(4):
+            label = label_str[i]
+            tf = unknown_vocab_dist[i]
+            tf = sorted(tf.items(), key=lambda _item: -len(_item[1]))
+            file_obj.write('{}: n_sample: {}; n_vocab: {}\n'.format(label, unknown_sample[i], len(tf)))
+            for t, f in tf:
+                file_obj.write(u'\t{}\t{}\n'.format(len(f), t).encode('utf8'))
+                for fi in f:
+                    file_obj.write(u'\t\t{}\n'.format(fi).encode('utf8'))
+
+
 if __name__ == '__main__':
     commandr.Run()

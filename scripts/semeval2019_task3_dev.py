@@ -30,6 +30,10 @@ def build_basic():
     path = config.path(TRAIN, LABEL)
     open(path, 'w').write('\n'.join(map(str, labels)) + '\n')
 
+    binary_labels = [0 if label == 0 else 1 for label in labels]
+    path = config.path(TRAIN, LABEL, 'binary')
+    open(path, 'w').write('\n'.join(map(str, binary_labels)) + '\n')
+
     labels = list()
     text_turns = [[] for _ in range(3)]
     for turn_1, turn_2, turn_3, label_idx in Processor.load_origin_dev():
@@ -44,6 +48,10 @@ def build_basic():
 
     path = config.path(TEST, LABEL)
     open(path, 'w').write('\n'.join(map(str, labels)) + '\n')
+
+    binary_labels = [0 if label == 0 else 1 for label in labels]
+    path = config.path(TEST, LABEL, 'binary')
+    open(path, 'w').write('\n'.join(map(str, binary_labels)) + '\n')
 
 
 @commandr.command

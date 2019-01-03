@@ -45,7 +45,7 @@ SEQ_LEN_2 = 'seq_len_2'
 
 
 class NNModel(BaseNNModel):
-    name = 'naive93'
+    name = 'main93_v2'
 
     def build_neural_network(self, lookup_table):
         test_mode = tf.placeholder(tf.int8, None, name=TEST_MODE)
@@ -75,43 +75,23 @@ class NNModel(BaseNNModel):
         embedded_2 = tf.nn.embedding_lookup(lookup_table, tid_2)
         embedded_2 = add_gaussian_noise_layer(embedded_2, stddev=self.config.embedding_noise_stddev, test_mode=test_mode)
 
-        with tf.variable_scope("blstm_layer_0") as scope:
-            cell_fw = rnn_cell.build_lstm(self.config.rnn_dim, dropout_keep_prob=dropout_keep_prob)
-            cell_bw = rnn_cell.build_lstm(self.config.rnn_dim, dropout_keep_prob=dropout_keep_prob)
-
-            outputs, output_states = tf.nn.bidirectional_dynamic_rnn(
-                cell_fw, cell_bw, embedded_0, seq_len_0,
-                cell_fw.zero_state(self.config.batch_size, tf.float32),
-                cell_bw.zero_state(self.config.batch_size, tf.float32)
+        with tf.variable_scope("rnn_0") as scope:
+            _, rnn_last_states_0 = tf.nn.dynamic_rnn(
+                rnn_cell.build_gru(self.config.rnn_dim, dropout_keep_prob=dropout_keep_prob),
+                inputs=embedded_0, sequence_length=seq_len_0, dtype=tf.float32
             )
-            outputs = tf.concat(outputs, axis=-1)
-        attention_output_0, _ = attention.build(outputs, self.config.attention_dim)
-
-        with tf.variable_scope("blstm_layer_1") as scope:
-            cell_fw = rnn_cell.build_lstm(self.config.rnn_dim, dropout_keep_prob=dropout_keep_prob)
-            cell_bw = rnn_cell.build_lstm(self.config.rnn_dim, dropout_keep_prob=dropout_keep_prob)
-
-            outputs, output_states = tf.nn.bidirectional_dynamic_rnn(
-                cell_fw, cell_bw, embedded_1, seq_len_1,
-                cell_fw.zero_state(self.config.batch_size, tf.float32),
-                cell_bw.zero_state(self.config.batch_size, tf.float32)
+        with tf.variable_scope("rnn_1") as scope:
+            _, rnn_last_states_1 = tf.nn.dynamic_rnn(
+                rnn_cell.build_gru(self.config.rnn_dim, dropout_keep_prob=dropout_keep_prob),
+                inputs=embedded_1, sequence_length=seq_len_1, dtype=tf.float32
             )
-            outputs = tf.concat(outputs, axis=-1)
-        attention_output_1, _ = attention.build(outputs, self.config.attention_dim)
-
-        with tf.variable_scope("blstm_layer_2") as scope:
-            cell_fw = rnn_cell.build_lstm(self.config.rnn_dim, dropout_keep_prob=dropout_keep_prob)
-            cell_bw = rnn_cell.build_lstm(self.config.rnn_dim, dropout_keep_prob=dropout_keep_prob)
-
-            outputs, output_states = tf.nn.bidirectional_dynamic_rnn(
-                cell_fw, cell_bw, embedded_2, seq_len_2,
-                cell_fw.zero_state(self.config.batch_size, tf.float32),
-                cell_bw.zero_state(self.config.batch_size, tf.float32)
+        with tf.variable_scope("rnn_2") as scope:
+            _, rnn_last_states_2 = tf.nn.dynamic_rnn(
+                rnn_cell.build_gru(self.config.rnn_dim, dropout_keep_prob=dropout_keep_prob),
+                inputs=embedded_2, sequence_length=seq_len_2, dtype=tf.float32
             )
-            outputs = tf.concat(outputs, axis=-1)
-        attention_output_2, _ = attention.build(outputs, self.config.attention_dim)
 
-        dense_input = tf.concat([attention_output_0, attention_output_1, attention_output_2], axis=1, name=HIDDEN_FEAT)
+        dense_input = tf.concat([rnn_last_states_0, rnn_last_states_1, rnn_last_states_2], axis=1, name=HIDDEN_FEAT)
 
         y, w, b = dense.build(dense_input, dim_output=self.config.output_dim, output_name=PROB_PREDICT)
         # 计算loss

@@ -14,7 +14,7 @@ nn:
   attention:
     dim: 50
   learning_rate:
-    init: 0.1
+    init: 0.01
     decay_steps: 1
     decay_rate: 0.9
   l2_reg_lambda: 0.1

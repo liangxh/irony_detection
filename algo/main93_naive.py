@@ -155,8 +155,6 @@ def load_dataset(data_config, vocab_id_mapping, seq_len, with_label=True, label_
         tid_list_2 = trim_tid_list(tid_list_2, MAX_SEQ_LEN)
         seq_len_2 = seq_to_len_list(tid_list_2)
 
-        seq_len_2 = filter(lambda v: v < 132, seq_len_2)
-
         datasets[mode] = {
             TID_0: tid_list_0,
             TID_1: tid_list_1,

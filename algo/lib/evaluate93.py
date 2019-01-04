@@ -95,7 +95,7 @@ def test():
 
 
 def basic_evaluate(gold, pred):
-    dim = max(gold + pred) + 1
+    dim = max(max(gold), max(pred)) + 1
     matrix = np.zeros((dim, dim))
     for g, p in zip(gold, pred):
         matrix[g][p] += 1

@@ -21,11 +21,6 @@ from dataset.common.load import *
 from dataset.semeval2019_task3_dev.config import config as data_config
 
 
-MAX_SEQ_LEN = 30
-CHAR = 'char'
-WORD = 'word'
-
-
 class NNConfig(BaseNNConfig):
     @property
     def rnn_dim(self):
@@ -45,7 +40,7 @@ SEQ_LEN_2 = 'seq_len_2'
 
 
 class NNModel(BaseNNModel):
-    name = 'main93_v3'
+    name = 'main93_loss'
 
     def build_neural_network(self, lookup_table):
         test_mode = tf.placeholder(tf.int8, None, name=TEST_MODE)
@@ -94,7 +89,6 @@ class NNModel(BaseNNModel):
         dense_input = tf.concat([rnn_last_states_0, rnn_last_states_1, rnn_last_states_2], axis=1, name=HIDDEN_FEAT)
 
         y, w, b = dense.build(dense_input, dim_output=self.config.output_dim, output_name=PROB_PREDICT)
-
         # 计算loss
         _loss_1 = tf.reduce_mean(tf.losses.sparse_softmax_cross_entropy(
             logits=y, labels=label_gold, weights=sample_weights))
@@ -103,13 +97,12 @@ class NNModel(BaseNNModel):
         if self.config.l2_reg_lambda is not None and self.config.l2_reg_lambda > 0:
             _loss_2 += self.config.l2_reg_lambda * tf.nn.l2_loss(w)
 
-        y_bin = tf.concat([
-            tf.reshape(y[:, 0], [-1, 1]),
-            tf.reshape(tf.reduce_max(y[:, 1:], reduction_indices=[1]), [-1, 1])
-        ], axis=1)
+        y, w, b = dense.build(dense_input, dim_output=2)
+        # 计算loss
         label_gold_bin = tf.clip_by_value(label_gold, 0, 1)
+        # 计算loss
         _loss_3 = tf.reduce_mean(tf.losses.sparse_softmax_cross_entropy(
-            logits=y_bin, labels=label_gold_bin, weights=sample_weights))
+            logits=y, labels=label_gold_bin, weights=sample_weights))
 
         loss = tf.add(tf.add(_loss_1, _loss_2), _loss_3, name=LOSS)
 
@@ -121,7 +114,7 @@ class NNModel(BaseNNModel):
         self.set_graph(graph=tf.get_default_graph())
 
 
-def load_dataset(data_config, vocab_id_mapping, seq_len, with_label=True, label_version=None, text_version=None):
+def load_dataset(vocab_id_mapping, max_seq_len, with_label=True, label_version=None, text_version=None):
     def seq_to_len_list(seq_list):
         return list(map(len, seq_list))
 
@@ -134,15 +127,15 @@ def load_dataset(data_config, vocab_id_mapping, seq_len, with_label=True, label_
     datasets = dict()
     for mode in [TRAIN, TEST]:
         tid_list_0 = tokenized_to_tid_list(load_tokenized_list(data_config.path(mode, TURN, '0.ek')), vocab_id_mapping)
-        tid_list_0 = trim_tid_list(tid_list_0, MAX_SEQ_LEN)
+        tid_list_0 = trim_tid_list(tid_list_0, max_seq_len)
         seq_len_0 = seq_to_len_list(tid_list_0)
 
         tid_list_1 = tokenized_to_tid_list(load_tokenized_list(data_config.path(mode, TURN, '1.ek')), vocab_id_mapping)
-        tid_list_1 = trim_tid_list(tid_list_1, MAX_SEQ_LEN)
+        tid_list_1 = trim_tid_list(tid_list_1, max_seq_len)
         seq_len_1 = seq_to_len_list(tid_list_1)
 
         tid_list_2 = tokenized_to_tid_list(load_tokenized_list(data_config.path(mode, TURN, '2.ek')), vocab_id_mapping)
-        tid_list_2 = trim_tid_list(tid_list_2, MAX_SEQ_LEN)
+        tid_list_2 = trim_tid_list(tid_list_2, max_seq_len)
         seq_len_2 = seq_to_len_list(tid_list_2)
 
         datasets[mode] = {
@@ -158,24 +151,9 @@ def load_dataset(data_config, vocab_id_mapping, seq_len, with_label=True, label_
             label_list = load_label_list(label_path)
             datasets[mode][LABEL_GOLD] = np.asarray(label_list)
 
-    max_seq_len = -1
-    for mode, _dataset in datasets.items():
-        print(mode, _dataset[SEQ_LEN_0].max(),
-            _dataset[SEQ_LEN_1].max(),
-            _dataset[SEQ_LEN_2].max())
-        max_seq_len = max(
-            max_seq_len,
-            _dataset[SEQ_LEN_0].max(),
-            _dataset[SEQ_LEN_1].max(),
-            _dataset[SEQ_LEN_2].max()
-        )
-
-    if seq_len < max_seq_len:
-        raise ValueError('seq_len set as {}, got max seq_len = {}'.format(seq_len, max_seq_len))
-
     for mode in [TRAIN, TEST]:
         for key in [TID_0, TID_1, TID_2]:
-            datasets[mode][key] = np.asarray(zero_pad_seq_list(datasets[mode][key], seq_len))
+            datasets[mode][key] = np.asarray(zero_pad_seq_list(datasets[mode][key], max_seq_len))
 
     if with_label:
         output_dim = max(datasets[TRAIN][LABEL_GOLD]) + 1
@@ -227,23 +205,22 @@ def train(text_version='ek', label_version=None, config_path='config93_naive.yam
     # 加载字典集
     # 在模型中会采用所有模型中支持的词向量, 并为有足够出现次数的单词随机生成词向量
     vocab_meta_list = load_vocab_list(vocab_train_path)
-    vocabs = [_meta['t'] for _meta in vocab_meta_list if _meta['tf'] >= config_data[WORD]['min_tf']]
+    vocabs = [_meta['t'] for _meta in vocab_meta_list if _meta['tf'] >= config_data['word']['min_tf']]
 
     # 加载词向量与相关数据
     lookup_table, vocab_id_mapping, embedding_dim = load_lookup_table(
         w2v_model_path=w2v_model_path, vocabs=vocabs)
     json.dump(vocab_id_mapping, open(data_config.output_path(output_key, ALL, VOCAB_ID_MAPPING), 'w'))
-    max_seq_len = MAX_SEQ_LEN
-
-    # 加载训练数据
-    datasets, output_dim = load_dataset(
-        data_config=data_config, vocab_id_mapping=vocab_id_mapping, seq_len=max_seq_len,
-        with_label=True, label_version=label_version, text_version=text_version
-    )
 
     # 加载配置
     nn_config = NNConfig(config_data)
     train_config = TrainConfig(config_data['train'])
+
+    # 加载训练数据
+    datasets, output_dim = load_dataset(
+        vocab_id_mapping=vocab_id_mapping, max_seq_len=nn_config.seq_len,
+        with_label=True, label_version=label_version, text_version=text_version
+    )
 
     # 初始化数据集的检索
     index_iterators = {mode: IndexIterator(datasets[mode][LABEL_GOLD]) for mode in [TRAIN, TEST]}
@@ -263,7 +240,6 @@ def train(text_version='ek', label_version=None, config_path='config93_naive.yam
     # 基于加载的数据更新配置
     nn_config.set_embedding_dim(embedding_dim)
     nn_config.set_output_dim(output_dim)
-    nn_config.set_seq_len(max_seq_len)
     # 搭建神经网络
     nn = NNModel(config=nn_config)
     nn.build_neural_network(lookup_table=lookup_table)

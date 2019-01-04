@@ -15,6 +15,7 @@ from algo.model.train_config import TrainConfig
 from dataset.common.const import *
 from dataset.common.load import *
 from algo.lib.common import print_evaluation, load_lookup_table, tokenized_to_tid_list, build_random_lookup_table
+from dataset.semeval2019_task3_dev.config import config as data_config
 
 MAX_WORD_SEQ_LEN = 170
 MAX_CHAR_SEQ_LEN = 170
@@ -94,8 +95,6 @@ def train(dataset_key, text_version, label_version=None, config_path='config.yam
     :return:
     """
     config_data = yaml.load(open(config_path))
-
-    data_config = getattr(importlib.import_module('dataset.{}.config'.format(dataset_key)), 'config')
 
     output_key = '{}_{}_{}'.format(config_data['module'].rsplit('.', 1)[1], text_version, int(time.time()))
     if label_version is not None:
@@ -327,17 +326,14 @@ def train(dataset_key, text_version, label_version=None, config_path='config.yam
 
 
 @commandr.command('eval')
-def show_eval(dataset_key, output_key):
+def show_eval(output_key):
     """
     [Usage]
-    python algo/main.py eval semeval2019_task3_dev -o A_ntua_ek_1542454066
+    python algo/main.py eval A_ntua_ek_1542454066
 
-    :param dataset_key: string
     :param output_key: string
     :return:
     """
-    data_config = getattr(importlib.import_module('dataset.{}.config'.format(dataset_key)), 'config')
-
     for mode in [TRAIN, TEST]:
         res = json.load(open(data_config.output_path(output_key, mode, EVALUATION)))
         print(mode)
@@ -346,19 +342,32 @@ def show_eval(dataset_key, output_key):
 
 
 @commandr.command('clear')
-def clear_output(output_key, dataset_key='semeval2019_task3_dev'):
+def clear_output(output_key):
     """
     [Usage]
     python algo/main.py clear A_ntua_ek_1542595525
-    python3 algo.main clear xxxxxxx
+    python3 -m algo.main93 clear xxxxxxx
 
     :param dataset_key: string
     :param output_key: string
     :return:
     """
-    data_config = getattr(importlib.import_module('dataset.{}.config'.format(dataset_key)), 'config')
     shutil.rmtree(data_config.output_folder(output_key))
     shutil.rmtree(data_config.model_folder(output_key))
+
+
+@commandr.command('config')
+def show_config(output_key):
+    """
+    [Usage]
+    python3 -m algo.main93 config xxxxxx
+
+    :param output_key:
+    :return:
+    """
+    path = data_config.output_path(output_key, ALL, CONFIG)
+    print(open(path).read())
+    print(path)
 
 
 if __name__ == '__main__':

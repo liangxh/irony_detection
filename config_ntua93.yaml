@@ -8,7 +8,7 @@ char:
   embedding_dim: 25
 
 nn:
-  seq_len: _
+  seq_len: 30
   embedding:
     trainable: False
     noise_stddev: 0.1

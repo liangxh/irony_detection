@@ -338,8 +338,9 @@ def show_eval(output_key):
         res = json.load(open(data_config.output_path(output_key, mode, EVALUATION)))
         print(mode)
         print_evaluation(res)
-        print(res)
-
+        for col in res[CONFUSION_MATRIX]:
+            print(','.join(map(str, col)))
+        print
 
 @commandr.command('clear')
 def clear_output(output_key):

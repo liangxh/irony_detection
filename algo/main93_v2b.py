@@ -40,7 +40,7 @@ SEQ_LEN_2 = 'seq_len_2'
 
 
 class NNModel(BaseNNModel):
-    name = 'main93_v2'
+    name = 'm93_v2b'
 
     def build_neural_network(self, lookup_table):
         test_mode = tf.placeholder(tf.int8, None, name=TEST_MODE)

@@ -69,7 +69,7 @@ def load_lookup_table2(w2v_model_path, vocabs):
         embedding_dim: int
     """
     w2v_model = PlainModel(w2v_model_path)
-    vocab_list = ['ZERO_VEC', ] + list(w2v_model.index.keys())
+    vocab_list = list(w2v_model.index.keys())
 
     not_supported_vocabs = list(filter(lambda _vocab: _vocab not in set(vocab_list), vocabs))
     n_not_supported = len(not_supported_vocabs)
@@ -87,7 +87,7 @@ def load_lookup_table2(w2v_model_path, vocabs):
 
     lookup_table = np.concatenate([zero_vec, lookup_table_pretrained, lookup_table_patch])
 
-    vocab_list += not_supported_vocabs
+    vocab_list = ['ZERO_VEC', ] + vocab_list + not_supported_vocabs
     vocab_id_mapping = {_vocab: _i for _i, _vocab in enumerate(vocab_list)}
 
     embedding_dim = w2v_model.dim

@@ -13,10 +13,13 @@ nn:
     dim: 50
   attention:
     dim: 50
+  cnn:
+    kernel_size: 3
+    filter_num: 32
   learning_rate:
-    init: 0.01
+    init: 0.005
     decay_steps: 1
-    decay_rate: 0.9
+    decay_rate: 0.95
   l2_reg_lambda: 0.1
   output:
     dim: _

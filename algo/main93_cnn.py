@@ -11,7 +11,7 @@ from algo.lib.dataset import IndexIterator
 from algo.lib.evaluate93 import basic_evaluate
 from algo.model.const import *
 from algo.model.train_config import TrainConfig
-from algo.lib.common import print_evaluation, load_lookup_table, tokenized_to_tid_list, build_random_lookup_table
+from algo.lib.common import print_evaluation, load_lookup_table2, tokenized_to_tid_list, build_random_lookup_table
 from algo.model.nn_config import BaseNNConfig
 from algo.nn.base import BaseNNModel
 from algo.nn.common import dense, rnn_cell, attention, cnn
@@ -204,7 +204,7 @@ def train(text_version='ek', label_version=None, config_path='config93_naive.yam
     vocabs = [_meta['t'] for _meta in vocab_meta_list if _meta['tf'] >= config_data['word']['min_tf']]
 
     # 加载词向量与相关数据
-    lookup_table, vocab_id_mapping, embedding_dim = load_lookup_table(
+    lookup_table, vocab_id_mapping, embedding_dim = load_lookup_table2(
         w2v_model_path=w2v_model_path, vocabs=vocabs)
     json.dump(vocab_id_mapping, open(data_config.output_path(output_key, ALL, VOCAB_ID_MAPPING), 'w'))
 

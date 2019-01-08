@@ -119,7 +119,7 @@ def main(ensemble_mode, config_path='config93_ensemble.yaml', build_analysis=Fal
         raise ValueError('unknown mode: {}'.format(ensemble_mode))
 
     for mode in [TRAIN, TEST]:
-        res = basic_evaluate(gold=labels_gold[mode], pred=labels_predict[mode], pos_label=pos_label)
+        res = basic_evaluate(gold=labels_gold[mode], pred=labels_predict[mode])
         print(mode)
         print_evaluation(res)
         print()

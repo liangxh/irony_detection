@@ -126,7 +126,7 @@ def main(ensemble_mode, config_path='config93_ensemble.yaml', build_analysis=Fal
 
         if build_analysis:
             output_path = data_config.path(mode, ANALYSIS, WRONG_PREDICT)
-            text_list = load_text_list(data_config.path(mode, TEXT))
+            text_list = load_text_list(data_config.path(mode, TEXT, EK))
             res = generate_wrong_prediction_report(
                 labels_gold=labels_gold[mode], labels_predict=labels_predict[mode], text_list=text_list)
             with open(output_path, 'w') as file_obj:

@@ -91,6 +91,7 @@ class NNModel(BaseNNModel):
             last_state_2 = cnn.max_pooling(cnn_output)
 
         dense_input = tf.concat([last_state_0, last_state_1, last_state_2], axis=1, name=HIDDEN_FEAT)
+        dense_input = tf.nn.dropout(dense_input, keep_prob=dropout_keep_prob)
 
         y, w, b = dense.build(dense_input, dim_output=self.config.output_dim, output_name=PROB_PREDICT)
         # 计算loss

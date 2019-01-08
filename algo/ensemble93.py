@@ -7,7 +7,7 @@ from algo.model.const import *
 from dataset.semeval2019_task3_dev.config import data_config
 from dataset.common.const import *
 from dataset.common.load import *
-from algo.lib.evaluate import basic_evaluate
+from algo.lib.evaluate93 import basic_evaluate
 from algo.lib.common import print_evaluation
 from algo.lib.common import generate_wrong_prediction_report
 

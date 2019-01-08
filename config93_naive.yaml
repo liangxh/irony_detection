@@ -16,6 +16,11 @@ nn:
   cnn:
     kernel_size: 3
     filter_num: 32
+  cnns:
+    - kernel_size: 5
+      filter_num: 32
+    - kernel_size: 3
+      filter_num: 16
   learning_rate:
     init: 0.005
     decay_steps: 1

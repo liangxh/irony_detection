@@ -4,7 +4,7 @@ import commandr
 import numpy as np
 import yaml
 from algo.model.const import *
-from dataset.semeval2019_task3_dev.config import data_config
+from dataset.semeval2019_task3_dev.config import config as data_config
 from dataset.common.const import *
 from dataset.common.load import *
 from algo.lib.evaluate93 import basic_evaluate

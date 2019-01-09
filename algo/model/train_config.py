@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from algo.model.const import *
 
 
 class TrainConfig(object):
@@ -28,3 +29,7 @@ class TrainConfig(object):
     @property
     def use_class_weights(self):
         return self.data['use_class_weights']
+
+    @property
+    def early_stop_metric(self):
+        return self.data['early_stop_metric'] if 'early_stop_metric' in self.data else F1_SCORE

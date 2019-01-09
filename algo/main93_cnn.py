@@ -11,10 +11,10 @@ from algo.lib.dataset import IndexIterator
 from algo.lib.evaluate93 import basic_evaluate
 from algo.model.const import *
 from algo.model.train_config import TrainConfig
-from algo.lib.common import print_evaluation, load_lookup_table2, tokenized_to_tid_list, build_random_lookup_table
+from algo.lib.common import print_evaluation, load_lookup_table2, tokenized_to_tid_list
 from algo.model.nn_config import BaseNNConfig
 from algo.nn.base import BaseNNModel
-from algo.nn.common import dense, rnn_cell, attention, cnn
+from algo.nn.common import dense, cnn
 from algo.nn.common.common import add_gaussian_noise_layer, build_dropout_keep_prob
 from dataset.common.const import *
 from dataset.common.load import *
@@ -176,7 +176,6 @@ def train(text_version='ek', label_version=None, config_path='config93_naive.yam
     python -m algo.main93_v2 train
     python3 -m algo.main93_v2 train -c config_ntua93.yaml
 
-    :param dataset_key: string
     :param text_version: string
     :param label_version: string
     :param config_path: string
@@ -212,6 +211,7 @@ def train(text_version='ek', label_version=None, config_path='config93_naive.yam
     # 加载配置
     nn_config = NNConfig(config_data)
     train_config = TrainConfig(config_data['train'])
+    early_stop_metric = train_config.early_stop_metric
 
     # 加载训练数据
     datasets, output_dim = load_dataset(
@@ -286,14 +286,14 @@ def train(text_version='ek', label_version=None, config_path='config93_naive.yam
             global_step = tf.train.global_step(sess, nn.var(GLOBAL_STEP))
 
             if train_config.valid_rate == 0.:
-                if best_res[TRAIN] is None or res[F1_SCORE] > best_res[TRAIN][F1_SCORE]:
+                if best_res[TRAIN] is None or res[early_stop_metric] > best_res[TRAIN][early_stop_metric]:
                     best_res[TRAIN] = res
                     no_update_count[TRAIN] = 0
                     saver.save(sess, save_path=model_output_prefix, global_step=global_step)
                 else:
                     no_update_count[TRAIN] += 1
             else:
-                if best_res[TRAIN] is None or res[F1_SCORE] > best_res[TRAIN][F1_SCORE]:
+                if best_res[TRAIN] is None or res[early_stop_metric] > best_res[TRAIN][early_stop_metric]:
                     best_res[TRAIN] = res
                     no_update_count[TRAIN] = 0
                 else:
@@ -318,7 +318,7 @@ def train(text_version='ek', label_version=None, config_path='config93_naive.yam
                 print_evaluation(res)
 
                 # Early Stop
-                if best_res[VALID] is None or res[F1_SCORE] > best_res[VALID][F1_SCORE]:
+                if best_res[VALID] is None or res[early_stop_metric] > best_res[VALID][early_stop_metric]:
                     saver.save(sess, save_path=model_output_prefix, global_step=global_step)
                     best_res[VALID] = res
                     no_update_count[VALID] = 0

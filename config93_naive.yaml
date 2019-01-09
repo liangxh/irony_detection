@@ -14,17 +14,17 @@ nn:
   attention:
     dim: 50
   cnn:
-    kernel_size: 3
-    filter_num: 32
+    kernel_size: 5
+    filter_num: 128
   cnns:
     - kernel_size: 5
-      filter_num: 32
+      filter_num: 128
     - kernel_size: 3
-      filter_num: 16
+      filter_num: 64
   learning_rate:
-    init: 0.005
+    init: 0.01
     decay_steps: 1
-    decay_rate: 0.95
+    decay_rate: 0.9
   l2_reg_lambda: 0.1
   output:
     dim: _
@@ -32,8 +32,8 @@ nn:
   binary_classification: False
 
 train:
-  epoch: 80
+  epoch: 200
   valid_rate: 0.1
-  batch_size: 100
+  batch_size: 50
   use_class_weights: False
   early_stop_metric: f1

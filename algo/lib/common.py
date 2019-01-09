@@ -8,8 +8,8 @@ keys = [ACCURACY, PRECISION, RECALL, F1_SCORE]
 
 def print_evaluation(res):
     values = list(map(res.get, keys))
-    print('\t'.join(list(map(lambda _k: _k + ' ' * (10 - len(_k)), keys))))
-    print('\t'.join(list(map(str, values))))
+    print(','.join(keys))
+    print(','.join(list(map(str, values))))
 
 
 def tokenized_to_tid_list(tokenized_list, vocab_id_mapping):

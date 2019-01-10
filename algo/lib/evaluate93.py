@@ -136,9 +136,7 @@ def estimate_test_score(confusion_matrix, real_distribution=None):
 
     mat = np.asarray(confusion_matrix)
     known_dist = mat.sum(axis=1).astype(float) / mat.sum()
-    print(known_dist)
     real_dist = np.asarray(real_distribution)
-    print(real_dist)
 
     multi = real_dist / known_dist
     new_mat = mat * multi.reshape([1, -1]).T

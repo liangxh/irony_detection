@@ -118,7 +118,7 @@ def basic_evaluate(gold, pred):
     microF1 = (2 * microRecall * microPrecision) / (microPrecision + microRecall) if (microPrecision + microRecall) > 0 else 0
     accuracy = float(match.sum()) / n_sample
 
-    test_score = confusion_matrix_to_score(matrix)
+    test_score = estimate_test_score(matrix)
 
     return {
         ACCURACY: accuracy,

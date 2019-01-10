@@ -5,6 +5,7 @@ import json
 import commandr
 from string import punctuation
 from collections import defaultdict
+from algo.model.const import *
 from dataset.common.const import *
 from dataset.common.load import load_label_list, load_tokenized_list, load_vocab_list
 from dataset.semeval2019_task3_dev.process import Processor, label_str
@@ -219,6 +220,30 @@ def analyse_cover():
                 file_obj.write(u'\t{}\t{}\n'.format(len(f), t).encode('utf8'))
                 for fi in f:
                     file_obj.write(u'\t\t{}\n'.format(fi).encode('utf8'))
+
+
+@commandr.command('eval')
+def build_eval_report(filename='out/eval.json', output_filename='out/out_eval.csv'):
+    data = json.load(open(filename))
+    content = ''
+    keys = [ACCURACY, PRECISION, RECALL, F1_SCORE, 'test_score']
+
+    line = ''
+    for i in range(3):
+        for key in keys:
+            line += '{},'.format(key)
+        line += ','
+    content += line + '\n'
+
+    for reses in zip(data[TRAIN], data[DEV], data[TEST]):
+        line = ''
+        for res in reses:
+            for key in keys:
+                line += '{},'.format(res[key])
+            line += ','
+        content += line + '\n'
+
+    open(output_filename, 'w').write(content)
 
 
 if __name__ == '__main__':

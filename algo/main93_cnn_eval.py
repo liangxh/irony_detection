@@ -280,7 +280,6 @@ def train(text_version='ek', label_version=None, config_path='config93_naive.yam
                 labels_gold += dataset[LABEL_GOLD][batch_index].tolist()
 
             labels_predict, labels_gold = labels_predict[:n_sample], labels_gold[:n_sample]
-            labels_predict, labels_gold = labels_predict[:n_sample], labels_gold[:n_sample]
             res = basic_evaluate(gold=labels_gold, pred=labels_predict)
             print_evaluation(res)
             eval_history[TRAIN].append(res)
@@ -341,8 +340,7 @@ def train(text_version='ek', label_version=None, config_path='config93_naive.yam
                 res = sess.run(fetches=fetches[TEST], feed_dict=feed_dict)
                 labels_predict += res[LABEL_PREDICT].tolist()
                 labels_gold += dataset[LABEL_GOLD][batch_index].tolist()
-            labels_predict = labels_predict[:_n_sample]
-            labels_gold = labels_gold[:_n_sample]
+            labels_predict, labels_gold = labels_predict[:_n_sample], labels_gold[:_n_sample]
             res = basic_evaluate(gold=labels_gold, pred=labels_predict)
             eval_history[TEST].append(res)
 

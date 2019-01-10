@@ -36,4 +36,4 @@ train:
   valid_rate: 0.1
   batch_size: 50
   use_class_weights: False
-  early_stop_metric: f1
+  early_stop_metric: test_score

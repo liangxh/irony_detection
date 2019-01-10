@@ -36,10 +36,6 @@ def getMetrics(labels_predict, labels_gold):
     falsePositives = np.sum(np.clip(discretePredictions - ground, 0, 1), axis=0)
     falseNegatives = np.sum(np.clip(ground - discretePredictions, 0, 1), axis=0)
 
-    print("True Positives per class : ", truePositives)
-    print("False Positives per class : ", falsePositives)
-    print("False Negatives per class : ", falseNegatives)
-
     # ------------- Macro level calculation ---------------
     macroPrecision = 0
     macroRecall = 0
@@ -50,21 +46,16 @@ def getMetrics(labels_predict, labels_gold):
         recall = truePositives[c] / (truePositives[c] + falseNegatives[c])
         macroRecall += recall
         f1 = (2 * recall * precision) / (precision + recall) if (precision + recall) > 0 else 0
-        print("Class %s : Precision : %.3f, Recall : %.3f, F1 : %.3f" % (label2emotion[c], precision, recall, f1))
 
     macroPrecision /= 3
     macroRecall /= 3
     macroF1 = (2 * macroRecall * macroPrecision) / (macroPrecision + macroRecall) if (
                                                                                      macroPrecision + macroRecall) > 0 else 0
-    print("Ignoring the Others class, Macro Precision : %.4f, Macro Recall : %.4f, Macro F1 : %.4f" % (
-    macroPrecision, macroRecall, macroF1))
 
     # ------------- Micro level calculation ---------------
     truePositives = truePositives[1:].sum()
     falsePositives = falsePositives[1:].sum()
     falseNegatives = falseNegatives[1:].sum()
-
-    print("Ignoring the Others class, Micro TP : %d, FP : %d, FN : %d" % (truePositives, falsePositives, falseNegatives))
 
     microPrecision = truePositives / (truePositives + falsePositives)
     microRecall = truePositives / (truePositives + falseNegatives)
@@ -94,6 +85,17 @@ def test():
     print(my_res[PRECISION], my_res[RECALL], my_res[F1_SCORE])
 
 
+def confusion_matrix_to_score(mat):
+    dim = mat.shape[0]
+    n_right = (mat[1:, 1:] * np.eye(dim - 1)).sum()
+    n_pred = np.sum(mat[:, 1:])
+    n_gold = np.sum(mat[1:, :])
+    precision = float(n_right) / n_pred if n_pred > 0 else 0.
+    recall = float(n_right) / n_gold if n_gold > 0 else 0.
+    score = 2 * precision * recall / (precision + recall) if precision + recall > 0 else 0.
+    return score
+
+
 def basic_evaluate(gold, pred):
     dim = max(max(gold), max(pred)) + 1
     matrix = np.zeros((dim, dim))
@@ -116,13 +118,32 @@ def basic_evaluate(gold, pred):
     microF1 = (2 * microRecall * microPrecision) / (microPrecision + microRecall) if (microPrecision + microRecall) > 0 else 0
     accuracy = float(match.sum()) / n_sample
 
+    test_score = confusion_matrix_to_score(matrix)
+
     return {
         ACCURACY: accuracy,
         PRECISION: microPrecision,
         RECALL: microRecall,
         F1_SCORE: microF1,
-        CONFUSION_MATRIX: matrix.tolist()
+        CONFUSION_MATRIX: matrix.tolist(),
+        'test_score': test_score,
     }
+
+
+def estimate_test_score(confusion_matrix, real_distribution=None):
+    if real_distribution is None:
+        real_distribution = [0.88, 0.04, 0.04, 0.04]
+
+    mat = np.asarray(confusion_matrix)
+    known_dist = mat.sum(axis=1).astype(float) / mat.sum()
+    print(known_dist)
+    real_dist = np.asarray(real_distribution)
+    print(real_dist)
+
+    multi = real_dist / known_dist
+    new_mat = mat * multi.reshape([1, -1]).T
+    score = confusion_matrix_to_score(new_mat)
+    return score
 
 
 if __name__ == '__main__':

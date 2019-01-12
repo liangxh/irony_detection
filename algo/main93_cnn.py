@@ -38,6 +38,10 @@ class NNConfig(BaseNNConfig):
     def kernel_size(self):
         return self.data['cnn']['kernel_size']
 
+    @property
+    def input_dropout_keep_prob(self):
+        return self.data.get('input_dropout_keep_prob', 1.)
+
 
 TID_0 = 'tid_0'
 TID_1 = 'tid_1'
@@ -68,6 +72,12 @@ class NNModel(BaseNNModel):
 
         tid_2 = tf.placeholder(tf.int32, [self.config.batch_size, self.config.seq_len], name=TID_2)
         seq_len_2 = tf.placeholder(tf.int32, [None, ], name=SEQ_LEN_2)
+
+        if self.config.input_dropout_keep_prob != 1.:
+            tid_keep_prob = build_dropout_keep_prob(keep_prob=self.config.input_dropout_keep_prob, test_mode=test_mode)
+            tid_0 = tf.nn.dropout(tid_0, keep_prob=tid_keep_prob)
+            tid_1 = tf.nn.dropout(tid_1, keep_prob=tid_keep_prob)
+            tid_2 = tf.nn.dropout(tid_2, keep_prob=tid_keep_prob)
 
         embedded_0 = tf.nn.embedding_lookup(lookup_table, tid_0)
         embedded_0 = add_gaussian_noise_layer(embedded_0, stddev=self.config.embedding_noise_stddev, test_mode=test_mode)

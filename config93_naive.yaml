@@ -29,6 +29,7 @@ nn:
   output:
     dim: _
   dropout_keep_prob: 0.5
+  input_dropout_keep_prob: 0.05
   binary_classification: False
 
 train:

@@ -14,7 +14,7 @@ from algo.model.train_config import TrainConfig
 from algo.lib.common import print_evaluation, load_lookup_table2, tokenized_to_tid_list
 from algo.model.nn_config import BaseNNConfig
 from algo.nn.base import BaseNNModel
-from algo.nn.common import dense, cnn
+from algo.nn.common import dense, cnn, rnn_cell, attention
 from algo.nn.common.common import add_gaussian_noise_layer, build_dropout_keep_prob
 from dataset.common.const import *
 from dataset.common.load import *
@@ -31,18 +31,8 @@ class NNConfig(BaseNNConfig):
         return self.data['attention']['dim']
 
     @property
-    def filter_num(self):
-        return self.data['cnn']['filter_num']
-
-    @property
-    def kernel_size(self):
-        return self.data['cnn']['kernel_size']
-
-    def cnn_filter_num(self, idx=0):
-        return self.data['cnns'][idx]['filter_num']
-
-    def cnn_kernel_size(self, idx=0):
-        return self.data['cnns'][idx]['kernel_size']
+    def input_dropout_keep_prob(self):
+        return self.data['input_dropout_keep_prob']
 
 
 TID_0 = 'tid_0'
@@ -54,7 +44,7 @@ SEQ_LEN_2 = 'seq_len_2'
 
 
 class NNModel(BaseNNModel):
-    name = 'm93_cnn2'
+    name = 'm93_gru2'
 
     def build_neural_network(self, lookup_table):
         test_mode = tf.placeholder(tf.int8, None, name=TEST_MODE)
@@ -75,6 +65,12 @@ class NNModel(BaseNNModel):
         tid_2 = tf.placeholder(tf.int32, [self.config.batch_size, self.config.seq_len], name=TID_2)
         seq_len_2 = tf.placeholder(tf.int32, [None, ], name=SEQ_LEN_2)
 
+        if self.config.input_dropout_keep_prob != 1.:
+            tid_keep_prob = build_dropout_keep_prob(keep_prob=self.config.input_dropout_keep_prob, test_mode=test_mode)
+            tid_0 = tf.nn.dropout(tid_0, keep_prob=tid_keep_prob)
+            tid_1 = tf.nn.dropout(tid_1, keep_prob=tid_keep_prob)
+            tid_2 = tf.nn.dropout(tid_2, keep_prob=tid_keep_prob)
+
         embedded_0 = tf.nn.embedding_lookup(lookup_table, tid_0)
         embedded_0 = add_gaussian_noise_layer(embedded_0, stddev=self.config.embedding_noise_stddev, test_mode=test_mode)
 
@@ -84,32 +80,23 @@ class NNModel(BaseNNModel):
         embedded_2 = tf.nn.embedding_lookup(lookup_table, tid_2)
         embedded_2 = add_gaussian_noise_layer(embedded_2, stddev=self.config.embedding_noise_stddev, test_mode=test_mode)
 
-        with tf.variable_scope("turn_0"):
-            cnn_output = cnn.build(
-                embedded_0, filter_num=self.config.cnn_filter_num(0), kernel_size=self.config.cnn_kernel_size(0))
-            cnn_output = tf.nn.dropout(cnn_output, dropout_keep_prob)
-            cnn_output = cnn.build(
-                cnn_output, filter_num=self.config.cnn_filter_num(1), kernel_size=self.config.cnn_kernel_size(1))
-            last_state_0 = cnn.max_pooling(cnn_output)
+        with tf.variable_scope("rnn_0") as scope:
+            _, rnn_last_states_0 = tf.nn.dynamic_rnn(
+                rnn_cell.build_gru(self.config.rnn_dim, dropout_keep_prob=dropout_keep_prob),
+                inputs=embedded_0, sequence_length=seq_len_0, dtype=tf.float32
+            )
+        with tf.variable_scope("rnn_1") as scope:
+            _, rnn_last_states_1 = tf.nn.dynamic_rnn(
+                rnn_cell.build_gru(self.config.rnn_dim, dropout_keep_prob=dropout_keep_prob),
+                inputs=embedded_1, sequence_length=seq_len_1, dtype=tf.float32
+            )
+        with tf.variable_scope("rnn_2") as scope:
+            _, rnn_last_states_2 = tf.nn.dynamic_rnn(
+                rnn_cell.build_gru(self.config.rnn_dim, dropout_keep_prob=dropout_keep_prob),
+                inputs=embedded_2, sequence_length=seq_len_2, dtype=tf.float32
+            )
 
-        with tf.variable_scope("turn_1"):
-            cnn_output = cnn.build(
-                embedded_1, filter_num=self.config.cnn_filter_num(0), kernel_size=self.config.cnn_kernel_size(0))
-            cnn_output = tf.nn.dropout(cnn_output, dropout_keep_prob)
-            cnn_output = cnn.build(
-                cnn_output, filter_num=self.config.cnn_filter_num(1), kernel_size=self.config.cnn_kernel_size(1))
-            last_state_1 = cnn.max_pooling(cnn_output)
-
-        with tf.variable_scope("turn_2"):
-            cnn_output = cnn.build(
-                embedded_2, filter_num=self.config.cnn_filter_num(0), kernel_size=self.config.cnn_kernel_size(0))
-            cnn_output = tf.nn.dropout(cnn_output, dropout_keep_prob)
-            cnn_output = cnn.build(
-                cnn_output, filter_num=self.config.cnn_filter_num(1), kernel_size=self.config.cnn_kernel_size(1))
-            last_state_2 = cnn.max_pooling(cnn_output)
-
-        dense_input = tf.concat([last_state_0, last_state_1, last_state_2], axis=1, name=HIDDEN_FEAT)
-        dense_input = tf.nn.dropout(dense_input, keep_prob=dropout_keep_prob)
+        dense_input = tf.concat([rnn_last_states_0, rnn_last_states_1, rnn_last_states_2], axis=1, name=HIDDEN_FEAT)
 
         y, w, b = dense.build(dense_input, dim_output=self.config.output_dim, output_name=PROB_PREDICT)
         # 计算loss
@@ -434,6 +421,22 @@ def train(text_version='ek', label_version=None, config_path='config93_naive.yam
     print('best test f1 reached: {}'.format(max(test_score_list)))
 
     print('OUTPUT_KEY: {}'.format(output_key))
+
+
+@commandr.command('clear')
+def clear_output(output_key, dataset_key='semeval2019_task3_dev'):
+    """
+    [Usage]
+    python algo/main.py clear A_ntua_ek_1542595525
+    python3 algo.main clear xxxxxxx
+
+    :param dataset_key: string
+    :param output_key: string
+    :return:
+    """
+    data_config = getattr(importlib.import_module('dataset.{}.config'.format(dataset_key)), 'config')
+    shutil.rmtree(data_config.output_folder(output_key))
+    shutil.rmtree(data_config.model_folder(output_key))
 
 
 if __name__ == '__main__':

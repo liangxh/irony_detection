@@ -14,7 +14,7 @@ from algo.model.train_config import TrainConfig
 from algo.lib.common import print_evaluation, load_lookup_table2, tokenized_to_tid_list
 from algo.model.nn_config import BaseNNConfig
 from algo.nn.base import BaseNNModel
-from algo.nn.common import dense, cnn
+from algo.nn.common import dense, cnn, rnn_cell, attention
 from algo.nn.common.common import add_gaussian_noise_layer, build_dropout_keep_prob
 from dataset.common.const import *
 from dataset.common.load import *

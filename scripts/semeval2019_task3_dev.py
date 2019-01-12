@@ -3,6 +3,7 @@ import re
 import emoji
 import json
 import commandr
+import numpy as np
 from string import punctuation
 from collections import defaultdict
 from algo.model.const import *
@@ -220,6 +221,31 @@ def analyse_cover():
                 file_obj.write(u'\t{}\t{}\n'.format(len(f), t).encode('utf8'))
                 for fi in f:
                     file_obj.write(u'\t\t{}\n'.format(fi).encode('utf8'))
+
+
+def confusion_matrix_to_score(mat):
+    dim = mat.shape[0]
+    n_right = (mat[1:, 1:] * np.eye(dim - 1)).sum()
+    n_pred = np.sum(mat[:, 1:])
+    n_gold = np.sum(mat[1:, :])
+    precision = float(n_right) / n_pred if n_pred > 0 else 0.
+    recall = float(n_right) / n_gold if n_gold > 0 else 0.
+    score = 2 * precision * recall / (precision + recall) if precision + recall > 0 else 0.
+    return score
+
+
+def estimate_new_score(confusion_matrix, real_distribution=None):
+    if real_distribution is None:
+        real_distribution = [0.88, 0.04, 0.04, 0.04]
+
+    mat = np.asarray(confusion_matrix)
+    known_dist = mat.sum(axis=1).astype(float) / mat.sum()
+    real_dist = np.asarray(real_distribution)
+
+    multi = real_dist / known_dist
+    new_mat = mat * multi.reshape([1, -1]).T
+    score = confusion_matrix_to_score(new_mat)
+    return score
 
 
 @commandr.command('eval')

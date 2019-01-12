@@ -11,10 +11,10 @@ from algo.lib.dataset import IndexIterator
 from algo.lib.evaluate93 import basic_evaluate
 from algo.model.const import *
 from algo.model.train_config import TrainConfig
-from algo.lib.common import print_evaluation, load_lookup_table, tokenized_to_tid_list, build_random_lookup_table
+from algo.lib.common import print_evaluation, load_lookup_table2, tokenized_to_tid_list
 from algo.model.nn_config import BaseNNConfig
 from algo.nn.base import BaseNNModel
-from algo.nn.common import dense, rnn_cell, attention
+from algo.nn.common import dense, cnn
 from algo.nn.common.common import add_gaussian_noise_layer, build_dropout_keep_prob
 from dataset.common.const import *
 from dataset.common.load import *
@@ -30,15 +30,31 @@ class NNConfig(BaseNNConfig):
     def attention_dim(self):
         return self.data['attention']['dim']
 
+    @property
+    def filter_num(self):
+        return self.data['cnn']['filter_num']
+
+    @property
+    def kernel_size(self):
+        return self.data['cnn']['kernel_size']
+
+    def cnn_filter_num(self, idx=0):
+        return self.data['cnns'][idx]['filter_num']
+
+    def cnn_kernel_size(self, idx=0):
+        return self.data['cnns'][idx]['kernel_size']
+
 
 TID_0 = 'tid_0'
+TID_1 = 'tid_1'
 TID_2 = 'tid_2'
 SEQ_LEN_0 = 'seq_len_0'
+SEQ_LEN_1 = 'seq_len_1'
 SEQ_LEN_2 = 'seq_len_2'
 
 
 class NNModel(BaseNNModel):
-    name = 'main93_onlya'
+    name = 'm93_cnn2'
 
     def build_neural_network(self, lookup_table):
         test_mode = tf.placeholder(tf.int8, None, name=TEST_MODE)
@@ -53,27 +69,47 @@ class NNModel(BaseNNModel):
         tid_0 = tf.placeholder(tf.int32, [self.config.batch_size, self.config.seq_len], name=TID_0)
         seq_len_0 = tf.placeholder(tf.int32, [None, ], name=SEQ_LEN_0)
 
+        tid_1 = tf.placeholder(tf.int32, [self.config.batch_size, self.config.seq_len], name=TID_1)
+        seq_len_1 = tf.placeholder(tf.int32, [None, ], name=SEQ_LEN_1)
+
         tid_2 = tf.placeholder(tf.int32, [self.config.batch_size, self.config.seq_len], name=TID_2)
         seq_len_2 = tf.placeholder(tf.int32, [None, ], name=SEQ_LEN_2)
 
         embedded_0 = tf.nn.embedding_lookup(lookup_table, tid_0)
         embedded_0 = add_gaussian_noise_layer(embedded_0, stddev=self.config.embedding_noise_stddev, test_mode=test_mode)
 
+        embedded_1 = tf.nn.embedding_lookup(lookup_table, tid_1)
+        embedded_1 = add_gaussian_noise_layer(embedded_1, stddev=self.config.embedding_noise_stddev, test_mode=test_mode)
+
         embedded_2 = tf.nn.embedding_lookup(lookup_table, tid_2)
         embedded_2 = add_gaussian_noise_layer(embedded_2, stddev=self.config.embedding_noise_stddev, test_mode=test_mode)
 
-        with tf.variable_scope("rnn_0") as scope:
-            _, rnn_last_states_0 = tf.nn.dynamic_rnn(
-                rnn_cell.build_gru(self.config.rnn_dim, dropout_keep_prob=dropout_keep_prob),
-                inputs=embedded_0, sequence_length=seq_len_0, dtype=tf.float32
-            )
-        with tf.variable_scope("rnn_2") as scope:
-            _, rnn_last_states_2 = tf.nn.dynamic_rnn(
-                rnn_cell.build_gru(self.config.rnn_dim, dropout_keep_prob=dropout_keep_prob),
-                inputs=embedded_2, sequence_length=seq_len_2, dtype=tf.float32
-            )
+        with tf.variable_scope("turn_0"):
+            cnn_output = cnn.build(
+                embedded_0, filter_num=self.config.cnn_filter_num(0), kernel_size=self.config.cnn_kernel_size(0))
+            cnn_output = tf.nn.dropout(cnn_output, dropout_keep_prob)
+            cnn_output = cnn.build(
+                cnn_output, filter_num=self.config.cnn_filter_num(1), kernel_size=self.config.cnn_kernel_size(1))
+            last_state_0 = cnn.max_pooling(cnn_output)
 
-        dense_input = tf.concat([rnn_last_states_0, rnn_last_states_2], axis=1, name=HIDDEN_FEAT)
+        with tf.variable_scope("turn_1"):
+            cnn_output = cnn.build(
+                embedded_1, filter_num=self.config.cnn_filter_num(0), kernel_size=self.config.cnn_kernel_size(0))
+            cnn_output = tf.nn.dropout(cnn_output, dropout_keep_prob)
+            cnn_output = cnn.build(
+                cnn_output, filter_num=self.config.cnn_filter_num(1), kernel_size=self.config.cnn_kernel_size(1))
+            last_state_1 = cnn.max_pooling(cnn_output)
+
+        with tf.variable_scope("turn_2"):
+            cnn_output = cnn.build(
+                embedded_2, filter_num=self.config.cnn_filter_num(0), kernel_size=self.config.cnn_kernel_size(0))
+            cnn_output = tf.nn.dropout(cnn_output, dropout_keep_prob)
+            cnn_output = cnn.build(
+                cnn_output, filter_num=self.config.cnn_filter_num(1), kernel_size=self.config.cnn_kernel_size(1))
+            last_state_2 = cnn.max_pooling(cnn_output)
+
+        dense_input = tf.concat([last_state_0, last_state_1, last_state_2], axis=1, name=HIDDEN_FEAT)
+        dense_input = tf.nn.dropout(dense_input, keep_prob=dropout_keep_prob)
 
         y, w, b = dense.build(dense_input, dim_output=self.config.output_dim, output_name=PROB_PREDICT)
         # 计算loss
@@ -109,14 +145,20 @@ def load_dataset(vocab_id_mapping, max_seq_len, with_label=True, label_version=N
         tid_list_0 = trim_tid_list(tid_list_0, max_seq_len)
         seq_len_0 = seq_to_len_list(tid_list_0)
 
+        tid_list_1 = tokenized_to_tid_list(load_tokenized_list(data_config.path(mode, TURN, '1.ek')), vocab_id_mapping)
+        tid_list_1 = trim_tid_list(tid_list_1, max_seq_len)
+        seq_len_1 = seq_to_len_list(tid_list_1)
+
         tid_list_2 = tokenized_to_tid_list(load_tokenized_list(data_config.path(mode, TURN, '2.ek')), vocab_id_mapping)
         tid_list_2 = trim_tid_list(tid_list_2, max_seq_len)
         seq_len_2 = seq_to_len_list(tid_list_2)
 
         datasets[mode] = {
             TID_0: tid_list_0,
+            TID_1: tid_list_1,
             TID_2: tid_list_2,
             SEQ_LEN_0: np.asarray(seq_len_0),
+            SEQ_LEN_1: np.asarray(seq_len_1),
             SEQ_LEN_2: np.asarray(seq_len_2),
         }
         if with_label:
@@ -125,7 +167,7 @@ def load_dataset(vocab_id_mapping, max_seq_len, with_label=True, label_version=N
             datasets[mode][LABEL_GOLD] = np.asarray(label_list)
 
     for mode in [TRAIN, TEST]:
-        for key in [TID_0, TID_2]:
+        for key in [TID_0, TID_1, TID_2]:
             datasets[mode][key] = np.asarray(zero_pad_seq_list(datasets[mode][key], max_seq_len))
 
     if with_label:
@@ -136,8 +178,8 @@ def load_dataset(vocab_id_mapping, max_seq_len, with_label=True, label_version=N
 
 
 feed_key = {
-    TRAIN: [TID_0, TID_2, SEQ_LEN_0, SEQ_LEN_2, LABEL_GOLD],
-    TEST: [TID_0, TID_2, SEQ_LEN_0, SEQ_LEN_2]
+    TRAIN: [TID_0, TID_1, TID_2, SEQ_LEN_0, SEQ_LEN_1, SEQ_LEN_2, LABEL_GOLD],
+    TEST: [TID_0, TID_1, TID_2, SEQ_LEN_0, SEQ_LEN_1, SEQ_LEN_2]
 }
 
 fetch_key = {
@@ -152,7 +194,6 @@ def train(text_version='ek', label_version=None, config_path='config93_naive.yam
     python -m algo.main93_v2 train
     python3 -m algo.main93_v2 train -c config_ntua93.yaml
 
-    :param dataset_key: string
     :param text_version: string
     :param label_version: string
     :param config_path: string
@@ -181,13 +222,14 @@ def train(text_version='ek', label_version=None, config_path='config93_naive.yam
     vocabs = [_meta['t'] for _meta in vocab_meta_list if _meta['tf'] >= config_data['word']['min_tf']]
 
     # 加载词向量与相关数据
-    lookup_table, vocab_id_mapping, embedding_dim = load_lookup_table(
+    lookup_table, vocab_id_mapping, embedding_dim = load_lookup_table2(
         w2v_model_path=w2v_model_path, vocabs=vocabs)
     json.dump(vocab_id_mapping, open(data_config.output_path(output_key, ALL, VOCAB_ID_MAPPING), 'w'))
 
     # 加载配置
     nn_config = NNConfig(config_data)
     train_config = TrainConfig(config_data['train'])
+    early_stop_metric = train_config.early_stop_metric
 
     # 加载训练数据
     datasets, output_dim = load_dataset(
@@ -227,6 +269,8 @@ def train(text_version='ek', label_version=None, config_path='config93_naive.yam
     no_update_count = {mode: 0 for mode in [TRAIN, VALID]}
     max_no_update_count = 10
 
+    eval_history = {TRAIN: list(), DEV: list(), TEST: list()}
+
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
         saver = tf.train.Saver(tf.global_variables())
@@ -254,22 +298,21 @@ def train(text_version='ek', label_version=None, config_path='config93_naive.yam
                 labels_gold += dataset[LABEL_GOLD][batch_index].tolist()
 
             labels_predict, labels_gold = labels_predict[:n_sample], labels_gold[:n_sample]
-            labels_predict, labels_gold = labels_predict[:n_sample], labels_gold[:n_sample]
             res = basic_evaluate(gold=labels_gold, pred=labels_predict)
-            last_eval[TRAIN] = res
             print_evaluation(res)
+            eval_history[TRAIN].append(res)
 
             global_step = tf.train.global_step(sess, nn.var(GLOBAL_STEP))
 
             if train_config.valid_rate == 0.:
-                if best_res[TRAIN] is None or res[F1_SCORE] > best_res[TRAIN][F1_SCORE]:
+                if best_res[TRAIN] is None or res[early_stop_metric] > best_res[TRAIN][early_stop_metric]:
                     best_res[TRAIN] = res
                     no_update_count[TRAIN] = 0
                     saver.save(sess, save_path=model_output_prefix, global_step=global_step)
                 else:
                     no_update_count[TRAIN] += 1
             else:
-                if best_res[TRAIN] is None or res[F1_SCORE] > best_res[TRAIN][F1_SCORE]:
+                if best_res[TRAIN] is None or res[early_stop_metric] > best_res[TRAIN][early_stop_metric]:
                     best_res[TRAIN] = res
                     no_update_count[TRAIN] = 0
                 else:
@@ -290,16 +333,34 @@ def train(text_version='ek', label_version=None, config_path='config93_naive.yam
 
                 labels_predict, labels_gold = labels_predict[:n_sample], labels_gold[:n_sample]
                 res = basic_evaluate(gold=labels_gold, pred=labels_predict)
-                last_eval[VALID] = res
+                eval_history[DEV].append(res)
                 print_evaluation(res)
 
                 # Early Stop
-                if best_res[VALID] is None or res[F1_SCORE] > best_res[VALID][F1_SCORE]:
+                if best_res[VALID] is None or res[early_stop_metric] > best_res[VALID][early_stop_metric]:
                     saver.save(sess, save_path=model_output_prefix, global_step=global_step)
                     best_res[VALID] = res
                     no_update_count[VALID] = 0
                 else:
                     no_update_count[VALID] += 1
+
+            # eval test
+            _mode = TEST
+            _dataset = datasets[_mode]
+            _index_iterator = index_iterators[_mode]
+            _n_sample = _index_iterator.n_sample()
+
+            labels_predict = list()
+            labels_gold = list()
+            for batch_index in _index_iterator.iterate(batch_size, shuffle=False):
+                feed_dict = {nn.var(_key): _dataset[_key][batch_index] for _key in feed_key[TEST]}
+                feed_dict[nn.var(TEST_MODE)] = 1
+                res = sess.run(fetches=fetches[TEST], feed_dict=feed_dict)
+                labels_predict += res[LABEL_PREDICT].tolist()
+                labels_gold += _dataset[LABEL_GOLD][batch_index].tolist()
+            labels_predict, labels_gold = labels_predict[:_n_sample], labels_gold[:_n_sample]
+            res = basic_evaluate(gold=labels_gold, pred=labels_predict)
+            eval_history[TEST].append(res)
 
             if no_update_count[TRAIN] >= max_no_update_count:
                 break
@@ -308,6 +369,8 @@ def train(text_version='ek', label_version=None, config_path='config93_naive.yam
         # 确保输出文件夹存在
 
     print('========================= BEST ROUND EVALUATION =========================')
+
+    json.dump(eval_history, open(data_config.output_path(output_key, 'eval', 'json'), 'w'))
 
     with tf.Session() as sess:
         prefix_checkpoint = tf.train.latest_checkpoint(data_config.model_path(key=output_key))
@@ -366,6 +429,9 @@ def train(text_version='ek', label_version=None, config_path='config93_naive.yam
 
             json.dump(res, open(data_config.output_path(output_key, mode, EVALUATION), 'w'))
             print()
+
+    test_score_list = map(lambda _item: _item['f1'], eval_history[TEST])
+    print('best test f1 reached: {}'.format(max(test_score_list)))
 
     print('OUTPUT_KEY: {}'.format(output_key))
 

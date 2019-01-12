@@ -251,6 +251,8 @@ def train(text_version='ek', label_version=None, config_path='config93_naive.yam
     no_update_count = {mode: 0 for mode in [TRAIN, VALID]}
     max_no_update_count = 10
 
+    eval_history = {TRAIN: list(), DEV: list(), TEST: list()}
+
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
         saver = tf.train.Saver(tf.global_variables())
@@ -278,10 +280,9 @@ def train(text_version='ek', label_version=None, config_path='config93_naive.yam
                 labels_gold += dataset[LABEL_GOLD][batch_index].tolist()
 
             labels_predict, labels_gold = labels_predict[:n_sample], labels_gold[:n_sample]
-            labels_predict, labels_gold = labels_predict[:n_sample], labels_gold[:n_sample]
             res = basic_evaluate(gold=labels_gold, pred=labels_predict)
-            last_eval[TRAIN] = res
             print_evaluation(res)
+            eval_history[TRAIN].append(res)
 
             global_step = tf.train.global_step(sess, nn.var(GLOBAL_STEP))
 
@@ -314,7 +315,7 @@ def train(text_version='ek', label_version=None, config_path='config93_naive.yam
 
                 labels_predict, labels_gold = labels_predict[:n_sample], labels_gold[:n_sample]
                 res = basic_evaluate(gold=labels_gold, pred=labels_predict)
-                last_eval[VALID] = res
+                eval_history[DEV].append(res)
                 print_evaluation(res)
 
                 # Early Stop
@@ -325,6 +326,24 @@ def train(text_version='ek', label_version=None, config_path='config93_naive.yam
                 else:
                     no_update_count[VALID] += 1
 
+            # eval test
+            _mode = TEST
+            _dataset = datasets[_mode]
+            _index_iterator = index_iterators[_mode]
+            _n_sample = _index_iterator.n_sample()
+
+            labels_predict = list()
+            labels_gold = list()
+            for batch_index in _index_iterator.iterate(batch_size, shuffle=False):
+                feed_dict = {nn.var(_key): _dataset[_key][batch_index] for _key in feed_key[TEST]}
+                feed_dict[nn.var(TEST_MODE)] = 1
+                res = sess.run(fetches=fetches[TEST], feed_dict=feed_dict)
+                labels_predict += res[LABEL_PREDICT].tolist()
+                labels_gold += _dataset[LABEL_GOLD][batch_index].tolist()
+            labels_predict, labels_gold = labels_predict[:_n_sample], labels_gold[:_n_sample]
+            res = basic_evaluate(gold=labels_gold, pred=labels_predict)
+            eval_history[TEST].append(res)
+
             if no_update_count[TRAIN] >= max_no_update_count:
                 break
 
@@ -332,6 +351,8 @@ def train(text_version='ek', label_version=None, config_path='config93_naive.yam
         # 确保输出文件夹存在
 
     print('========================= BEST ROUND EVALUATION =========================')
+
+    json.dump(eval_history, open(data_config.output_path(output_key, 'eval', 'json'), 'w'))
 
     with tf.Session() as sess:
         prefix_checkpoint = tf.train.latest_checkpoint(data_config.model_path(key=output_key))
@@ -390,6 +411,9 @@ def train(text_version='ek', label_version=None, config_path='config93_naive.yam
 
             json.dump(res, open(data_config.output_path(output_key, mode, EVALUATION), 'w'))
             print()
+
+    test_score_list = map(lambda _item: _item['f1'], eval_history[TEST])
+    print('best test f1 reached: {}'.format(max(test_score_list)))
 
     print('OUTPUT_KEY: {}'.format(output_key))
 

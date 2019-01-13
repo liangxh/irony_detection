@@ -33,3 +33,7 @@ class TrainConfig(object):
     @property
     def early_stop_metric(self):
         return self.data['early_stop_metric'] if 'early_stop_metric' in self.data else F1_SCORE
+
+    @property
+    def input_dropout_keep_prob(self):
+        return self.data['input_dropout_keep_prob']

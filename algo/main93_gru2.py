@@ -30,10 +30,6 @@ class NNConfig(BaseNNConfig):
     def attention_dim(self):
         return self.data['attention']['dim']
 
-    @property
-    def input_dropout_keep_prob(self):
-        return self.data['input_dropout_keep_prob']
-
 
 TID_0 = 'tid_0'
 TID_1 = 'tid_1'
@@ -169,6 +165,12 @@ fetch_key = {
 }
 
 
+def tid_dropout(tids, dropout_keep_rate):
+    tids = np.asarray(tids)
+    mask = (np.random.random(tids.shape) >= dropout_keep_rate).astype(int)
+    return tids * mask
+
+
 @commandr.command
 def train(text_version='ek', label_version=None, config_path='config93_naive.yaml'):
     """
@@ -271,6 +273,12 @@ def train(text_version='ek', label_version=None, config_path='config93_naive.yam
 
             for batch_index in index_iterator.iterate(batch_size, mode=TRAIN, shuffle=True):
                 feed_dict = {nn.var(_key): dataset[_key][batch_index] for _key in feed_key[TRAIN]}
+
+                for _key in [TID_0, TID_1, TID_2]:
+                    var = nn.var(_key)
+                    _tids = feed_dict[var]
+                    feed_dict[var] = tid_dropout(_tids, train_config.input_dropout_keep_prob)
+
                 feed_dict[nn.var(SAMPLE_WEIGHTS)] = list(map(label_weight.get, feed_dict[nn.var(LABEL_GOLD)]))
                 feed_dict[nn.var(TEST_MODE)] = 0
                 res = sess.run(fetches=fetches[TRAIN], feed_dict=feed_dict)

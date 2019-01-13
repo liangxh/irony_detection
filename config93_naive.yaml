@@ -29,7 +29,6 @@ nn:
   output:
     dim: _
   dropout_keep_prob: 0.5
-  input_dropout_keep_prob: 1.
   binary_classification: False
 
 train:
@@ -38,3 +37,4 @@ train:
   batch_size: 100
   use_class_weights: False
   early_stop_metric: precision
+  input_dropout_keep_prob: 1.

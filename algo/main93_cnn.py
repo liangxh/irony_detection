@@ -172,7 +172,7 @@ fetch_key = {
 
 def tid_dropout(tids, dropout_keep_rate):
     tids = np.asarray(tids)
-    mask = (np.random.random(tids.shape) >= dropout_keep_rate).astype(int)
+    mask = (np.random.random(tids.shape) <= dropout_keep_rate).astype(int)
     return tids * mask
 
 

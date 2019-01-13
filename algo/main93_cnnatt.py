@@ -73,19 +73,19 @@ class NNModel(BaseNNModel):
         with tf.variable_scope("rnn_0") as scope:
             cnn_output = cnn.build(embedded_0, self.config.filter_num, self.config.kernel_size)
             max_ = cnn.max_pooling(cnn_output)
-            att_ = attention.build(cnn_output, self.config.attention_dim)
+            att_, _ = attention.build(cnn_output, self.config.attention_dim)
             last_state_0 = tf.concat([max_, att_], axis=1)
 
         with tf.variable_scope("rnn_1") as scope:
             cnn_output = cnn.build(embedded_1, self.config.filter_num, self.config.kernel_size)
             max_ = cnn.max_pooling(cnn_output)
-            att_ = attention.build(cnn_output, self.config.attention_dim)
+            att_, _ = attention.build(cnn_output, self.config.attention_dim)
             last_state_1 = tf.concat([max_, att_], axis=1)
 
         with tf.variable_scope("rnn_2") as scope:
             cnn_output = cnn.build(embedded_2, self.config.filter_num, self.config.kernel_size)
             max_ = cnn.max_pooling(cnn_output)
-            att_ = attention.build(cnn_output, self.config.attention_dim)
+            att_, _ = attention.build(cnn_output, self.config.attention_dim)
             last_state_2 = tf.concat([max_, att_], axis=1)
 
         dense_input = tf.concat([last_state_0, last_state_1, last_state_2], axis=1, name=HIDDEN_FEAT)

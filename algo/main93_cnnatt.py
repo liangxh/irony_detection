@@ -40,7 +40,7 @@ class NNConfig(BaseNNConfig):
 
 
 class NNModel(BaseNNModel):
-    name = 'm93_cnn'
+    name = 'm93_cnnatt'
 
     def build_neural_network(self, lookup_table):
         test_mode = tf.placeholder(tf.int8, None, name=TEST_MODE)
@@ -421,22 +421,6 @@ def train(text_version='ek', label_version=None, config_path='config93_naive.yam
     print('best test f1 reached: {}'.format(max(test_score_list)))
 
     print('OUTPUT_KEY: {}'.format(output_key))
-
-
-@commandr.command('clear')
-def clear_output(output_key, dataset_key='semeval2019_task3_dev'):
-    """
-    [Usage]
-    python algo/main.py clear A_ntua_ek_1542595525
-    python3 algo.main clear xxxxxxx
-
-    :param dataset_key: string
-    :param output_key: string
-    :return:
-    """
-    data_config = getattr(importlib.import_module('dataset.{}.config'.format(dataset_key)), 'config')
-    shutil.rmtree(data_config.output_folder(output_key))
-    shutil.rmtree(data_config.model_folder(output_key))
 
 
 if __name__ == '__main__':

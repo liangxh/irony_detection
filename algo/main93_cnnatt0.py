@@ -72,15 +72,15 @@ class NNModel(BaseNNModel):
 
         with tf.variable_scope('turn_0'):
             cnn_output = cnn.build(embedded_0, self.config.filter_num, self.config.kernel_size)
-            last_state_0 = attention.build(cnn_output, self.config.attention_dim)
+            last_state_0, _ = attention.build(cnn_output, self.config.attention_dim)
 
         with tf.variable_scope('turn_1'):
             cnn_output = cnn.build(embedded_1, self.config.filter_num, self.config.kernel_size)
-            last_state_1 = attention.build(cnn_output, self.config.attention_dim)
+            last_state_1, _ = attention.build(cnn_output, self.config.attention_dim)
 
         with tf.variable_scope('turn_2'):
             cnn_output = cnn.build(embedded_2, self.config.filter_num, self.config.kernel_size)
-            last_state_2 = attention.build(cnn_output, self.config.attention_dim)
+            last_state_2, _ = attention.build(cnn_output, self.config.attention_dim)
 
         dense_input = tf.concat([last_state_0, last_state_1, last_state_2], axis=1, name=HIDDEN_FEAT)
         dense_input = tf.nn.dropout(dense_input, keep_prob=dropout_keep_prob)

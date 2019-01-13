@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function
-import importlib
 import time
 import commandr
 import yaml
@@ -11,7 +10,7 @@ from algo.lib.dataset import IndexIterator
 from algo.lib.evaluate93 import basic_evaluate
 from algo.model.const import *
 from algo.model.train_config import TrainConfig
-from algo.lib.common import print_evaluation, load_lookup_table2, tokenized_to_tid_list
+from algo.lib.common import print_evaluation, load_lookup_table2, tokenized_to_tid_list, tid_dropout
 from algo.model.nn_config import BaseNNConfig
 from algo.nn.base import BaseNNModel
 from algo.nn.common import dense, cnn, rnn_cell, attention
@@ -29,14 +28,6 @@ class NNConfig(BaseNNConfig):
     @property
     def attention_dim(self):
         return self.data['attention']['dim']
-
-
-TID_0 = 'tid_0'
-TID_1 = 'tid_1'
-TID_2 = 'tid_2'
-SEQ_LEN_0 = 'seq_len_0'
-SEQ_LEN_1 = 'seq_len_1'
-SEQ_LEN_2 = 'seq_len_2'
 
 
 class NNModel(BaseNNModel):
@@ -267,6 +258,13 @@ def train(text_version='ek', label_version=None, config_path='config93_naive.yam
 
             for batch_index in index_iterator.iterate(batch_size, mode=TRAIN, shuffle=True):
                 feed_dict = {nn.var(_key): dataset[_key][batch_index] for _key in feed_key[TRAIN]}
+
+                if train_config.input_dropout_keep_prob < 1.:
+                    for _key in [TID_0, TID_1, TID_2]:
+                        var = nn.var(_key)
+                        _tids = feed_dict[var]
+                        feed_dict[var] = tid_dropout(_tids, train_config.input_dropout_keep_prob)
+
                 feed_dict[nn.var(SAMPLE_WEIGHTS)] = list(map(label_weight.get, feed_dict[nn.var(LABEL_GOLD)]))
                 feed_dict[nn.var(TEST_MODE)] = 0
                 res = sess.run(fetches=fetches[TRAIN], feed_dict=feed_dict)
@@ -411,22 +409,6 @@ def train(text_version='ek', label_version=None, config_path='config93_naive.yam
     print('best test f1 reached: {}'.format(max(test_score_list)))
 
     print('OUTPUT_KEY: {}'.format(output_key))
-
-
-@commandr.command('clear')
-def clear_output(output_key, dataset_key='semeval2019_task3_dev'):
-    """
-    [Usage]
-    python algo/main.py clear A_ntua_ek_1542595525
-    python3 algo.main clear xxxxxxx
-
-    :param dataset_key: string
-    :param output_key: string
-    :return:
-    """
-    data_config = getattr(importlib.import_module('dataset.{}.config'.format(dataset_key)), 'config')
-    shutil.rmtree(data_config.output_folder(output_key))
-    shutil.rmtree(data_config.model_folder(output_key))
 
 
 if __name__ == '__main__':

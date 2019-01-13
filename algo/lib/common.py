@@ -12,6 +12,12 @@ def print_evaluation(res):
     print(','.join(list(map(str, values))))
 
 
+def tid_dropout(tids, dropout_keep_rate):
+    tids = np.asarray(tids)
+    mask = (np.random.random(tids.shape) <= dropout_keep_rate).astype(int)
+    return tids * mask
+
+
 def tokenized_to_tid_list(tokenized_list, vocab_id_mapping):
     tid_list = list(map(
         lambda _tokens: list(filter(

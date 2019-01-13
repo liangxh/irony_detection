@@ -30,14 +30,6 @@ class NNConfig(BaseNNConfig):
         return self.data['attention']['dim']
 
 
-TID_0 = 'tid_0'
-TID_1 = 'tid_1'
-TID_2 = 'tid_2'
-SEQ_LEN_0 = 'seq_len_0'
-SEQ_LEN_1 = 'seq_len_1'
-SEQ_LEN_2 = 'seq_len_2'
-
-
 class NNModel(BaseNNModel):
     name = 'naive93'
 

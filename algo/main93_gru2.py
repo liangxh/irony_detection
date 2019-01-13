@@ -274,10 +274,11 @@ def train(text_version='ek', label_version=None, config_path='config93_naive.yam
             for batch_index in index_iterator.iterate(batch_size, mode=TRAIN, shuffle=True):
                 feed_dict = {nn.var(_key): dataset[_key][batch_index] for _key in feed_key[TRAIN]}
 
-                for _key in [TID_0, TID_1, TID_2]:
-                    var = nn.var(_key)
-                    _tids = feed_dict[var]
-                    feed_dict[var] = tid_dropout(_tids, train_config.input_dropout_keep_prob)
+                if train_config.input_dropout_keep_prob < 1.:
+                    for _key in [TID_0, TID_1, TID_2]:
+                        var = nn.var(_key)
+                        _tids = feed_dict[var]
+                        feed_dict[var] = tid_dropout(_tids, train_config.input_dropout_keep_prob)
 
                 feed_dict[nn.var(SAMPLE_WEIGHTS)] = list(map(label_weight.get, feed_dict[nn.var(LABEL_GOLD)]))
                 feed_dict[nn.var(TEST_MODE)] = 0

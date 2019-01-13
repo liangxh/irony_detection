@@ -36,4 +36,4 @@ class TrainConfig(object):
 
     @property
     def input_dropout_keep_prob(self):
-        return self.data['input_dropout_keep_prob']
+        return self.data.get('input_dropout_keep_prob', 1.)

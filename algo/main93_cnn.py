@@ -11,7 +11,7 @@ from algo.lib.dataset import IndexIterator
 from algo.lib.evaluate93 import basic_evaluate
 from algo.model.const import *
 from algo.model.train_config import TrainConfig
-from algo.lib.common import print_evaluation, load_lookup_table2, tokenized_to_tid_list
+from algo.lib.common import print_evaluation, load_lookup_table2, tokenized_to_tid_list, tid_dropout
 from algo.model.nn_config import BaseNNConfig
 from algo.nn.base import BaseNNModel
 from algo.nn.common import dense, cnn
@@ -160,12 +160,6 @@ fetch_key = {
     TRAIN: [OPTIMIZER, LOSS, LABEL_PREDICT],
     TEST: [LABEL_PREDICT, PROB_PREDICT, HIDDEN_FEAT]
 }
-
-
-def tid_dropout(tids, dropout_keep_rate):
-    tids = np.asarray(tids)
-    mask = (np.random.random(tids.shape) <= dropout_keep_rate).astype(int)
-    return tids * mask
 
 
 @commandr.command

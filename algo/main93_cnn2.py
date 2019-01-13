@@ -10,7 +10,7 @@ from algo.lib.dataset import IndexIterator
 from algo.lib.evaluate93 import basic_evaluate
 from algo.model.const import *
 from algo.model.train_config import TrainConfig
-from algo.lib.common import print_evaluation, load_lookup_table2, tokenized_to_tid_list
+from algo.lib.common import print_evaluation, load_lookup_table2, tokenized_to_tid_list, tid_dropout
 from algo.model.nn_config import BaseNNConfig
 from algo.nn.base import BaseNNModel
 from algo.nn.common import dense, cnn
@@ -283,6 +283,13 @@ def train(text_version='ek', label_version=None, config_path='config93_naive.yam
                 feed_dict = {nn.var(_key): dataset[_key][batch_index] for _key in feed_key[TRAIN]}
                 feed_dict[nn.var(SAMPLE_WEIGHTS)] = list(map(label_weight.get, feed_dict[nn.var(LABEL_GOLD)]))
                 feed_dict[nn.var(TEST_MODE)] = 0
+
+                if train_config.input_dropout_keep_prob < 1.:
+                    for _key in [TID_0, TID_1, TID_2]:
+                        var = nn.var(_key)
+                        _tids = feed_dict[var]
+                        feed_dict[var] = tid_dropout(_tids, train_config.input_dropout_keep_prob)
+
                 res = sess.run(fetches=fetches[TRAIN], feed_dict=feed_dict)
 
                 labels_predict += res[LABEL_PREDICT].tolist()

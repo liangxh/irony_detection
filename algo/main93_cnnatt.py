@@ -14,7 +14,7 @@ from algo.model.train_config import TrainConfig
 from algo.lib.common import print_evaluation, load_lookup_table2, tokenized_to_tid_list, tid_dropout
 from algo.model.nn_config import BaseNNConfig
 from algo.nn.base import BaseNNModel
-from algo.nn.common import dense, cnn
+from algo.nn.common import dense, cnn, attention
 from algo.nn.common.common import add_gaussian_noise_layer, build_dropout_keep_prob
 from dataset.common.const import *
 from dataset.common.load import *
@@ -72,17 +72,21 @@ class NNModel(BaseNNModel):
 
         with tf.variable_scope("rnn_0") as scope:
             cnn_output = cnn.build(embedded_0, self.config.filter_num, self.config.kernel_size)
-            last_state_0 = cnn.max_pooling(cnn_output)
+            max_ = cnn.max_pooling(cnn_output)
+            att_ = attention.build(cnn_output, self.config.attention_dim)
+            last_state_0 = tf.concat([max_, att_], axis=1)
 
         with tf.variable_scope("rnn_1") as scope:
             cnn_output = cnn.build(embedded_1, self.config.filter_num, self.config.kernel_size)
-            last_state_1 = cnn.max_pooling(cnn_output)
+            max_ = cnn.max_pooling(cnn_output)
+            att_ = attention.build(cnn_output, self.config.attention_dim)
+            last_state_1 = tf.concat([max_, att_], axis=1)
 
         with tf.variable_scope("rnn_2") as scope:
             cnn_output = cnn.build(embedded_2, self.config.filter_num, self.config.kernel_size)
-            last_state_2 = cnn.max_pooling(cnn_output)
-
-
+            max_ = cnn.max_pooling(cnn_output)
+            att_ = attention.build(cnn_output, self.config.attention_dim)
+            last_state_2 = tf.concat([max_, att_], axis=1)
 
         dense_input = tf.concat([last_state_0, last_state_1, last_state_2], axis=1, name=HIDDEN_FEAT)
         dense_input = tf.nn.dropout(dense_input, keep_prob=dropout_keep_prob)

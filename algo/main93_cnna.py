@@ -238,7 +238,7 @@ def train(text_version='ek', label_version=None, config_path='config93_naive.yam
 
         # 训练开始 ##########################################################################
         for epoch in range(train_config.epoch):
-            print('== epoch {} =='.format(epoch))
+            print('== epoch {} = {} ='.format(epoch, output_key))
 
             # 利用训练集进行训练
             print('TRAIN')

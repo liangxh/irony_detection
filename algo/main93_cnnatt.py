@@ -40,7 +40,7 @@ class NNConfig(BaseNNConfig):
 
 
 class NNModel(BaseNNModel):
-    name = 'm93_cnna'
+    name = 'm93_cnn'
 
     def build_neural_network(self, lookup_table):
         test_mode = tf.placeholder(tf.int8, None, name=TEST_MODE)
@@ -55,11 +55,17 @@ class NNModel(BaseNNModel):
         tid_0 = tf.placeholder(tf.int32, [self.config.batch_size, self.config.seq_len], name=TID_0)
         seq_len_0 = tf.placeholder(tf.int32, [None, ], name=SEQ_LEN_0)
 
+        tid_1 = tf.placeholder(tf.int32, [self.config.batch_size, self.config.seq_len], name=TID_1)
+        seq_len_1 = tf.placeholder(tf.int32, [None, ], name=SEQ_LEN_1)
+
         tid_2 = tf.placeholder(tf.int32, [self.config.batch_size, self.config.seq_len], name=TID_2)
         seq_len_2 = tf.placeholder(tf.int32, [None, ], name=SEQ_LEN_2)
 
         embedded_0 = tf.nn.embedding_lookup(lookup_table, tid_0)
         embedded_0 = add_gaussian_noise_layer(embedded_0, stddev=self.config.embedding_noise_stddev, test_mode=test_mode)
+
+        embedded_1 = tf.nn.embedding_lookup(lookup_table, tid_1)
+        embedded_1 = add_gaussian_noise_layer(embedded_1, stddev=self.config.embedding_noise_stddev, test_mode=test_mode)
 
         embedded_2 = tf.nn.embedding_lookup(lookup_table, tid_2)
         embedded_2 = add_gaussian_noise_layer(embedded_2, stddev=self.config.embedding_noise_stddev, test_mode=test_mode)
@@ -68,11 +74,17 @@ class NNModel(BaseNNModel):
             cnn_output = cnn.build(embedded_0, self.config.filter_num, self.config.kernel_size)
             last_state_0 = cnn.max_pooling(cnn_output)
 
+        with tf.variable_scope("rnn_1") as scope:
+            cnn_output = cnn.build(embedded_1, self.config.filter_num, self.config.kernel_size)
+            last_state_1 = cnn.max_pooling(cnn_output)
+
         with tf.variable_scope("rnn_2") as scope:
             cnn_output = cnn.build(embedded_2, self.config.filter_num, self.config.kernel_size)
             last_state_2 = cnn.max_pooling(cnn_output)
 
-        dense_input = tf.concat([last_state_0, last_state_2], axis=1, name=HIDDEN_FEAT)
+
+
+        dense_input = tf.concat([last_state_0, last_state_1, last_state_2], axis=1, name=HIDDEN_FEAT)
         dense_input = tf.nn.dropout(dense_input, keep_prob=dropout_keep_prob)
 
         y, w, b = dense.build(dense_input, dim_output=self.config.output_dim, output_name=PROB_PREDICT)
@@ -109,14 +121,20 @@ def load_dataset(vocab_id_mapping, max_seq_len, with_label=True, label_version=N
         tid_list_0 = trim_tid_list(tid_list_0, max_seq_len)
         seq_len_0 = seq_to_len_list(tid_list_0)
 
+        tid_list_1 = tokenized_to_tid_list(load_tokenized_list(data_config.path(mode, TURN, '1.ek')), vocab_id_mapping)
+        tid_list_1 = trim_tid_list(tid_list_1, max_seq_len)
+        seq_len_1 = seq_to_len_list(tid_list_1)
+
         tid_list_2 = tokenized_to_tid_list(load_tokenized_list(data_config.path(mode, TURN, '2.ek')), vocab_id_mapping)
         tid_list_2 = trim_tid_list(tid_list_2, max_seq_len)
         seq_len_2 = seq_to_len_list(tid_list_2)
 
         datasets[mode] = {
             TID_0: tid_list_0,
+            TID_1: tid_list_1,
             TID_2: tid_list_2,
             SEQ_LEN_0: np.asarray(seq_len_0),
+            SEQ_LEN_1: np.asarray(seq_len_1),
             SEQ_LEN_2: np.asarray(seq_len_2),
         }
         if with_label:
@@ -125,7 +143,7 @@ def load_dataset(vocab_id_mapping, max_seq_len, with_label=True, label_version=N
             datasets[mode][LABEL_GOLD] = np.asarray(label_list)
 
     for mode in [TRAIN, TEST]:
-        for key in [TID_0, TID_2]:
+        for key in [TID_0, TID_1, TID_2]:
             datasets[mode][key] = np.asarray(zero_pad_seq_list(datasets[mode][key], max_seq_len))
 
     if with_label:
@@ -136,8 +154,8 @@ def load_dataset(vocab_id_mapping, max_seq_len, with_label=True, label_version=N
 
 
 feed_key = {
-    TRAIN: [TID_0, TID_2, SEQ_LEN_0, SEQ_LEN_2, LABEL_GOLD],
-    TEST: [TID_0, TID_2, SEQ_LEN_0, SEQ_LEN_2]
+    TRAIN: [TID_0, TID_1, TID_2, SEQ_LEN_0, SEQ_LEN_1, SEQ_LEN_2, LABEL_GOLD],
+    TEST: [TID_0, TID_1, TID_2, SEQ_LEN_0, SEQ_LEN_1, SEQ_LEN_2]
 }
 
 fetch_key = {
@@ -252,7 +270,7 @@ def train(text_version='ek', label_version=None, config_path='config93_naive.yam
                 feed_dict[nn.var(TEST_MODE)] = 0
 
                 if train_config.input_dropout_keep_prob < 1.:
-                    for _key in [TID_0, TID_2]:
+                    for _key in [TID_0, TID_1, TID_2]:
                         var = nn.var(_key)
                         _tids = feed_dict[var]
                         feed_dict[var] = tid_dropout(_tids, train_config.input_dropout_keep_prob)

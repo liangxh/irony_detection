@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function
+import importlib
 import time
 import commandr
 import yaml
@@ -13,7 +14,7 @@ from algo.model.train_config import TrainConfig
 from algo.lib.common import print_evaluation, load_lookup_table2, tokenized_to_tid_list, tid_dropout
 from algo.model.nn_config import BaseNNConfig
 from algo.nn.base import BaseNNModel
-from algo.nn.common import dense, cnn, rnn_cell, attention
+from algo.nn.common import dense, cnn, rnn_cell
 from algo.nn.common.common import add_gaussian_noise_layer, build_dropout_keep_prob
 from dataset.common.const import *
 from dataset.common.load import *
@@ -29,9 +30,17 @@ class NNConfig(BaseNNConfig):
     def attention_dim(self):
         return self.data['attention']['dim']
 
+    @property
+    def filter_num(self):
+        return self.data['cnn']['filter_num']
+
+    @property
+    def kernel_size(self):
+        return self.data['cnn']['kernel_size']
+
 
 class NNModel(BaseNNModel):
-    name = 'm93_gru'
+    name = 'm93_crnn'
 
     def build_neural_network(self, lookup_table):
         test_mode = tf.placeholder(tf.int8, None, name=TEST_MODE)
@@ -62,22 +71,36 @@ class NNModel(BaseNNModel):
         embedded_2 = add_gaussian_noise_layer(embedded_2, stddev=self.config.embedding_noise_stddev, test_mode=test_mode)
 
         with tf.variable_scope("rnn_0") as scope:
-            _, rnn_last_states_0 = tf.nn.dynamic_rnn(
+            _, last_state_r0 = tf.nn.dynamic_rnn(
                 rnn_cell.build_gru(self.config.rnn_dim, dropout_keep_prob=dropout_keep_prob),
                 inputs=embedded_0, sequence_length=seq_len_0, dtype=tf.float32
             )
+
+            cnn_output = cnn.build(embedded_0, self.config.filter_num, self.config.kernel_size)
+            last_state_c0 = cnn.max_pooling(cnn_output)
+
         with tf.variable_scope("rnn_1") as scope:
-            _, rnn_last_states_1 = tf.nn.dynamic_rnn(
+            _, last_state_r1 = tf.nn.dynamic_rnn(
                 rnn_cell.build_gru(self.config.rnn_dim, dropout_keep_prob=dropout_keep_prob),
                 inputs=embedded_1, sequence_length=seq_len_1, dtype=tf.float32
             )
+
+            cnn_output = cnn.build(embedded_0, self.config.filter_num, self.config.kernel_size)
+            last_state_c1 = cnn.max_pooling(cnn_output)
+
         with tf.variable_scope("rnn_2") as scope:
-            _, rnn_last_states_2 = tf.nn.dynamic_rnn(
+            _, last_state_r2 = tf.nn.dynamic_rnn(
                 rnn_cell.build_gru(self.config.rnn_dim, dropout_keep_prob=dropout_keep_prob),
                 inputs=embedded_2, sequence_length=seq_len_2, dtype=tf.float32
             )
 
-        dense_input = tf.concat([rnn_last_states_0, rnn_last_states_1, rnn_last_states_2], axis=1, name=HIDDEN_FEAT)
+            cnn_output = cnn.build(embedded_0, self.config.filter_num, self.config.kernel_size)
+            last_state_c2 = cnn.max_pooling(cnn_output)
+
+        dense_input = tf.concat([
+            last_state_r0, last_state_r1, last_state_r2,
+            last_state_c0, last_state_c1, last_state_c2,
+        ], axis=1, name=HIDDEN_FEAT)
         dense_input = tf.nn.dropout(dense_input, keep_prob=dropout_keep_prob)
 
         y, w, b = dense.build(dense_input, dim_output=self.config.output_dim, output_name=PROB_PREDICT)
@@ -259,6 +282,8 @@ def train(text_version='ek', label_version=None, config_path='config93_naive.yam
 
             for batch_index in index_iterator.iterate(batch_size, mode=TRAIN, shuffle=True):
                 feed_dict = {nn.var(_key): dataset[_key][batch_index] for _key in feed_key[TRAIN]}
+                feed_dict[nn.var(SAMPLE_WEIGHTS)] = list(map(label_weight.get, feed_dict[nn.var(LABEL_GOLD)]))
+                feed_dict[nn.var(TEST_MODE)] = 0
 
                 if train_config.input_dropout_keep_prob < 1.:
                     for _key in [TID_0, TID_1, TID_2]:
@@ -266,8 +291,6 @@ def train(text_version='ek', label_version=None, config_path='config93_naive.yam
                         _tids = feed_dict[var]
                         feed_dict[var] = tid_dropout(_tids, train_config.input_dropout_keep_prob)
 
-                feed_dict[nn.var(SAMPLE_WEIGHTS)] = list(map(label_weight.get, feed_dict[nn.var(LABEL_GOLD)]))
-                feed_dict[nn.var(TEST_MODE)] = 0
                 res = sess.run(fetches=fetches[TRAIN], feed_dict=feed_dict)
 
                 labels_predict += res[LABEL_PREDICT].tolist()

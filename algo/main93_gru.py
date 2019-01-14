@@ -53,13 +53,22 @@ class NNModel(BaseNNModel):
         seq_len_2 = tf.placeholder(tf.int32, [None, ], name=SEQ_LEN_2)
 
         embedded_0 = tf.nn.embedding_lookup(lookup_table, tid_0)
-        embedded_0 = add_gaussian_noise_layer(embedded_0, stddev=self.config.embedding_noise_stddev, test_mode=test_mode)
-
         embedded_1 = tf.nn.embedding_lookup(lookup_table, tid_1)
-        embedded_1 = add_gaussian_noise_layer(embedded_1, stddev=self.config.embedding_noise_stddev, test_mode=test_mode)
-
         embedded_2 = tf.nn.embedding_lookup(lookup_table, tid_2)
-        embedded_2 = add_gaussian_noise_layer(embedded_2, stddev=self.config.embedding_noise_stddev, test_mode=test_mode)
+
+        if self.config.embedding_noise_type is None:
+            pass
+        elif self.config.embedding_noise_type == 'guassian':
+            embedded_0 = add_gaussian_noise_layer(embedded_0, stddev=self.config.embedding_noise_stddev, test_mode=test_mode)
+            embedded_1 = add_gaussian_noise_layer(embedded_1, stddev=self.config.embedding_noise_stddev, test_mode=test_mode)
+            embedded_2 = add_gaussian_noise_layer(embedded_2, stddev=self.config.embedding_noise_stddev, test_mode=test_mode)
+        elif self.config.embedding_noise_type == 'dropout':
+            emb_dropout_keep_prob = build_dropout_keep_prob(keep_prob=self.config.embedding_dropout_keep_prob, test_mode=test_mode)
+            embedded_0 = tf.nn.dropout(embedded_0, emb_dropout_keep_prob)
+            embedded_1 = tf.nn.dropout(embedded_1, emb_dropout_keep_prob)
+            embedded_2 = tf.nn.dropout(embedded_2, emb_dropout_keep_prob)
+        else:
+            raise Exception('unknown embedding noise type: {}'.format(self.config.embedding_noise_type))
 
         with tf.variable_scope("rnn_0") as scope:
             _, rnn_last_states_0 = tf.nn.dynamic_rnn(

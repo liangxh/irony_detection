@@ -11,9 +11,7 @@ nn:
   seq_len: _
   embedding:
     trainable: False
-    noise_type: dropout
     noise_stddev: 0.1
-    dropout_keep_prob: 0.9
   rnn:
     dim: 150
   learning_rate:

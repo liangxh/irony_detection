@@ -67,7 +67,7 @@ class NNModel(BaseNNModel):
 
         if self.config.embedding_noise_type is None:
             pass
-        elif self.config.embedding_noise_type == 'guassian':
+        elif self.config.embedding_noise_type == 'gaussian':
             embedded_0 = add_gaussian_noise_layer(embedded_0, stddev=self.config.embedding_noise_stddev, test_mode=test_mode)
             embedded_1 = add_gaussian_noise_layer(embedded_1, stddev=self.config.embedding_noise_stddev, test_mode=test_mode)
             embedded_2 = add_gaussian_noise_layer(embedded_2, stddev=self.config.embedding_noise_stddev, test_mode=test_mode)

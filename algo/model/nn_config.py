@@ -60,6 +60,13 @@ class BaseNNConfig(object):
         return self.data['dropout_keep_prob']
 
     @property
+    def embedding_noise_type(self):
+        return self.data['embedding'].get('noise_type', 'gaussian')
+
+    @property
     def embedding_noise_stddev(self):
         return self.data['embedding']['noise_stddev']
 
+    @property
+    def embedding_dropout_keep_prob(self):
+        return self.data['embedding']['dropout_keep_prob']

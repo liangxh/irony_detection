@@ -23,9 +23,9 @@ nn:
       filter_num: 64
   learning_rate:
     init: 0.005
-    decay_steps: 1
+    decay_steps: 2
     decay_rate: 0.95
-  l2_reg_lambda: 0.2
+  l2_reg_lambda: 0.4
   output:
     dim: _
   dropout_keep_prob: 0.5

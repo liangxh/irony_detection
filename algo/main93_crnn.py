@@ -14,7 +14,7 @@ from algo.model.train_config import TrainConfig
 from algo.lib.common import print_evaluation, load_lookup_table2, tokenized_to_tid_list, tid_dropout
 from algo.model.nn_config import BaseNNConfig
 from algo.nn.base import BaseNNModel
-from algo.nn.common import dense, cnn, attention
+from algo.nn.common import dense, cnn, rnn_cell
 from algo.nn.common.common import add_gaussian_noise_layer, build_dropout_keep_prob
 from dataset.common.const import *
 from dataset.common.load import *
@@ -40,7 +40,7 @@ class NNConfig(BaseNNConfig):
 
 
 class NNModel(BaseNNModel):
-    name = 'm93_cnnatt0'
+    name = 'm93_cnn'
 
     def build_neural_network(self, lookup_table):
         test_mode = tf.placeholder(tf.int8, None, name=TEST_MODE)
@@ -70,18 +70,26 @@ class NNModel(BaseNNModel):
         embedded_2 = tf.nn.embedding_lookup(lookup_table, tid_2)
         embedded_2 = add_gaussian_noise_layer(embedded_2, stddev=self.config.embedding_noise_stddev, test_mode=test_mode)
 
-        with tf.variable_scope('turn_0'):
+        with tf.variable_scope("rnn_0") as scope:
             cnn_output = cnn.build(embedded_0, self.config.filter_num, self.config.kernel_size)
-            last_state_0, _ = attention.build(cnn_output, self.config.attention_dim)
+            _, last_state_0 = tf.nn.dynamic_rnn(
+                rnn_cell.build_gru(self.config.rnn_dim, dropout_keep_prob=dropout_keep_prob),
+                inputs=cnn_output, sequence_length=seq_len_0 - self.config.filter_num + 1, dtype=tf.float32
+            )
 
-        with tf.variable_scope('turn_1'):
+        with tf.variable_scope("rnn_1") as scope:
             cnn_output = cnn.build(embedded_1, self.config.filter_num, self.config.kernel_size)
-            last_state_1, _ = attention.build(cnn_output, self.config.attention_dim)
+            _, last_state_1 = tf.nn.dynamic_rnn(
+                rnn_cell.build_gru(self.config.rnn_dim, dropout_keep_prob=dropout_keep_prob),
+                inputs=cnn_output, sequence_length=seq_len_0 - self.config.filter_num + 1, dtype=tf.float32
+            )
 
-        with tf.variable_scope('turn_2'):
+        with tf.variable_scope("rnn_2") as scope:
             cnn_output = cnn.build(embedded_2, self.config.filter_num, self.config.kernel_size)
-            last_state_2, _ = attention.build(cnn_output, self.config.attention_dim)
-
+            _, last_state_2 = tf.nn.dynamic_rnn(
+                rnn_cell.build_gru(self.config.rnn_dim, dropout_keep_prob=dropout_keep_prob),
+                inputs=cnn_output, sequence_length=seq_len_0 - self.config.filter_num + 1, dtype=tf.float32
+            )
         dense_input = tf.concat([last_state_0, last_state_1, last_state_2], axis=1, name=HIDDEN_FEAT)
         dense_input = tf.nn.dropout(dense_input, keep_prob=dropout_keep_prob)
 

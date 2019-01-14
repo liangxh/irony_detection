@@ -40,7 +40,7 @@ class NNConfig(BaseNNConfig):
 
 
 class NNModel(BaseNNModel):
-    name = 'm93_crnn'
+    name = 'm93_2crnn'
 
     def build_neural_network(self, lookup_table):
         test_mode = tf.placeholder(tf.int8, None, name=TEST_MODE)

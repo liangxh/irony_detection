@@ -71,30 +71,30 @@ class NNModel(BaseNNModel):
         embedded_2 = add_gaussian_noise_layer(embedded_2, stddev=self.config.embedding_noise_stddev, test_mode=test_mode)
 
         with tf.variable_scope("rnn_0") as scope:
-            _, last_state_r0 = tf.nn.dynamic_rnn(
+            rnn_outputs, last_state_r0 = tf.nn.dynamic_rnn(
                 rnn_cell.build_gru(self.config.rnn_dim, dropout_keep_prob=dropout_keep_prob),
                 inputs=embedded_0, sequence_length=seq_len_0, dtype=tf.float32
             )
 
-            cnn_output = cnn.build(last_state_r0, self.config.filter_num, self.config.kernel_size)
+            cnn_output = cnn.build(rnn_outputs, self.config.filter_num, self.config.kernel_size)
             last_state_c0 = cnn.max_pooling(cnn_output)
 
         with tf.variable_scope("rnn_1") as scope:
-            _, last_state_r1 = tf.nn.dynamic_rnn(
+            rnn_outputs, last_state_r1 = tf.nn.dynamic_rnn(
                 rnn_cell.build_gru(self.config.rnn_dim, dropout_keep_prob=dropout_keep_prob),
                 inputs=embedded_1, sequence_length=seq_len_1, dtype=tf.float32
             )
 
-            cnn_output = cnn.build(last_state_r1, self.config.filter_num, self.config.kernel_size)
+            cnn_output = cnn.build(rnn_outputs, self.config.filter_num, self.config.kernel_size)
             last_state_c1 = cnn.max_pooling(cnn_output)
 
         with tf.variable_scope("rnn_2") as scope:
-            _, last_state_r2 = tf.nn.dynamic_rnn(
+            rnn_outputs, last_state_r2 = tf.nn.dynamic_rnn(
                 rnn_cell.build_gru(self.config.rnn_dim, dropout_keep_prob=dropout_keep_prob),
                 inputs=embedded_2, sequence_length=seq_len_2, dtype=tf.float32
             )
 
-            cnn_output = cnn.build(last_state_r2, self.config.filter_num, self.config.kernel_size)
+            cnn_output = cnn.build(rnn_outputs, self.config.filter_num, self.config.kernel_size)
             last_state_c2 = cnn.max_pooling(cnn_output)
 
         dense_input = tf.concat([

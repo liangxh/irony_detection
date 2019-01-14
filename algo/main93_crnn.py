@@ -74,21 +74,21 @@ class NNModel(BaseNNModel):
             cnn_output = cnn.build(embedded_0, self.config.filter_num, self.config.kernel_size)
             _, last_state_0 = tf.nn.dynamic_rnn(
                 rnn_cell.build_gru(self.config.rnn_dim, dropout_keep_prob=dropout_keep_prob),
-                inputs=cnn_output, sequence_length=seq_len_0 - self.config.filter_num + 1, dtype=tf.float32
+                inputs=cnn_output, sequence_length=seq_len_0 - self.config.kernel_size + 1, dtype=tf.float32
             )
 
         with tf.variable_scope("rnn_1") as scope:
             cnn_output = cnn.build(embedded_1, self.config.filter_num, self.config.kernel_size)
             _, last_state_1 = tf.nn.dynamic_rnn(
                 rnn_cell.build_gru(self.config.rnn_dim, dropout_keep_prob=dropout_keep_prob),
-                inputs=cnn_output, sequence_length=seq_len_1 - self.config.filter_num + 1, dtype=tf.float32
+                inputs=cnn_output, sequence_length=seq_len_1 - self.config.kernel_size + 1, dtype=tf.float32
             )
 
         with tf.variable_scope("rnn_2") as scope:
             cnn_output = cnn.build(embedded_2, self.config.filter_num, self.config.kernel_size)
             _, last_state_2 = tf.nn.dynamic_rnn(
                 rnn_cell.build_gru(self.config.rnn_dim, dropout_keep_prob=dropout_keep_prob),
-                inputs=cnn_output, sequence_length=seq_len_2 - self.config.filter_num + 1, dtype=tf.float32
+                inputs=cnn_output, sequence_length=seq_len_2 - self.config.kernel_size + 1, dtype=tf.float32
             )
         dense_input = tf.concat([last_state_0, last_state_1, last_state_2], axis=1, name=HIDDEN_FEAT)
         dense_input = tf.nn.dropout(dense_input, keep_prob=dropout_keep_prob)

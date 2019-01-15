@@ -412,5 +412,46 @@ def check_seq(output_key, w2v_key='ntua_ek'):
     print(max_seq_len)
 
 
+@commandr.command
+def check_wrong(output_key, w2v_key='ntua_ek'):
+    mode = TEST
+    path = data_config.output_path(output_key, mode, LABEL_PREDICT)
+    pred = load_label_list(path)
+
+    path = data_config.path(mode, LABEL)
+    gold = load_label_list(path)
+
+    w2v_model_path = data_config.path(ALL, WORD2VEC, w2v_key)
+    vocab_train_path = data_config.path(TRAIN, VOCAB, 'ek')
+
+    # 加载字典集
+    # 在模型中会采用所有模型中支持的词向量, 并为有足够出现次数的单词随机生成词向量
+    vocab_meta_list = load_vocab_list(vocab_train_path)
+    vocabs = [_meta['t'] for _meta in vocab_meta_list if _meta['tf'] >= 2]
+
+    # 加载词向量与相关数据
+    lookup_table, vocab_id_mapping, embedding_dim = load_lookup_table(
+        w2v_model_path=w2v_model_path, vocabs=vocabs)
+
+    tokens_0 = load_tokenized_list(data_config.path(mode, TURN, '0.ek'))
+    tokens_1 = load_tokenized_list(data_config.path(mode, TURN, '1.ek'))
+    tokens_2 = load_tokenized_list(data_config.path(mode, TURN, '2.ek'))
+    tid_list_0 = tokenized_to_tid_list(tokens_0, vocab_id_mapping)
+    tid_list_1 = tokenized_to_tid_list(tokens_1, vocab_id_mapping)
+    tid_list_2 = tokenized_to_tid_list(load_tokenized_list(data_config.path(mode, TURN, '2.ek')), vocab_id_mapping)
+
+    max_seq_len = 0
+    for p, g, tid_0, tid_1, tid_2, tk_0, tk_1, tk_2 in zip(pred, gold, tid_list_0, tid_list_1, tid_list_2, tokens_0, tokens_1, tokens_2):
+        if p != g and (len(tid_0) > 30 or len(tid_1) > 30 or len(tid_2) > 30):
+            print('pred: {}, gold: {}'.format(p, g))
+            print('turn0: {}'.format(' '.join(tk_0)))
+            print('turn1: {}'.format(' '.join(tk_1)))
+            print('turn2: {}'.format(' '.join(tk_2)))
+
+        if p != g:
+            max_seq_len = max(max_seq_len, len(tid_0), len(tid_1), len(tid_2))
+    print(max_seq_len)
+
+
 if __name__ == '__main__':
     commandr.Run()

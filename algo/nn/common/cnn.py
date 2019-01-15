@@ -17,10 +17,21 @@ def build(ph_input, filter_num, kernel_size, activation=None):
 
 def max_pooling(ph_input):
     output = tf.nn.max_pool(
-                    tf.expand_dims(ph_input, -2),
-                    ksize=[1, ph_input.shape[1].value, 1, 1],
-                    strides=[1] * 4,
-                    padding='VALID'
-                )
+        tf.expand_dims(ph_input, -2),
+        ksize=[1, ph_input.shape[1].value, 1, 1],
+        strides=[1] * 4,
+        padding='VALID'
+    )
+    output = tf.reshape(output, [-1, output.shape[-1].value])
+    return output
+
+
+def avg_pooling(ph_input):
+    output = tf.nn.avg_pool(
+        tf.expand_dims(ph_input, -2),
+        ksize=[1, ph_input.shape[1].value, 1, 1],
+        strides=[1] * 4,
+        padding='VALID'
+    )
     output = tf.reshape(output, [-1, output.shape[-1].value])
     return output

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function
-import importlib
+import re
 import time
 import commandr
 import yaml
@@ -112,16 +112,7 @@ class NNModel(BaseNNModel):
         self.set_graph(graph=tf.get_default_graph())
 
 
-def load_dataset(vocab_id_mapping, max_seq_len, with_label=True, label_version=None, text_version=None):
-    def seq_to_len_list(seq_list):
-        return list(map(len, seq_list))
-
-    def zero_pad_seq_list(seq_list, seq_len):
-        return list(map(lambda _seq: _seq + [0] * (seq_len - len(_seq)), seq_list))
-
-    def trim_tid_list(tid_list, max_len):
-        return list(map(lambda _seq: _seq[:max_len], tid_list))
-
+def load_dataset(vocab_id_mapping, max_seq_len, with_label=True, label_version=None):
     datasets = dict()
     for mode in [TRAIN, TEST]:
         tid_list_0 = tokenized_to_tid_list(load_tokenized_list(data_config.path(mode, TURN, '0.ek')), vocab_id_mapping)
@@ -217,7 +208,7 @@ def train(text_version='ek', label_version=None, config_path='config93_naive.yam
     # 加载训练数据
     datasets, output_dim = load_dataset(
         vocab_id_mapping=vocab_id_mapping, max_seq_len=nn_config.seq_len,
-        with_label=True, label_version=label_version, text_version=text_version
+        with_label=True, label_version=label_version
     )
 
     # 初始化数据集的检索
@@ -424,6 +415,58 @@ def train(text_version='ek', label_version=None, config_path='config93_naive.yam
     print('best test f1 reached: {}'.format(max(test_score_list)))
 
     print('OUTPUT_KEY: {}'.format(output_key))
+
+
+@commandr.command('test')
+def live_test(output_key):
+    config_path = data_config.output_path(output_key, ALL, CONFIG)
+    config_data = yaml.load(open(config_path))
+    nn_config = NNConfig(config_data)
+    vocab_id_mapping = json.load(open(data_config.output_path(output_key, ALL, VOCAB_ID_MAPPING), 'r'))
+
+    with tf.Session() as sess:
+        prefix_checkpoint = tf.train.latest_checkpoint(data_config.model_path(key=output_key))
+        saver = tf.train.import_meta_graph('{}.meta'.format(prefix_checkpoint))
+        saver.restore(sess, prefix_checkpoint)
+
+        nn = BaseNNModel(config=None)
+        nn.set_graph(tf.get_default_graph())
+
+        fetches = {_key: nn.var(_key) for _key in [LABEL_PREDICT, PROB_PREDICT]}
+        while True:
+            res = input('input: ')
+            if res == 'quit':
+                break
+
+            turns = res.strip().split('<turn>')
+            if len(turns) != 3:
+                print('invalid turns')
+                continue
+
+            tokens_list = list()
+            for turn in turns:
+                tokens = re.sub('\s+', ' ', turn.strip()).split(' ')
+                tokens_list.append(tokens)
+
+            tid_list_0 = tokenized_to_tid_list([tokens_list[0], ], vocab_id_mapping)
+            tid_list_1 = tokenized_to_tid_list([tokens_list[1], ], vocab_id_mapping)
+            tid_list_2 = tokenized_to_tid_list([tokens_list[2], ], vocab_id_mapping)
+
+            tid_0 = np.asarray(zero_pad_seq_list(tid_list_0, nn_config.seq_len))
+            tid_1 = np.asarray(zero_pad_seq_list(tid_list_1, nn_config.seq_len))
+            tid_2 = np.asarray(zero_pad_seq_list(tid_list_2, nn_config.seq_len))
+
+            feed_dict = {
+                nn.var(TID_0): tid_0,
+                nn.var(TID_1): tid_1,
+                nn.var(TID_2): tid_2,
+                nn.var(TEST_MODE): 1
+            }
+            res = sess.run(fetches=fetches, feed_dict=feed_dict)
+            label = res[LABEL_PREDICT][0]
+            prob = res[PROB_PREDICT][0]
+            print('label: {}'.format(label))
+            print('prob: {}'.format(prob))
 
 
 if __name__ == '__main__':

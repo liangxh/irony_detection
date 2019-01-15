@@ -80,3 +80,15 @@ def load_feat(path, separator='\t'):
                 raise Exception('expected dim={}, got dim={} at line {}'.format(dim, len(vec), i + 1))
             vec_list.append(vec)
     return vec_list, dim
+
+
+def seq_to_len_list(seq_list):
+    return list(map(len, seq_list))
+
+
+def zero_pad_seq_list(seq_list, seq_len):
+    return list(map(lambda _seq: _seq + [0] * (seq_len - len(_seq)), seq_list))
+
+
+def trim_tid_list(tid_list, max_len):
+    return list(map(lambda _seq: _seq[:max_len], tid_list))

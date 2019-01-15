@@ -26,7 +26,7 @@ nn:
   learning_rate:
     init: 0.005
     decay_steps: 2
-    decay_rate: 0.95
+    decay_rate: 0.9
   l2_reg_lambda: 0.4
   output:
     dim: _

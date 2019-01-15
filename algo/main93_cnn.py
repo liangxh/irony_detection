@@ -438,7 +438,7 @@ def live_test(output_key):
             if res == 'quit':
                 break
 
-            turns = res.strip().split('<turn>')
+            turns = res.strip().split('|`')
             if len(turns) != 3:
                 print('invalid turns')
                 continue
@@ -448,9 +448,10 @@ def live_test(output_key):
                 tokens = re.sub('\s+', ' ', turn.strip()).split(' ')
                 tokens_list.append(tokens)
 
-            tid_list_0 = tokenized_to_tid_list([tokens_list[0], ], vocab_id_mapping)
-            tid_list_1 = tokenized_to_tid_list([tokens_list[1], ], vocab_id_mapping)
-            tid_list_2 = tokenized_to_tid_list([tokens_list[2], ], vocab_id_mapping)
+            placeholder = [[]] * (nn_config.batch_size - 1)
+            tid_list_0 = tokenized_to_tid_list([tokens_list[0], ] + placeholder, vocab_id_mapping)
+            tid_list_1 = tokenized_to_tid_list([tokens_list[1], ] + placeholder, vocab_id_mapping)
+            tid_list_2 = tokenized_to_tid_list([tokens_list[2], ] + placeholder, vocab_id_mapping)
 
             tid_0 = np.asarray(zero_pad_seq_list(tid_list_0, nn_config.seq_len))
             tid_1 = np.asarray(zero_pad_seq_list(tid_list_1, nn_config.seq_len))

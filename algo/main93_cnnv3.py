@@ -52,6 +52,8 @@ class NNModel(BaseNNModel):
         )
         dropout_keep_prob = build_dropout_keep_prob(keep_prob=self.config.dropout_keep_prob, test_mode=test_mode)
 
+        regularizer = tf.contrib.layers.l2_regularizer(scale=self.config.l2_reg_lambda)
+
         tid_0 = tf.placeholder(tf.int32, [self.config.batch_size, self.config.seq_len], name=TID_0)
         seq_len_0 = tf.placeholder(tf.int32, [None, ], name=SEQ_LEN_0)
 
@@ -80,33 +82,33 @@ class NNModel(BaseNNModel):
             raise Exception('unknown embedding noise type: {}'.format(self.config.embedding_noise_type))
 
         with tf.variable_scope("rnn_0") as scope:
-            cnn_output = cnn.build2(embedded_0, self.config.filter_num, self.config.kernel_size)
+            cnn_output = cnn.build2(embedded_0, self.config.filter_num, self.config.kernel_size, regularizer)
             last_state_0 = cnn.max_pooling(cnn_output)
 
         with tf.variable_scope("rnn_1") as scope:
-            cnn_output = cnn.build2(embedded_1, self.config.filter_num, self.config.kernel_size)
+            cnn_output = cnn.build2(embedded_1, self.config.filter_num, self.config.kernel_size, regularizer)
             last_state_1 = cnn.max_pooling(cnn_output)
 
         with tf.variable_scope("rnn_2") as scope:
-            cnn_output = cnn.build2(embedded_2, self.config.filter_num, self.config.kernel_size)
+            cnn_output = cnn.build2(embedded_2, self.config.filter_num, self.config.kernel_size, regularizer)
             last_state_2 = cnn.max_pooling(cnn_output)
 
         dense_input = tf.concat([last_state_0, last_state_1, last_state_2], axis=1, name=HIDDEN_FEAT)
         dense_input = tf.nn.dropout(dense_input, keep_prob=dropout_keep_prob)
 
-        dense_input, _, _ = dense.build(
-            dense_input,
-            dim_output=int(dense_input.shape[-1] / 2),
-            activation=tf.nn.relu
-        )
-        y, w, b = dense.build(dense_input, dim_output=self.config.output_dim, output_name=PROB_PREDICT)
+        dense_input, w2, _ = dense.build(dense_input, dim_output=32, activation=tf.nn.relu)
+
+        y, w, b = dense.build(
+            dense_input, dim_output=self.config.output_dim, output_name=PROB_PREDICT)
         # 计算loss
         _loss_1 = tf.reduce_mean(tf.losses.sparse_softmax_cross_entropy(
             logits=y, labels=label_gold, weights=sample_weights))
 
         _loss_2 = tf.constant(0., dtype=tf.float32)
         if self.config.l2_reg_lambda is not None and self.config.l2_reg_lambda > 0:
-            _loss_2 += self.config.l2_reg_lambda * tf.nn.l2_loss(w)
+            _loss_2 += self.config.l2_reg_lambda * (
+                tf.nn.l2_loss(w) + tf.nn.l2_loss(w2) + tf.losses.get_regularization_loss()
+            )
         loss = tf.add(_loss_1, _loss_2, name=LOSS)
 
         # 预测标签

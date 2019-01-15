@@ -15,13 +15,14 @@ def build(ph_input, filter_num, kernel_size, activation=None):
     return h
 
 
-def build2(ph_input, filter_num, kernel_size):
+def build2(ph_input, filter_num, kernel_size, regularizer=None):
     conv = tf.layers.conv1d(
         ph_input,
         filters=filter_num,
         kernel_size=kernel_size,
         strides=1,
-        padding='same'
+        padding='same',
+        kernel_regularizer=regularizer
     )
     h = tf.nn.relu(conv)
     return h

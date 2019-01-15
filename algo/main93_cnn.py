@@ -438,7 +438,7 @@ def live_test(output_key):
             if res == 'quit':
                 break
 
-            turns = res.strip().split('|`')
+            turns = res.strip().split('|')
             if len(turns) != 3:
                 print('invalid turns')
                 continue

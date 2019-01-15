@@ -9,7 +9,7 @@ nn:
   embedding:
     trainable: False
     noise_stddev: 0.1
-    noise_type: guassian
+    noise_type: gaussian
     dropout_keep_prob: 0.9
   rnn:
     dim: 50

@@ -52,8 +52,6 @@ class NNModel(BaseNNModel):
         )
         dropout_keep_prob = build_dropout_keep_prob(keep_prob=self.config.dropout_keep_prob, test_mode=test_mode)
 
-        regularizer = tf.contrib.layers.l2_regularizer(scale=self.config.l2_reg_lambda)
-
         tid_0 = tf.placeholder(tf.int32, [self.config.batch_size, self.config.seq_len], name=TID_0)
         seq_len_0 = tf.placeholder(tf.int32, [None, ], name=SEQ_LEN_0)
 
@@ -82,15 +80,15 @@ class NNModel(BaseNNModel):
             raise Exception('unknown embedding noise type: {}'.format(self.config.embedding_noise_type))
 
         with tf.variable_scope("rnn_0") as scope:
-            cnn_output = cnn.build2(embedded_0, self.config.filter_num, self.config.kernel_size, regularizer)
+            cnn_output = cnn.build2(embedded_0, self.config.filter_num, self.config.kernel_size)
             last_state_0 = cnn.max_pooling(cnn_output)
 
         with tf.variable_scope("rnn_1") as scope:
-            cnn_output = cnn.build2(embedded_1, self.config.filter_num, self.config.kernel_size, regularizer)
+            cnn_output = cnn.build2(embedded_1, self.config.filter_num, self.config.kernel_size)
             last_state_1 = cnn.max_pooling(cnn_output)
 
         with tf.variable_scope("rnn_2") as scope:
-            cnn_output = cnn.build2(embedded_2, self.config.filter_num, self.config.kernel_size, regularizer)
+            cnn_output = cnn.build2(embedded_2, self.config.filter_num, self.config.kernel_size)
             last_state_2 = cnn.max_pooling(cnn_output)
 
         dense_input = tf.concat([last_state_0, last_state_1, last_state_2], axis=1, name=HIDDEN_FEAT)
@@ -106,9 +104,7 @@ class NNModel(BaseNNModel):
 
         _loss_2 = tf.constant(0., dtype=tf.float32)
         if self.config.l2_reg_lambda is not None and self.config.l2_reg_lambda > 0:
-            _loss_2 += self.config.l2_reg_lambda * (
-                tf.nn.l2_loss(w) + tf.nn.l2_loss(w2) + tf.losses.get_regularization_loss()
-            )
+            _loss_2 += self.config.l2_reg_lambda * (tf.nn.l2_loss(w) + tf.nn.l2_loss(w2))
         loss = tf.add(_loss_1, _loss_2, name=LOSS)
 
         # 预测标签

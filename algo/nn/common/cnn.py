@@ -10,9 +10,20 @@ def build(ph_input, filter_num, kernel_size, activation=None):
     w = tf.Variable(tf.truncated_normal(filter_shape, stddev=0.1))
     b = tf.Variable(tf.constant(0.1, shape=[filter_num]))
     conv = tf.nn.conv1d(ph_input, w, stride=1, padding='VALID')
-    h = activation(conv + b)     # [batch_size, seq_len - filter_size + 1, filter_num]
 
+    h = activation(conv + b)     # [batch_size, seq_len - filter_size + 1, filter_num]
     return h
+
+
+def build2(ph_input, filter_num, kernel_size):
+    conv = tf.layers.conv1d(
+        ph_input,
+        filters=filter_num,
+        kernel_size=kernel_size,
+        strides=1,
+        padding='valid'
+    )
+    return conv
 
 
 def max_pooling(ph_input):

@@ -21,9 +21,10 @@ def build2(ph_input, filter_num, kernel_size):
         filters=filter_num,
         kernel_size=kernel_size,
         strides=1,
-        padding='valid'
+        padding='same'
     )
-    return conv
+    h = tf.nn.relu(conv)
+    return h
 
 
 def max_pooling(ph_input):

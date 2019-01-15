@@ -7,6 +7,7 @@ import yaml
 import shutil
 import numpy as np
 import tensorflow as tf
+from collections import defaultdict
 from algo.nn.base import BaseNNModel
 from algo.lib.dataset import IndexIterator, SimpleIndexIterator
 from algo.lib.evaluate93 import basic_evaluate
@@ -452,6 +453,35 @@ def check_wrong(output_key, w2v_key='ntua_ek'):
             max_seq_len = max(max_seq_len, len(tid_0), len(tid_1), len(tid_2))
     print(max_seq_len)
 
+
+@commandr.command
+def export_wrong(output_key):
+    mode = TEST
+    path = data_config.output_path(output_key, mode, LABEL_PREDICT)
+    pred = load_label_list(path)
+
+    path = data_config.path(mode, LABEL)
+    gold = load_label_list(path)
+
+    tokens_0 = load_tokenized_list(data_config.path(mode, TURN, '0.ek'))
+    tokens_1 = load_tokenized_list(data_config.path(mode, TURN, '1.ek'))
+    tokens_2 = load_tokenized_list(data_config.path(mode, TURN, '2.ek'))
+
+    wrong = defaultdict(lambda: defaultdict(lambda: list()))
+
+    max_seq_len = 0
+    for p, g, tk_0, tk_1, tk_2 in zip(pred, gold, tokens_0, tokens_1, tokens_2):
+        if p != g:
+            wrong[g][p].append(' '.join(tk_0) + ' | ' + ' '.join(tk_1) + ' | ' + ' '.join(tk_2))
+            max_seq_len = max(max_seq_len, len(tk_0), len(tk_1), len(tk_2))
+
+    for _g in range(4):
+        for _p in range(4):
+            print('{}->{}'.format(_g, _p))
+            for sample in wrong[_g][_p]:
+                print('\t{}'.format(sample))
+
+    print(max_seq_len)
 
 if __name__ == '__main__':
     commandr.Run()

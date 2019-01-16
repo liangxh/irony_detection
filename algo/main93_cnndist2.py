@@ -160,8 +160,9 @@ def custom_sampling(dataset, dist=None):
         tid_ = [copy.deepcopy(dataset[TID_[j]][i]) for j in range(3)]
 
         j = random.randint(0, 2)
-        pop_idx = random.randint(0, len(tid_[j]) - 1)
-        tid_[j].pop(pop_idx)
+        if len(tid_[j]) > 1:
+            pop_idx = random.randint(0, len(tid_[j]) - 1)
+            tid_[j].pop(pop_idx)
 
         for j in range(3):
             dataset[TID_[j]].append(tid_[j])

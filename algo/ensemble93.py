@@ -50,6 +50,8 @@ def main(ensemble_mode, config_path='config93_ensemble.yaml', build_analysis=Fal
     :param build_analysis: bool
     :return: 
     """
+    dataset_key = 'semeval2019_task3_dev'
+
     config_data = yaml.load(open(config_path))
     config = Config(data=config_data)
 
@@ -87,7 +89,7 @@ def main(ensemble_mode, config_path='config93_ensemble.yaml', build_analysis=Fal
             labels_predict[mode] = labels
 
     elif ensemble_mode == MAJORITY_VOTING:
-        components = list()
+        components = dict()
 
         for mode in [TRAIN, TEST]:
             for output_key in config.components:
@@ -100,12 +102,12 @@ def main(ensemble_mode, config_path='config93_ensemble.yaml', build_analysis=Fal
                             continue
                         label = int(line)
                         label_list.append(label)
-                components.append(label_list)
+                components[output_key] = label_list
 
             labels = list()
             for i in range(n_sample[mode]):
                 prob = np.zeros((output_dim, ))
-                for label_list in components:
+                for output_key, label_list in components.items():
                     label = label_list[i]
                     prob[label] += 1
                 labels.append(np.argmax(prob))

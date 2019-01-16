@@ -2,8 +2,10 @@
 from __future__ import print_function
 import re
 import time
+import copy
 import commandr
 import yaml
+import random
 import shutil
 import numpy as np
 import tensorflow as tf
@@ -155,12 +157,15 @@ def custom_sampling(dataset, dist=None):
 
     label = 0
     for i in label_idx[label]:
-        tid_0 = dataset[TID_0][i]
-        tid_1 = dataset[TID_1][i]
-        tid_2 = dataset[TID_2][i]
-        dataset[TID_0].append(tid_0)
-        dataset[TID_1].append(tid_1)
-        dataset[TID_2].append(tid_2)
+        tid_ = [copy.deepcopy(dataset[TID_[j]][i]) for j in range(3)]
+
+        j = random.randint(0, 2)
+        if len(tid_[j]) > 1:
+            pop_idx = random.randint(0, len(tid_[j]) - 1)
+            tid_[j].pop(pop_idx)
+
+        for j in range(3):
+            dataset[TID_[j]].append(tid_[j])
         dataset[LABEL_GOLD].append(0)
 
     dataset[LABEL_GOLD] = np.asarray(dataset[LABEL_GOLD])

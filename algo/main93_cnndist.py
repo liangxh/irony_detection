@@ -224,7 +224,7 @@ def train(text_version='ek', label_version=None, config_path='config93_naive.yam
 
     # 加载训练数据
     datasets, output_dim = load_dataset(
-        vocab_id_mapping=vocab_id_mapping, max_seq_len=nn_config.seq_len
+        vocab_id_mapping=vocab_id_mapping, max_seq_len=nn_config.seq_len,
         with_label=True, label_version=label_version
     )
 

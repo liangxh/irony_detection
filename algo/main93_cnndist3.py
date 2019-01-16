@@ -94,14 +94,17 @@ class NNModel(BaseNNModel):
         dense_input = tf.concat([last_state_0, last_state_1, last_state_2], axis=1, name=HIDDEN_FEAT)
         dense_input = tf.nn.dropout(dense_input, keep_prob=dropout_keep_prob)
 
+        dense_input, w2, _ = dense.build(dense_input, dim_output=32, activation=tf.nn.relu)
+
         y, w, b = dense.build(dense_input, dim_output=self.config.output_dim, output_name=PROB_PREDICT)
+
         # 计算loss
         _loss_1 = tf.reduce_mean(tf.losses.sparse_softmax_cross_entropy(
             logits=y, labels=label_gold, weights=sample_weights))
 
         _loss_2 = tf.constant(0., dtype=tf.float32)
         if self.config.l2_reg_lambda is not None and self.config.l2_reg_lambda > 0:
-            _loss_2 += self.config.l2_reg_lambda * tf.nn.l2_loss(w)
+            _loss_2 += self.config.l2_reg_lambda * (tf.nn.l2_loss(w) + tf.nn.l2_loss(w2))
         loss = tf.add(_loss_1, _loss_2, name=LOSS)
 
         # 预测标签
@@ -167,7 +170,6 @@ def custom_sampling(dataset, dist=None):
         for j in range(3):
             dataset[TID_[j]].append(tid_[j])
         dataset[LABEL_GOLD].append(label)
-
 
     dataset[LABEL_GOLD] = np.asarray(dataset[LABEL_GOLD])
     return dataset

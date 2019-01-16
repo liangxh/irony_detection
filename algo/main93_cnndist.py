@@ -20,6 +20,9 @@ from dataset.common.const import *
 from dataset.common.load import *
 from dataset.semeval2019_task3_dev.config import config as data_config
 
+TID_ = [TID_0, TID_1, TID_1]
+SEQ_LEN_ = [SEQ_LEN_0, SEQ_LEN_1, SEQ_LEN_2]
+
 
 class NNConfig(BaseNNConfig):
     @property
@@ -40,7 +43,7 @@ class NNConfig(BaseNNConfig):
 
 
 class NNModel(BaseNNModel):
-    name = 'm93_cnn'
+    name = 'm93_cnndist'
 
     def build_neural_network(self, lookup_table):
         test_mode = tf.placeholder(tf.int8, None, name=TEST_MODE)
@@ -53,13 +56,8 @@ class NNModel(BaseNNModel):
         dropout_keep_prob = build_dropout_keep_prob(keep_prob=self.config.dropout_keep_prob, test_mode=test_mode)
 
         tid_0 = tf.placeholder(tf.int32, [self.config.batch_size, self.config.seq_len], name=TID_0)
-        seq_len_0 = tf.placeholder(tf.int32, [None, ], name=SEQ_LEN_0)
-
         tid_1 = tf.placeholder(tf.int32, [self.config.batch_size, self.config.seq_len], name=TID_1)
-        seq_len_1 = tf.placeholder(tf.int32, [None, ], name=SEQ_LEN_1)
-
         tid_2 = tf.placeholder(tf.int32, [self.config.batch_size, self.config.seq_len], name=TID_2)
-        seq_len_2 = tf.placeholder(tf.int32, [None, ], name=SEQ_LEN_2)
 
         embedded_0 = tf.nn.embedding_lookup(lookup_table, tid_0)
         embedded_1 = tf.nn.embedding_lookup(lookup_table, tid_1)
@@ -112,37 +110,29 @@ class NNModel(BaseNNModel):
         self.set_graph(graph=tf.get_default_graph())
 
 
-def to_input(tid_list, max_seq_len):
+def to_nn_input(tid_list, max_seq_len):
     tid_list = trim_tid_list(tid_list, max_seq_len)
-    seq_len = seq_to_len_list(tid_list)
+    # seq_len = seq_to_len_list(tid_list)
     tid_list = np.asarray(zero_pad_seq_list(tid_list, max_seq_len))
-    return tid_list, seq_len
+    return tid_list  # , seq_len
 
 
-def load_dataset(vocab_id_mapping, max_seq_len, with_label=True, label_version=None):
+def load_dataset(vocab_id_mapping, with_label=True, label_version=None):
     datasets = dict()
     for mode in [TRAIN, TEST]:
-        tid_lists = [
-            tokenized_to_tid_list(load_tokenized_list(data_config.path(mode, TURN, '{}.ek'.format(i))), vocab_id_mapping)
-            for i in [0, 1, 2]
-        ]
-
-        tid_lists = [trim_tid_list(tid_list, max_seq_len) for tid_list in tid_lists]
-        seq_lens = [seq_to_len_list(tid_list) for tid_list in tid_lists]
-        tid_lists = [np.asarray(zero_pad_seq_list(tid_list, max_seq_len)) for tid_list in tid_lists]
-
-        datasets[mode] = {
-            TID_0: tid_lists[0],
-            TID_1: tid_lists[1],
-            TID_2: tid_lists[2],
-            SEQ_LEN_0: np.asarray(seq_lens[0]),
-            SEQ_LEN_1: np.asarray(seq_lens[1]),
-            SEQ_LEN_2: np.asarray(seq_lens[2]),
-        }
+        datasets[mode] = dict()
+        for i in [0, 1, 2]:
+            tid_list = tokenized_to_tid_list(
+                load_tokenized_list(data_config.path(mode, TURN, '{}.ek'.format(i))),
+                vocab_id_mapping
+            )
+            datasets[mode][TID_[i]] = tid_list
         if with_label:
             label_path = data_config.path(mode, LABEL, label_version)
             label_list = load_label_list(label_path)
             datasets[mode][LABEL_GOLD] = np.asarray(label_list)
+
+    datasets[TRAIN] = custom_sampling(datasets[TRAIN])
 
     if with_label:
         output_dim = max(datasets[TRAIN][LABEL_GOLD]) + 1
@@ -151,15 +141,35 @@ def load_dataset(vocab_id_mapping, max_seq_len, with_label=True, label_version=N
         return datasets
 
 
+def custom_sampling(dataset, dist=None):
+    if dist is None:
+        dist = [0.88, 0.04, 0.04, 0.04]
+    label_idx = [list() for _ in range(len(dist))]
+    for i, label in enumerate(dataset[LABEL_GOLD]):
+        label_idx[label].append(i)
+
+    label = 0
+    for i in label_idx[label]:
+        tid_0 = dataset[TID_0][i]
+        tid_1 = dataset[TID_1][i]
+        tid_2 = dataset[TID_2][i]
+        dataset[TID_0].append(tid_0)
+        dataset[TID_2].append(tid_1)
+        dataset[TID_3].append(tid_2)
+        dataset[LABEL_GOLD].append(0)
+    return dataset
+
+
 feed_key = {
-    TRAIN: [TID_0, TID_1, TID_2, SEQ_LEN_0, SEQ_LEN_1, SEQ_LEN_2, LABEL_GOLD],
-    TEST: [TID_0, TID_1, TID_2, SEQ_LEN_0, SEQ_LEN_1, SEQ_LEN_2]
+    TRAIN: [TID_0, TID_1, TID_2, LABEL_GOLD],
+    TEST: [TID_0, TID_1, TID_2, ]
 }
 
 fetch_key = {
     TRAIN: [OPTIMIZER, LOSS, LABEL_PREDICT],
     TEST: [LABEL_PREDICT, PROB_PREDICT, HIDDEN_FEAT]
 }
+
 
 
 @commandr.command
@@ -206,10 +216,7 @@ def train(text_version='ek', label_version=None, config_path='config93_naive.yam
     early_stop_metric = train_config.early_stop_metric
 
     # 加载训练数据
-    datasets, output_dim = load_dataset(
-        vocab_id_mapping=vocab_id_mapping, max_seq_len=nn_config.seq_len,
-        with_label=True, label_version=label_version
-    )
+    datasets, output_dim = load_dataset(vocab_id_mapping=vocab_id_mapping,  with_label=True, label_version=label_version)
 
     # 初始化数据集的检索
     index_iterators = {mode: IndexIterator(datasets[mode][LABEL_GOLD]) for mode in [TRAIN, TEST]}
@@ -235,7 +242,6 @@ def train(text_version='ek', label_version=None, config_path='config93_naive.yam
 
     batch_size = train_config.batch_size
     fetches = {mode: {_key: nn.var(_key) for _key in fetch_key[mode]} for mode in [TRAIN, TEST]}
-    last_eval = {TRAIN: None, VALID: None, TEST: None}
 
     model_output_prefix = data_config.model_path(key=output_key) + '/model'
 
@@ -266,13 +272,8 @@ def train(text_version='ek', label_version=None, config_path='config93_naive.yam
                 feed_dict = {nn.var(_key): dataset[_key][batch_index] for _key in feed_key[TRAIN]}
                 feed_dict[nn.var(SAMPLE_WEIGHTS)] = list(map(label_weight.get, feed_dict[nn.var(LABEL_GOLD)]))
                 feed_dict[nn.var(TEST_MODE)] = 0
-
-                if train_config.input_dropout_keep_prob < 1.:
-                    for _key in [TID_0, TID_1, TID_2]:
-                        var = nn.var(_key)
-                        _tids = feed_dict[var]
-                        feed_dict[var] = tid_dropout(_tids, train_config.input_dropout_keep_prob)
-
+                for _key in [TID_0, TID_1, TID_2]:
+                    feed_dict[nn.var(_key)] = to_nn_input(feed_dict[nn.var(_key)], nn_config.seq_len)
                 res = sess.run(fetches=fetches[TRAIN], feed_dict=feed_dict)
 
                 labels_predict += res[LABEL_PREDICT].tolist()
@@ -308,7 +309,10 @@ def train(text_version='ek', label_version=None, config_path='config93_naive.yam
                 for batch_index in index_iterator.iterate(batch_size, mode=VALID, shuffle=False):
                     feed_dict = {nn.var(_key): dataset[_key][batch_index] for _key in feed_key[TEST]}
                     feed_dict[nn.var(TEST_MODE)] = 1
+                    for _key in [TID_0, TID_1, TID_2]:
+                        feed_dict[nn.var(_key)] = to_nn_input(feed_dict[nn.var(_key)], nn_config.seq_len)
                     res = sess.run(fetches=fetches[TEST], feed_dict=feed_dict)
+
                     labels_predict += res[LABEL_PREDICT].tolist()
                     labels_gold += dataset[LABEL_GOLD][batch_index].tolist()
 
@@ -336,7 +340,10 @@ def train(text_version='ek', label_version=None, config_path='config93_naive.yam
             for batch_index in _index_iterator.iterate(batch_size, shuffle=False):
                 feed_dict = {nn.var(_key): _dataset[_key][batch_index] for _key in feed_key[TEST]}
                 feed_dict[nn.var(TEST_MODE)] = 1
+                for _key in [TID_0, TID_1, TID_2]:
+                    feed_dict[nn.var(_key)] = to_nn_input(feed_dict[nn.var(_key)], nn_config.seq_len)
                 res = sess.run(fetches=fetches[TEST], feed_dict=feed_dict)
+
                 labels_predict += res[LABEL_PREDICT].tolist()
                 labels_gold += _dataset[LABEL_GOLD][batch_index].tolist()
             labels_predict, labels_gold = labels_predict[:_n_sample], labels_gold[:_n_sample]

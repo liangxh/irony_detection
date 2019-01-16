@@ -294,7 +294,7 @@ def train(text_version='ek', label_version=None, config_path='config93_naive.yam
 
             labels_predict, labels_gold = labels_predict[:n_sample], labels_gold[:n_sample]
             prob_predict = prob_predict[:n_sample]
-            labels_predict_np = list(map(np.argmax, prob_predict))[:n_sample]
+            labels_predict_np = list(map(np.argmax, prob_predict))
 
             res = basic_evaluate(gold=labels_gold, pred=labels_predict_np)
             print_evaluation(res)
@@ -333,7 +333,7 @@ def train(text_version='ek', label_version=None, config_path='config93_naive.yam
 
                 labels_predict, labels_gold = labels_predict[:n_sample], labels_gold[:n_sample]
                 prob_predict = prob_predict[:n_sample]
-                labels_predict_np = list(map(np.argmax, prob_predict))[:n_sample]
+                labels_predict_np = list(map(np.argmax, prob_predict))
                 res = basic_evaluate(gold=labels_gold, pred=labels_predict_np)
 
                 eval_history[DEV].append(res)
@@ -365,8 +365,8 @@ def train(text_version='ek', label_version=None, config_path='config93_naive.yam
                 prob_predict += res[PROB_PREDICT].tolist()
 
             labels_predict, labels_gold = labels_predict[:_n_sample], labels_gold[:_n_sample]
-            prob_predict = prob_predict[:n_sample]
-            labels_predict_np = list(map(np.argmax, prob_predict))[:n_sample]
+            prob_predict = prob_predict[:_n_sample]
+            labels_predict_np = list(map(np.argmax, prob_predict))
             res = basic_evaluate(gold=labels_gold, pred=labels_predict_np)
             eval_history[TEST].append(res)
 

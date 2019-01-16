@@ -205,8 +205,8 @@ def analyse_cover():
             for token in unknown:
                 unknown_vocab_dist[label][token] += [line, ]
 
-    print len(train_vocab - test_vocab)
-    print len(test_vocab - train_vocab)
+    print(len(train_vocab - test_vocab))
+    print(len(test_vocab - train_vocab))
     new_vocab = test_vocab - train_vocab
     with open('out/new_vocab_in_test.txt', 'w') as file_obj:
         file_obj.write(u'\n'.join(new_vocab).encode('utf8'))

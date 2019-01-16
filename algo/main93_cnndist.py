@@ -319,8 +319,8 @@ def train(text_version='ek', label_version=None, config_path='config93_naive.yam
                 for batch_index in index_iterator.iterate(batch_size, mode=VALID, shuffle=False):
                     feed_dict = {nn.var(_key): dataset[_key][batch_index] for _key in feed_key[TEST]}
                     feed_dict[nn.var(TEST_MODE)] = 1
-                    for _key in [TID_0, TID_1, TID_2]:
-                        feed_dict[nn.var(_key)] = to_nn_input(feed_dict[nn.var(_key)], nn_config.seq_len)
+                    # for _key in [TID_0, TID_1, TID_2]:
+                    #     feed_dict[nn.var(_key)] = to_nn_input(feed_dict[nn.var(_key)], nn_config.seq_len)
                     res = sess.run(fetches=fetches[TEST], feed_dict=feed_dict)
 
                     labels_predict += res[LABEL_PREDICT].tolist()

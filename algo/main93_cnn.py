@@ -80,15 +80,15 @@ class NNModel(BaseNNModel):
             raise Exception('unknown embedding noise type: {}'.format(self.config.embedding_noise_type))
 
         with tf.variable_scope("rnn_0") as scope:
-            cnn_output = cnn.build(embedded_0, self.config.filter_num, self.config.kernel_size)
+            cnn_output = cnn.build2(embedded_0, self.config.filter_num, self.config.kernel_size)
             last_state_0 = cnn.max_pooling(cnn_output)
 
         with tf.variable_scope("rnn_1") as scope:
-            cnn_output = cnn.build(embedded_1, self.config.filter_num, self.config.kernel_size)
+            cnn_output = cnn.build2(embedded_1, self.config.filter_num, self.config.kernel_size)
             last_state_1 = cnn.max_pooling(cnn_output)
 
         with tf.variable_scope("rnn_2") as scope:
-            cnn_output = cnn.build(embedded_2, self.config.filter_num, self.config.kernel_size)
+            cnn_output = cnn.build2(embedded_2, self.config.filter_num, self.config.kernel_size)
             last_state_2 = cnn.max_pooling(cnn_output)
 
         dense_input = tf.concat([last_state_0, last_state_1, last_state_2], axis=1, name=HIDDEN_FEAT)

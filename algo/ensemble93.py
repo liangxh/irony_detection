@@ -89,9 +89,10 @@ def main(ensemble_mode, config_path='config93_ensemble.yaml', build_analysis=Fal
             labels_predict[mode] = labels
 
     elif ensemble_mode == MAJORITY_VOTING:
-        components = dict()
 
         for mode in [TRAIN, TEST]:
+            components = list()
+
             for output_key in config.components:
                 path = data_config.output_path(output_key, mode, LABEL_PREDICT)
                 label_list = list()
@@ -102,12 +103,12 @@ def main(ensemble_mode, config_path='config93_ensemble.yaml', build_analysis=Fal
                             continue
                         label = int(line)
                         label_list.append(label)
-                components[output_key] = label_list
+                components.append(label_list)
 
             labels = list()
             for i in range(n_sample[mode]):
                 prob = np.zeros((output_dim, ))
-                for output_key, label_list in components.items():
+                for label_list in components:
                     label = label_list[i]
                     prob[label] += 1
                 labels.append(np.argmax(prob))

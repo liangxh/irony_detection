@@ -117,7 +117,7 @@ def to_nn_input(tid_list, max_seq_len):
     return tid_list  # , seq_len
 
 
-def load_dataset(vocab_id_mapping, with_label=True, label_version=None):
+def load_dataset(vocab_id_mapping, max_seq_len, with_label=True, label_version=None):
     datasets = dict()
     for mode in [TRAIN, TEST]:
         datasets[mode] = dict()
@@ -133,6 +133,10 @@ def load_dataset(vocab_id_mapping, with_label=True, label_version=None):
             datasets[mode][LABEL_GOLD] = np.asarray(label_list)
 
     datasets[TRAIN] = custom_sampling(datasets[TRAIN])
+
+    for mode in [TRAIN, TEST]:
+        for i in [0, 1, 2]:
+            datasets[mode][TID_[i]] = to_nn_input(datasets[mode][TID_[i]], max_seq_len=max_seq_len)
 
     if with_label:
         output_dim = max(datasets[TRAIN][LABEL_GOLD]) + 1
@@ -219,7 +223,10 @@ def train(text_version='ek', label_version=None, config_path='config93_naive.yam
     early_stop_metric = train_config.early_stop_metric
 
     # 加载训练数据
-    datasets, output_dim = load_dataset(vocab_id_mapping=vocab_id_mapping,  with_label=True, label_version=label_version)
+    datasets, output_dim = load_dataset(
+        vocab_id_mapping=vocab_id_mapping, max_seq_len=nn_config.seq_len
+        with_label=True, label_version=label_version
+    )
 
     # 初始化数据集的检索
     index_iterators = {mode: IndexIterator(datasets[mode][LABEL_GOLD]) for mode in [TRAIN, TEST]}
@@ -275,8 +282,8 @@ def train(text_version='ek', label_version=None, config_path='config93_naive.yam
                 feed_dict = {nn.var(_key): dataset[_key][batch_index] for _key in feed_key[TRAIN]}
                 feed_dict[nn.var(SAMPLE_WEIGHTS)] = list(map(label_weight.get, feed_dict[nn.var(LABEL_GOLD)]))
                 feed_dict[nn.var(TEST_MODE)] = 0
-                for _key in [TID_0, TID_1, TID_2]:
-                    feed_dict[nn.var(_key)] = to_nn_input(feed_dict[nn.var(_key)], nn_config.seq_len)
+                # for _key in [TID_0, TID_1, TID_2]:
+                #     feed_dict[nn.var(_key)] = to_nn_input(feed_dict[nn.var(_key)], nn_config.seq_len)
                 res = sess.run(fetches=fetches[TRAIN], feed_dict=feed_dict)
 
                 labels_predict += res[LABEL_PREDICT].tolist()
@@ -343,8 +350,8 @@ def train(text_version='ek', label_version=None, config_path='config93_naive.yam
             for batch_index in _index_iterator.iterate(batch_size, shuffle=False):
                 feed_dict = {nn.var(_key): _dataset[_key][batch_index] for _key in feed_key[TEST]}
                 feed_dict[nn.var(TEST_MODE)] = 1
-                for _key in [TID_0, TID_1, TID_2]:
-                    feed_dict[nn.var(_key)] = to_nn_input(feed_dict[nn.var(_key)], nn_config.seq_len)
+                # for _key in [TID_0, TID_1, TID_2]:
+                #     feed_dict[nn.var(_key)] = to_nn_input(feed_dict[nn.var(_key)], nn_config.seq_len)
                 res = sess.run(fetches=fetches[TEST], feed_dict=feed_dict)
 
                 labels_predict += res[LABEL_PREDICT].tolist()

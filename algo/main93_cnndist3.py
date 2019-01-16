@@ -166,7 +166,7 @@ def custom_sampling(dataset, dist=None):
 
         for j in range(3):
             dataset[TID_[j]].append(tid_[j])
-        dataset[LABEL_GOLD].append(0)
+        dataset[LABEL_GOLD].append(label)
 
     for label in [1, 2, 3]:
         for i in label_idx[label]:
@@ -179,7 +179,7 @@ def custom_sampling(dataset, dist=None):
 
             for j in range(3):
                 dataset[TID_[j]].append(tid_[j])
-            dataset[LABEL_GOLD].append(0)
+            dataset[LABEL_GOLD].append(label)
 
     dataset[LABEL_GOLD] = np.asarray(dataset[LABEL_GOLD])
     return dataset

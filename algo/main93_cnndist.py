@@ -20,7 +20,7 @@ from dataset.common.const import *
 from dataset.common.load import *
 from dataset.semeval2019_task3_dev.config import config as data_config
 
-TID_ = [TID_0, TID_1, TID_1]
+TID_ = [TID_0, TID_1, TID_2]
 SEQ_LEN_ = [SEQ_LEN_0, SEQ_LEN_1, SEQ_LEN_2]
 
 

@@ -61,7 +61,7 @@ class NNModel(BaseNNModel):
         tid_2 = tf.placeholder(tf.int32, [self.config.batch_size, self.config.seq_len], name=TID_2)
         seq_len_2 = tf.placeholder(tf.int32, [None, ], name=SEQ_LEN_2)
 
-        l2_regularizer = tf.contrib.layers.l2_regularizer(config.l2_reg_lambda)
+        # l2_regularizer = tf.contrib.layers.l2_regularizer(config.l2_reg_lambda)
 
         embedded_0 = tf.nn.embedding_lookup(lookup_table, tid_0)
         embedded_1 = tf.nn.embedding_lookup(lookup_table, tid_1)
@@ -96,6 +96,17 @@ class NNModel(BaseNNModel):
         dense_input = tf.concat([last_state_0, last_state_1, last_state_2], axis=1, name=HIDDEN_FEAT)
         dense_input = tf.nn.dropout(dense_input, keep_prob=dropout_keep_prob)
 
+        y, w, b = dense.build(dense_input, dim_output=self.config.output_dim, output_name=PROB_PREDICT)
+        # 计算loss
+        _loss_1 = tf.reduce_mean(tf.losses.sparse_softmax_cross_entropy(
+            logits=y, labels=label_gold, weights=sample_weights))
+
+        _loss_2 = tf.constant(0., dtype=tf.float32)
+        if self.config.l2_reg_lambda is not None and self.config.l2_reg_lambda > 0:
+            _loss_2 += self.config.l2_reg_lambda * tf.nn.l2_loss(w)
+        loss = tf.add(_loss_1, _loss_2, name=LOSS)
+
+        """
         y = tf.layers.dense(
             inputs=dense_input, units=self.config.output_dim,
             kernel_regularizer=l2_regularizer, name=PROB_PREDICT
@@ -103,6 +114,7 @@ class NNModel(BaseNNModel):
         _loss_1 = tf.reduce_mean(tf.losses.sparse_softmax_cross_entropy(
             logits=y, labels=label_gold, weights=sample_weights))
         loss = tf.add(_loss_1, tf.losses.get_regularization_loss(), name=LOSS)
+        """
 
         # 预测标签
         tf.cast(tf.argmax(y, 1), tf.int32, name=LABEL_PREDICT)

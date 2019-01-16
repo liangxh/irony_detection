@@ -154,8 +154,8 @@ def custom_sampling(dataset, dist=None):
         tid_1 = dataset[TID_1][i]
         tid_2 = dataset[TID_2][i]
         dataset[TID_0].append(tid_0)
-        dataset[TID_2].append(tid_1)
-        dataset[TID_3].append(tid_2)
+        dataset[TID_1].append(tid_1)
+        dataset[TID_2].append(tid_2)
         dataset[LABEL_GOLD].append(0)
     return dataset
 

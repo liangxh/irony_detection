@@ -312,16 +312,16 @@ def train(text_version='ek', label_version=None, config_path='config93_naive.yam
         sess.run(tf.global_variables_initializer())
         saver = tf.train.Saver(tf.global_variables())
 
-        dataset = custom_sampling(datasets[TRAIN])
-        index_iterator = SimpleIndexIterator.from_dataset(dataset=dataset)
-        dataset = dataset_as_input(dataset, nn_config.seq_len)
-
         # 训练开始 ##########################################################################
         for epoch in range(train_config.epoch):
             print('== epoch {} = {} =='.format(epoch, output_key))
 
             # 利用训练集进行训练
             print('TRAIN')
+            dataset = custom_sampling(datasets[TRAIN])
+            index_iterator = SimpleIndexIterator.from_dataset(dataset=dataset)
+            dataset = dataset_as_input(dataset, nn_config.seq_len)
+
             n_sample = index_iterator.n_sample()
             labels_predict = list()
             labels_gold = list()

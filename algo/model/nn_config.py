@@ -70,3 +70,7 @@ class BaseNNConfig(object):
     @property
     def embedding_dropout_keep_prob(self):
         return self.data['embedding']['dropout_keep_prob']
+
+    @property
+    def dense_layers(self):
+        return self.data['dense']

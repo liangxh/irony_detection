@@ -284,7 +284,7 @@ def train(text_version='ek', label_version=None, config_path='config93_naive.yam
     index_iterators = {
         mode: SimpleIndexIterator.from_dataset(datasets[mode]) for mode in [VALID, TEST]}
     for mode in [VALID, TEST]:
-        datasets[mode] = to_nn_input(datasets[mode], nn_config.seq_len)
+        datasets[mode] = dataset_as_input(datasets[mode], nn_config.seq_len)
 
     label_weight = {_label: 1. for _label in range(output_dim)}
 

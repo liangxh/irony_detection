@@ -12,6 +12,13 @@ def print_evaluation(res):
     print(','.join(list(map(str, values))))
 
 
+def print_evaluation2(res):
+    _keys = keys + ['test_score']
+    values = list(map(res.get, _keys))
+    print(','.join(_keys))
+    print(','.join(list(map(str, values))))
+
+
 def tid_dropout(tids, dropout_keep_rate):
     tids = np.asarray(tids)
     mask = (np.random.random(tids.shape) <= dropout_keep_rate).astype(int)

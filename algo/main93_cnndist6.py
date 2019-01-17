@@ -13,7 +13,7 @@ from algo.lib.dataset import SimpleIndexIterator
 from algo.lib.evaluate93 import basic_evaluate
 from algo.model.const import *
 from algo.model.train_config import TrainConfig
-from algo.lib.common import print_evaluation, load_lookup_table2, tokenized_to_tid_list
+from algo.lib.common import print_evaluation2 as print_evaluation, load_lookup_table2, tokenized_to_tid_list
 from algo.model.nn_config import BaseNNConfig
 from algo.nn.base import BaseNNModel
 from algo.nn.common import dense, cnn
@@ -404,6 +404,8 @@ def train(text_version='ek', label_version=None, config_path='config93_naive.yam
             labels_predict, labels_gold = labels_predict[:_n_sample], labels_gold[:_n_sample]
             res = basic_evaluate(gold=labels_gold, pred=labels_predict)
             eval_history[_mode].append(res)
+            print('TEST')
+            print_evaluation(res)
 
             if no_update_count[TRAIN] >= max_no_update_count:
                 break

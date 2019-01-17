@@ -3,19 +3,12 @@ import numpy as np
 from algo.model.const import *
 from nlp.word2vec import PlainModel
 
-keys = [ACCURACY, PRECISION, RECALL, F1_SCORE]
+keys = [ACCURACY, PRECISION, RECALL, F1_SCORE, 'test_score']
 
 
 def print_evaluation(res):
     values = list(map(res.get, keys))
     print(','.join(keys))
-    print(','.join(list(map(str, values))))
-
-
-def print_evaluation2(res):
-    _keys = keys + ['test_score']
-    values = list(map(res.get, _keys))
-    print(','.join(_keys))
     print(','.join(list(map(str, values))))
 
 

@@ -26,7 +26,7 @@ class SimpleIndexIterator(object):
 
     @classmethod
     def from_dataset(cls, dataset):
-        return cls(n_sample=len(dataset.values()[0]))
+        return cls(n_sample=len(list(dataset.values())[0]))
 
 
 class IndexIterator(object):

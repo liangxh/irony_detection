@@ -26,12 +26,12 @@ nn:
   dense:
     - dim: 32
       activation: relu
-      l2: True
+      l2: 0.2
   learning_rate:
     init: 0.005
     decay_steps: 2
     decay_rate: 0.9
-  l2_reg_lambda: 0.4
+  l2_reg_lambda: 0.2
   output:
     dim: _
   dropout_keep_prob: 0.5

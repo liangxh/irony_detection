@@ -45,7 +45,7 @@ class NNConfig(BaseNNConfig):
 
 
 class NNModel(BaseNNModel):
-    name = 'm93_cnndist5'
+    name = 'm93_cnndist6'
     """
     others的样本人复制一份并随机摘掉一个词
     

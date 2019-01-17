@@ -335,7 +335,7 @@ def show_eval(output_key):
     :param output_key: string
     :return:
     """
-    for mode in [TRAIN, TEST]:
+    for mode in [TRAIN, VALID, TEST]:
         res = json.load(open(data_config.output_path(output_key, mode, EVALUATION)))
         print(mode)
         print_evaluation(res)

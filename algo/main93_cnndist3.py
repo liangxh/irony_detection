@@ -46,6 +46,11 @@ class NNConfig(BaseNNConfig):
 
 class NNModel(BaseNNModel):
     name = 'm93_cnndist3'
+    """
+    others的样本人复制一份并随机摘掉一个词
+    
+    CNN后选择性添加Dense层
+    """
 
     def build_neural_network(self, lookup_table):
         test_mode = tf.placeholder(tf.int8, None, name=TEST_MODE)

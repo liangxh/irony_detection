@@ -13,13 +13,20 @@ class SimpleIndexIterator(object):
     def n_sample(self):
         return self._n_sample
 
-    def iterate(self, batch_size):
+    def iterate(self, batch_size, shuffle):
         index = range(self._n_sample)
+        if shuffle:
+            random.shuffle(index)
+
         n_patch = batch_size - len(index) % batch_size
         if n_patch < batch_size:
             index += index[:n_patch]
         for n in range(int(len(index) / batch_size)):
             yield index[(n * batch_size): ((n + 1) * batch_size)]
+
+    @classmethod
+    def from_dataset(cls, dataset):
+        return cls(n_sample=len(dataset.values[0]))
 
 
 class IndexIterator(object):

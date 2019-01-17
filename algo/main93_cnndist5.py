@@ -173,7 +173,7 @@ def split_train_valid(dataset, valid_rate, dim=4):
         n_sample = len(idx_list)
         n_valid = int(n_sample * valid_rate)
 
-        index = range(n_sample)
+        index = list(range(n_sample))
         random.shuffle(index)
         train_index = index[:-n_valid]
         valid_index = index[-n_valid:]

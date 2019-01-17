@@ -250,6 +250,9 @@ def estimate_new_score(confusion_matrix, real_distribution=None):
 
 @commandr.command('eval')
 def build_eval_report(filename='out/eval.json', output_filename='out/out_eval.csv'):
+    if DEV in data:
+        data[VALID] = data[DEV]
+
     data = json.load(open(filename))
     content = ''
     keys = [ACCURACY, PRECISION, RECALL, F1_SCORE, 'test_score']
@@ -261,7 +264,7 @@ def build_eval_report(filename='out/eval.json', output_filename='out/out_eval.cs
         line += ','
     content += line + '\n'
 
-    for reses in zip(data[TRAIN], data[DEV], data[TEST]):
+    for reses in zip(data[TRAIN], data[VALID], data[TEST]):
         line = ''
         for res in reses:
             for key in keys:

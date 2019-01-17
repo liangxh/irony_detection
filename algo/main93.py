@@ -349,8 +349,8 @@ def show_eval2(output_key):
     res = json.load(open(data_config.output_path(output_key, ALL, 'best_eval')))
     for mode in [TRAIN, VALID, TEST]:
         print(mode)
-        print_evaluation(res)
-        for col in res[CONFUSION_MATRIX]:
+        print_evaluation(res[mode])
+        for col in res[mode][CONFUSION_MATRIX]:
             print(','.join(map(str, col)))
         print()
 

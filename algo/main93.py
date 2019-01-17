@@ -341,7 +341,19 @@ def show_eval(output_key):
         print_evaluation(res)
         for col in res[CONFUSION_MATRIX]:
             print(','.join(map(str, col)))
-        print
+        print()
+
+
+@commandr.command('eval2')
+def show_eval2(output_key):
+    res = json.load(open(data_config.output_path(output_key, ALL, 'best_eval')))
+    for mode in [TRAIN, VALID, TEST]:
+        print(mode)
+        print_evaluation(res)
+        for col in res[CONFUSION_MATRIX]:
+            print(','.join(map(str, col)))
+        print()
+
 
 @commandr.command('clear')
 def clear_output(output_key):

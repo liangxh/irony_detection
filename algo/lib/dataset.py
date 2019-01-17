@@ -14,7 +14,7 @@ class SimpleIndexIterator(object):
         return self._n_sample
 
     def iterate(self, batch_size, shuffle):
-        index = range(self._n_sample)
+        index = list(range(self._n_sample))
         if shuffle:
             random.shuffle(index)
 

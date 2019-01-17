@@ -282,8 +282,8 @@ def train(text_version='ek', label_version=None, config_path='config93_naive.yam
     datasets[TRAIN], datasets[VALID] = split_train_valid(
         dataset=datasets['all_train'], valid_rate=train_config.valid_rate)
     index_iterators = {
-        mode: SimpleIndexIterator.from_dataset(datasets[mode]) for mode in [VALID, TEST]}
-    for mode in [VALID, TEST]:
+        mode: SimpleIndexIterator.from_dataset(datasets[mode]) for mode in [VALID, TEST, 'all_train']}
+    for mode in [VALID, TEST, 'all_train']:
         datasets[mode] = dataset_as_input(datasets[mode], nn_config.seq_len)
 
     label_weight = {_label: 1. for _label in range(output_dim)}
@@ -304,7 +304,7 @@ def train(text_version='ek', label_version=None, config_path='config93_naive.yam
     no_update_count = {mode: 0 for mode in [TRAIN, VALID]}
     max_no_update_count = 10
 
-    eval_history = {TRAIN: list(), DEV: list(), TEST: list()}
+    eval_history = {TRAIN: list(), VALID: list(), TEST: list()}
 
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
@@ -312,7 +312,7 @@ def train(text_version='ek', label_version=None, config_path='config93_naive.yam
 
         dataset = custom_sampling(datasets[TRAIN])
         index_iterator = SimpleIndexIterator.from_dataset(dataset=dataset)
-        dataset = to_nn_input(dataset, nn_config.seq_len)
+        dataset = dataset_as_input(dataset, nn_config.seq_len)
 
         # 训练开始 ##########################################################################
         for epoch in range(train_config.epoch):
@@ -357,20 +357,23 @@ def train(text_version='ek', label_version=None, config_path='config93_naive.yam
                 # 计算在验证集上的表现, 不更新模型参数
                 print('VALID')
 
-                n_sample = index_iterators[VALID].n_sample()
+                _mode = VALID
+                _dataset = datasets[_mode]
+                _index_iterator = SimpleIndexIterator.from_dataset(_dataset)
+                _n_sample = _index_iterator.n_sample()
+
                 labels_predict = list()
                 labels_gold = list()
-
-                for batch_index in index_iterators[VALID].iterate(batch_size, shuffle=False):
-                    feed_dict = {nn.var(_key): dataset[_key][batch_index] for _key in feed_key[TEST]}
+                for batch_index in _index_iterator.iterate(batch_size, shuffle=False):
+                    feed_dict = {nn.var(_key): _dataset[_key][batch_index] for _key in feed_key[TEST]}
                     feed_dict[nn.var(TEST_MODE)] = 1
                     res = sess.run(fetches=fetches[TEST], feed_dict=feed_dict)
-                    labels_predict += res[LABEL_PREDICT].tolist()
-                    labels_gold += dataset[LABEL_GOLD][batch_index].tolist()
 
-                labels_predict, labels_gold = labels_predict[:n_sample], labels_gold[:n_sample]
+                    labels_predict += res[LABEL_PREDICT].tolist()
+                    labels_gold += _dataset[LABEL_GOLD][batch_index].tolist()
+                labels_predict, labels_gold = labels_predict[:_n_sample], labels_gold[:_n_sample]
                 res = basic_evaluate(gold=labels_gold, pred=labels_predict)
-                eval_history[DEV].append(res)
+                eval_history[_mode].append(res)
                 print_evaluation(res)
 
                 # Early Stop
@@ -384,7 +387,7 @@ def train(text_version='ek', label_version=None, config_path='config93_naive.yam
             # eval test
             _mode = TEST
             _dataset = datasets[_mode]
-            _index_iterator = index_iterators[_mode]
+            _index_iterator = SimpleIndexIterator.from_dataset(_dataset)
             _n_sample = _index_iterator.n_sample()
 
             labels_predict = list()
@@ -392,15 +395,13 @@ def train(text_version='ek', label_version=None, config_path='config93_naive.yam
             for batch_index in _index_iterator.iterate(batch_size, shuffle=False):
                 feed_dict = {nn.var(_key): _dataset[_key][batch_index] for _key in feed_key[TEST]}
                 feed_dict[nn.var(TEST_MODE)] = 1
-                # for _key in [TID_0, TID_1, TID_2]:
-                #     feed_dict[nn.var(_key)] = to_nn_input(feed_dict[nn.var(_key)], nn_config.seq_len)
                 res = sess.run(fetches=fetches[TEST], feed_dict=feed_dict)
 
                 labels_predict += res[LABEL_PREDICT].tolist()
                 labels_gold += _dataset[LABEL_GOLD][batch_index].tolist()
             labels_predict, labels_gold = labels_predict[:_n_sample], labels_gold[:_n_sample]
             res = basic_evaluate(gold=labels_gold, pred=labels_predict)
-            eval_history[TEST].append(res)
+            eval_history[_mode].append(res)
 
             if no_update_count[TRAIN] >= max_no_update_count:
                 break

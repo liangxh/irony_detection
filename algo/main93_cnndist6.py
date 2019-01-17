@@ -200,24 +200,24 @@ def dataset_as_input(dataset, max_seq_len):
 def custom_sampling(dataset, dist=None):
     if dist is None:
         dist = [0.88, 0.04, 0.04, 0.04]
-    dim = len(dist)
-    dataset = copy.deepcopy(dataset)
+
+    dataset = {k: list() + v for k, v in dataset.items()}
     label_idx = [list() for _ in range(len(dist))]
     for i, label in enumerate(dataset[LABEL_GOLD]):
         label_idx[label].append(i)
 
-    for label in range(dim):
-        for i in label_idx[label]:
-            tid_ = [copy.deepcopy(dataset[TID_[j]][i]) for j in range(3)]
+    label = 0
+    for i in label_idx[label]:
+        tid_ = [copy.deepcopy(dataset[TID_[j]][i]) for j in range(3)]
 
-            j = random.randint(0, 2)
-            if len(tid_[j]) > 1:
-                pop_idx = random.randint(0, len(tid_[j]) - 1)
-                tid_[j].pop(pop_idx)
+        j = random.randint(0, 2)
+        if len(tid_[j]) > 1:
+            pop_idx = random.randint(0, len(tid_[j]) - 1)
+            tid_[j].pop(pop_idx)
 
-            for j in range(3):
-                dataset[TID_[j]].append(tid_[j])
-            dataset[LABEL_GOLD].append(label)
+        for j in range(3):
+            dataset[TID_[j]].append(tid_[j])
+        dataset[LABEL_GOLD].append(label)
     return dataset
 
 

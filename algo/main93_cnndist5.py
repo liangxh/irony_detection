@@ -201,7 +201,7 @@ def custom_sampling(dataset, dist=None):
     if dist is None:
         dist = [0.88, 0.04, 0.04, 0.04]
 
-    dataset = {k: list() + v for k, v in dataset}
+    dataset = {k: list() + v for k, v in dataset.items()}
     label_idx = [list() for _ in range(len(dist))]
     for i, label in enumerate(dataset[LABEL_GOLD]):
         label_idx[label].append(i)

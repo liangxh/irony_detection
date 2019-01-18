@@ -18,3 +18,7 @@ def build(inputs, attention_size):
     output = tf.reduce_sum(
         inputs * tf.reshape(alphas, [-1, seq_length, 1]), 1)
     return output, alphas
+
+
+def build2(ph_input, ph_context, attention_size):
+    pass

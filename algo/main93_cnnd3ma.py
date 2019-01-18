@@ -16,7 +16,7 @@ from algo.model.train_config import TrainConfig
 from algo.lib.common import print_evaluation, load_lookup_table2, tokenized_to_tid_list, tid_dropout
 from algo.model.nn_config import BaseNNConfig
 from algo.nn.base import BaseNNModel
-from algo.nn.common import dense, cnn
+from algo.nn.common import dense, cnn, attention
 from algo.nn.common.common import *
 from dataset.common.const import *
 from dataset.common.load import *
@@ -83,12 +83,20 @@ class NNModel(BaseNNModel):
             raise Exception('unknown embedding noise type: {}'.format(self.config.embedding_noise_type))
 
         last_states = list()
+        cnn_output_ = [None for _ in range(3)]
+        context_ = [None for _ in range(3)]
         for i in range(3):
             with tf.variable_scope('turn{}'.format(i)) as scope:
                 cnn_output = cnn.build2(embedded_[i], self.config.filter_num, self.config.kernel_size)
-                cnn_output = mask_by_seq_len(cnn_output, seq_len_[i])
-                last_state = cnn.max_pooling(cnn_output)
-                last_states.append(last_state)
+                cnn_output_[i] = mask_by_seq_len(cnn_output, seq_len_[i])
+                context_[i] = cnn.max_pooling(cnn_output_[i])
+                last_states.append(context_[i])
+
+        for i in range(3):
+            for j in range(3):
+                if i != j:
+                    cross_feat = attention.build2(cnn_output_[i], context_[j])
+                    last_states.append(cross_feat)
 
         dense_input = tf.concat(last_states, axis=1, name=HIDDEN_FEAT)
         dense_input = tf.nn.dropout(dense_input, keep_prob=dropout_keep_prob)

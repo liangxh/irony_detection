@@ -43,6 +43,12 @@ class NNConfig(BaseNNConfig):
     def kernel_size(self):
         return self.data['cnn']['kernel_size']
 
+    def cnn_filter_num(self, idx=0):
+        return self.data['cnns'][idx]['filter_num']
+
+    def cnn_kernel_size(self, idx=0):
+        return self.data['cnns'][idx]['kernel_size']
+
 
 class NNModel(BaseNNModel):
     name = 'm93_cnndist32'

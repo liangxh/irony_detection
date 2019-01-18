@@ -45,7 +45,7 @@ class NNConfig(BaseNNConfig):
 
 
 class NNModel(BaseNNModel):
-    name = 'm93_cnndist32'
+    name = 'm93_cnndist3'
     """
     others的样本人复制一份并随机摘掉一个词
     
@@ -84,16 +84,28 @@ class NNModel(BaseNNModel):
         else:
             raise Exception('unknown embedding noise type: {}'.format(self.config.embedding_noise_type))
 
-        with tf.variable_scope("rnn_0") as scope:
-            cnn_output = cnn.build2(embedded_0, self.config.filter_num, self.config.kernel_size)
+        with tf.variable_scope("turn_0"):
+            cnn_output = cnn.build2(
+                embedded_0, filter_num=self.config.cnn_filter_num(0), kernel_size=self.config.cnn_kernel_size(0))
+            cnn_output = tf.nn.dropout(cnn_output, dropout_keep_prob)
+            cnn_output = cnn.build(
+                cnn_output, filter_num=self.config.cnn_filter_num(1), kernel_size=self.config.cnn_kernel_size(1))
             last_state_0 = cnn.max_pooling(cnn_output)
 
-        with tf.variable_scope("rnn_1") as scope:
-            cnn_output = cnn.build2(embedded_1, self.config.filter_num, self.config.kernel_size)
+        with tf.variable_scope("turn_1"):
+            cnn_output = cnn.build2(
+                embedded_1, filter_num=self.config.cnn_filter_num(0), kernel_size=self.config.cnn_kernel_size(0))
+            cnn_output = tf.nn.dropout(cnn_output, dropout_keep_prob)
+            cnn_output = cnn.build(
+                cnn_output, filter_num=self.config.cnn_filter_num(1), kernel_size=self.config.cnn_kernel_size(1))
             last_state_1 = cnn.max_pooling(cnn_output)
 
-        with tf.variable_scope("rnn_2") as scope:
-            cnn_output = cnn.build2(embedded_2, self.config.filter_num, self.config.kernel_size)
+        with tf.variable_scope("turn_2"):
+            cnn_output = cnn.build2(
+                embedded_2, filter_num=self.config.cnn_filter_num(0), kernel_size=self.config.cnn_kernel_size(0))
+            cnn_output = tf.nn.dropout(cnn_output, dropout_keep_prob)
+            cnn_output = cnn.build(
+                cnn_output, filter_num=self.config.cnn_filter_num(1), kernel_size=self.config.cnn_kernel_size(1))
             last_state_2 = cnn.max_pooling(cnn_output)
 
         dense_input = tf.concat([last_state_0, last_state_1, last_state_2], axis=1, name=HIDDEN_FEAT)
@@ -103,7 +115,7 @@ class NNModel(BaseNNModel):
         for conf in self.config.dense_layers:
             dense_input, w, _ = dense.build(
                 dense_input, dim_output=conf['dim'], activation=getattr(tf.nn, conf['activation']))
-            if conf.get('l2') > 0:
+            if conf.get('l2', 0.) > 0:
                 comp = conf['l2'] * tf.nn.l2_loss(w)
                 if l2_component is None:
                     l2_component = comp
@@ -176,17 +188,16 @@ def custom_sampling(dataset, dist=None):
 
     label = 0
     for i in label_idx[label]:
-        for _ in range(2):
-            tid_ = [copy.deepcopy(dataset[TID_[j]][i]) for j in range(3)]
+        tid_ = [copy.deepcopy(dataset[TID_[j]][i]) for j in range(3)]
 
-            j = random.randint(0, 2)
-            if len(tid_[j]) > 1:
-                pop_idx = random.randint(0, len(tid_[j]) - 1)
-                tid_[j].pop(pop_idx)
+        j = random.randint(0, 2)
+        if len(tid_[j]) > 1:
+            pop_idx = random.randint(0, len(tid_[j]) - 1)
+            tid_[j].pop(pop_idx)
 
-            for j in range(3):
-                dataset[TID_[j]].append(tid_[j])
-            dataset[LABEL_GOLD].append(label)
+        for j in range(3):
+            dataset[TID_[j]].append(tid_[j])
+        dataset[LABEL_GOLD].append(label)
 
     dataset[LABEL_GOLD] = np.asarray(dataset[LABEL_GOLD])
     return dataset
@@ -384,6 +395,8 @@ def train(text_version='ek', label_version=None, config_path='config93_naive.yam
             labels_predict, labels_gold = labels_predict[:_n_sample], labels_gold[:_n_sample]
             res = basic_evaluate(gold=labels_gold, pred=labels_predict)
             eval_history[TEST].append(res)
+            print('TEST')
+            print_evaluation(res)
 
             if no_update_count[TRAIN] >= max_no_update_count:
                 break

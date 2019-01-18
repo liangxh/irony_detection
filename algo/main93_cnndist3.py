@@ -103,7 +103,7 @@ class NNModel(BaseNNModel):
         for conf in self.config.dense_layers:
             dense_input, w, _ = dense.build(
                 dense_input, dim_output=conf['dim'], activation=getattr(tf.nn, conf['activation']))
-            if conf.get('l2') > 0:
+            if conf.get('l2', 0.) > 0:
                 comp = conf['l2'] * tf.nn.l2_loss(w)
                 if l2_component is None:
                     l2_component = comp
@@ -383,6 +383,8 @@ def train(text_version='ek', label_version=None, config_path='config93_naive.yam
             labels_predict, labels_gold = labels_predict[:_n_sample], labels_gold[:_n_sample]
             res = basic_evaluate(gold=labels_gold, pred=labels_predict)
             eval_history[TEST].append(res)
+            print('TEST')
+            print_evaluation(res)
 
             if no_update_count[TRAIN] >= max_no_update_count:
                 break

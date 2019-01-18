@@ -95,8 +95,9 @@ class NNModel(BaseNNModel):
         for i in range(3):
             for j in range(3):
                 if i != j:
-                    cross_feat = attention.build2(cnn_output_[i], context_[j])
-                    last_states.append(cross_feat)
+                    with tf.variable_scope('cross_{}_{}'.format(i, j)) as scope:
+                        cross_feat, _ = attention.build2(cnn_output_[i], context_[j])
+                        last_states.append(cross_feat)
 
         dense_input = tf.concat(last_states, axis=1, name=HIDDEN_FEAT)
         dense_input = tf.nn.dropout(dense_input, keep_prob=dropout_keep_prob)

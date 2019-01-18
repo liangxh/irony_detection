@@ -127,7 +127,7 @@ class NNModel(BaseNNModel):
 
 def to_nn_input(tid_list, max_seq_len):
     tid_list = trim_tid_list(tid_list, max_seq_len)
-    seq_len = seq_to_len_list(tid_list)
+    seq_len = np.asarray(seq_to_len_list(tid_list))
     tid_list = np.asarray(zero_pad_seq_list(tid_list, max_seq_len))
     return tid_list, seq_len
 

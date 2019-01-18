@@ -20,3 +20,10 @@ def build_dropout_keep_prob(keep_prob, test_mode):
         lambda: tf.constant(1., dtype=tf.float32),
         lambda: tf.constant(keep_prob, dtype=tf.float32)
     )
+
+
+def mask_by_seq_len(ph_input, seq_len):
+    max_len = ph_input.shape[-2]
+    mask = tf.sequence_mask(seq_len, maxlen=max_len, dtype=tf.float32)
+    mask = tf.expand_dims(mask, -1)
+    return tf.multiply(ph_input, mask)

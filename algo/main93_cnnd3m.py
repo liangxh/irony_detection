@@ -68,7 +68,7 @@ class NNModel(BaseNNModel):
         for i in range(3):
             tid_[i] = tf.placeholder(tf.int32, [self.config.batch_size, self.config.seq_len], name=TID_[i])
             seq_len_[i] = tf.placeholder(tf.int32, [None, ], name=SEQ_LEN_[i])
-            embedded_[i] = tf.nn.embedding_lookup(lookup_table, tid_[0])
+            embedded_[i] = tf.nn.embedding_lookup(lookup_table, tid_[i])
 
         if self.config.embedding_noise_type is None:
             pass

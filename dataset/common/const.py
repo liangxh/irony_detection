@@ -4,6 +4,7 @@ TRAIN = 'train'
 DEV = 'dev'
 TEST = 'test'
 ALL = 'all'
+FINAL = 'final'
 
 RAW = 'raw'
 TXT = 'txt'

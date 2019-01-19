@@ -41,6 +41,10 @@ class IndexIterator(object):
         }
         self.mode_index = None
 
+    @classmethod
+    def from_dataset(cls, dataset):
+        return cls(gold_labels=dataset[LABEL_GOLD])
+
     @property
     def label_n_sample(self):
         return {_label: len(_index) for _label, _index in self.label_index.items()}

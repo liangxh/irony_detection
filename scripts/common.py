@@ -13,8 +13,12 @@ from dataset.common.load import *
 def build_vocab(dataset_key, text_version):
     data_config = getattr(importlib.import_module('dataset.{}.config'.format(dataset_key)), 'config')
 
+    keys =  [TRAIN, TEST]
+    if dataset_key == 'semeval2019_task3_dev':
+        keys += [FINAL]
+
     all_token = set()
-    for key in [TRAIN, TEST]:
+    for key in keys:
         text_path = data_config.path(key, TEXT, text_version)
         output_path = data_config.path(key, VOCAB, text_version)
         print(output_path)

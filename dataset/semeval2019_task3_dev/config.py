@@ -9,6 +9,7 @@ class Config(BaseConfig):
     path_train = os.path.join(path_root, 'train.txt')
     path_dev = os.path.join(path_root, 'dev.txt')
     path_dev_no_labels = os.path.join(path_root, 'devwithoutlabels.txt')
+    path_test_no_labels = os.path.join(path_root, 'testwithoutlabels.txt')
 
     dataset_key = 'semeval2019_task3_dev'
 

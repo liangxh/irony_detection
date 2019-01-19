@@ -16,7 +16,7 @@ from dataset.semeval2019_task3_dev.config import config
 @commandr.command
 def build_basic():
     config.prepare_data_folder()
-
+    # TRAIN
     labels = list()
     text_turns = [[] for _ in range(3)]
     for turn_1, turn_2, turn_3, label_idx in Processor.load_origin_train():
@@ -36,6 +36,7 @@ def build_basic():
     path = config.path(TRAIN, LABEL, 'binary')
     open(path, 'w').write('\n'.join(map(str, binary_labels)) + '\n')
 
+    # TEST
     labels = list()
     text_turns = [[] for _ in range(3)]
     for turn_1, turn_2, turn_3, label_idx in Processor.load_origin_dev():
@@ -55,12 +56,33 @@ def build_basic():
     path = config.path(TEST, LABEL, 'binary')
     open(path, 'w').write('\n'.join(map(str, binary_labels)) + '\n')
 
+    # FINAL
+    labels = list()
+    text_turns = [[] for _ in range(3)]
+    for turn_1, turn_2, turn_3 in Processor.load_origin_test_no_labels():
+        label_idx = 0
+        turns = [turn_1, turn_2, turn_3]
+        for i, r in enumerate(turns):
+            text_turns[i].append(r)
+        labels.append(label_idx)
+
+    for i, texts in enumerate(text_turns):
+        path = config.path(FINAL, 'turn', str(i))
+        open(path, 'w').write('\n'.join(texts) + '\n')
+
+    path = config.path(FINAL, LABEL)
+    open(path, 'w').write('\n'.join(map(str, labels)) + '\n')
+
+    binary_labels = [0 if label == 0 else 1 for label in labels]
+    path = config.path(FINAL, LABEL, 'binary')
+    open(path, 'w').write('\n'.join(map(str, binary_labels)) + '\n')
+
 
 @commandr.command
 def build_ek():
     config.prepare_data_folder()
 
-    for mode in [TRAIN, TEST]:
+    for mode in [TRAIN, TEST, FINAL]:
         text_ek_turns = []
         for i in range(3):
             path = config.path(mode, 'turn', '{}.ek'.format(i))
@@ -103,7 +125,7 @@ def build_data_split():
         obj.close()
 
 
-@commandr.command
+@commandr.command('dev')
 def build_dev_submit(output_key=None):
     """
     python -m scripts.semeval2019_task3_dev build_dev_submit -o gru_ek_1543492018
@@ -134,6 +156,40 @@ def build_dev_submit(output_key=None):
 
         for line, label in zip(lines, labels):
             o_obj.write('{}\t{}\n'.format(line, label))
+
+
+@commandr.command('final')
+def build_final_submit(output_key=None):
+    """
+    python -m scripts.semeval2019_task3_dev build_dev_submit -o gru_ek_1543492018
+    python3 -m scripts.semeval2019_task3_dev build_dev_submit -o
+
+    :param output_key: string
+    :return:
+    """
+    output_path = 'test.txt'
+
+    first_line = open(config.path_train, 'r').readline()
+    with open(output_path, 'w') as o_obj:
+        o_obj.write(first_line)
+
+        lines = open(config.path_dev_no_labels).read().strip().split('\n')
+        lines = lines[1:]
+        lines = list(map(lambda l: l.strip(), lines))
+
+        if output_key is not None:
+            path_labels = config.output_path(output_key, TEST, LABEL_PREDICT)
+
+            labels = open(path_labels, 'r').read().strip().split('\n')
+            labels = list(map(int, labels))
+            labels = list(map(lambda l: label_str[l], labels))
+            assert len(labels) == len(lines)
+        else:
+            labels = ['others'] * len(lines)
+
+        for line, label in zip(lines, labels):
+            o_obj.write('{}\t{}\n'.format(line, label))
+
 
 
 @commandr.command('analyse_slang')

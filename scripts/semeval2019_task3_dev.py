@@ -7,6 +7,8 @@ import numpy as np
 from string import punctuation
 from collections import defaultdict
 from algo.model.const import *
+from algo.lib.evaluate93 import basic_evaluate
+from algo.lib.common import print_evaluation
 from dataset.common.const import *
 from dataset.common.load import load_label_list, load_tokenized_list, load_vocab_list
 from dataset.semeval2019_task3_dev.process import Processor, label_str
@@ -325,6 +327,14 @@ def build_eval_report(filename='out/eval.json', output_filename='out/out_eval.cs
         content += line + '\n'
 
     open(output_filename, 'w').write(content)
+
+
+@commandr.command('test_sub')
+def test_submit(filename_pred, filename_gold):
+    pred = map(lambda _item: _item[-1], Processor.load_origin(filename_pred))
+    gold = map(lambda _item: _item[-1], Processor.load_origin(filename_gold))
+    res = basic_evaluate(pred, gold)
+    print_evaluation(res)
 
 
 if __name__ == '__main__':

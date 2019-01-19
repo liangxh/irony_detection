@@ -126,7 +126,7 @@ def build_data_split():
 
 
 @commandr.command('dev')
-def build_dev_submit(output_key=None):
+def build_dev_submit(output_key):
     """
     python -m scripts.semeval2019_task3_dev build_dev_submit -o gru_ek_1543492018
     python3 -m scripts.semeval2019_task3_dev build_dev_submit -o
@@ -159,9 +159,9 @@ def build_dev_submit(output_key=None):
 
 
 @commandr.command('final')
-def build_final_submit(output_key=None):
+def build_final_submit(output_key):
     """
-    python -m scripts.semeval2019_task3_dev build_dev_submit -o gru_ek_1543492018
+    python -m scripts.semeval2019_task3_dev final -o gru_ek_1543492018
     python3 -m scripts.semeval2019_task3_dev build_dev_submit -o
 
     :param output_key: string
@@ -173,23 +173,19 @@ def build_final_submit(output_key=None):
     with open(output_path, 'w') as o_obj:
         o_obj.write(first_line)
 
-        lines = open(config.path_dev_no_labels).read().strip().split('\n')
+        lines = open(config.path_test_no_labels).read().strip().split('\n')
         lines = lines[1:]
         lines = list(map(lambda l: l.strip(), lines))
 
-        if output_key is not None:
-            path_labels = config.output_path(output_key, TEST, LABEL_PREDICT)
+        path_labels = config.output_path(output_key, FINAL, LABEL_PREDICT)
 
-            labels = open(path_labels, 'r').read().strip().split('\n')
-            labels = list(map(int, labels))
-            labels = list(map(lambda l: label_str[l], labels))
-            assert len(labels) == len(lines)
-        else:
-            labels = ['others'] * len(lines)
+        labels = open(path_labels, 'r').read().strip().split('\n')
+        labels = list(map(int, labels))
+        labels = list(map(lambda l: label_str[l], labels))
+        assert len(labels) == len(lines)
 
         for line, label in zip(lines, labels):
             o_obj.write('{}\t{}\n'.format(line, label))
-
 
 
 @commandr.command('analyse_slang')

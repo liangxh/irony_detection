@@ -411,7 +411,8 @@ def train(text_version='ek', label_version=None, config_path='config93_naive.yam
                 prob_predict += res[PROB_PREDICT].tolist()
                 labels_predict += res[LABEL_PREDICT].tolist()
                 hidden_feats += res[HIDDEN_FEAT].tolist()
-                labels_gold += dataset[LABEL_GOLD][batch_index].tolist()
+                if LABEL_GOLD in dataset:
+                    labels_gold += dataset[LABEL_GOLD][batch_index].tolist()
 
             prob_predict = prob_predict[:n_sample]
             labels_predict = labels_predict[:n_sample]

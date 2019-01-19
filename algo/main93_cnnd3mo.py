@@ -104,7 +104,7 @@ class NNModel(BaseNNModel):
         l2_w_list = list()
 
         y_others, w, b = dense.build(dense_input, dim_output=3)
-        y_others = tf.reduce_max(y_others, -1)
+        y_others = tf.expand_dims(tf.reduce_max(y_others, 1), axis=1)
         l2_w_list.append(w)
 
         y_has, w, b = dense.build(dense_input, dim_output=self.config.output_dim - 1)

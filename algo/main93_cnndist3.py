@@ -242,7 +242,7 @@ def train(text_version='ek', label_version=None, config_path='config93_naive.yam
     datasets[TEST], _ = load_dataset(
         mode=TEST, vocab_id_mapping=vocab_id_mapping, max_seq_len=nn_config.seq_len)
     datasets[FINAL] = load_dataset(
-        mode=FINAL, vocab_id_mapping=vocab_id_mapping, max_seq_len=nn_config.seq_len)
+        mode=FINAL, vocab_id_mapping=vocab_id_mapping, max_seq_len=nn_config.seq_len, with_label=False)
 
     # 初始化数据集的检索
     index_iterators = {
@@ -337,8 +337,6 @@ def train(text_version='ek', label_version=None, config_path='config93_naive.yam
                 for batch_index in index_iterator.iterate(batch_size, mode=VALID, shuffle=False):
                     feed_dict = {nn.var(_key): dataset[_key][batch_index] for _key in feed_key[TEST]}
                     feed_dict[nn.var(TEST_MODE)] = 1
-                    # for _key in [TID_0, TID_1, TID_2]:
-                    #     feed_dict[nn.var(_key)] = to_nn_input(feed_dict[nn.var(_key)], nn_config.seq_len)
                     res = sess.run(fetches=fetches[TEST], feed_dict=feed_dict)
 
                     labels_predict += res[LABEL_PREDICT].tolist()
@@ -346,7 +344,7 @@ def train(text_version='ek', label_version=None, config_path='config93_naive.yam
 
                 labels_predict, labels_gold = labels_predict[:n_sample], labels_gold[:n_sample]
                 res = basic_evaluate(gold=labels_gold, pred=labels_predict)
-                eval_history[DEV].append(res)
+                eval_history[VALID].append(res)
                 print_evaluation(res)
 
                 # Early Stop
@@ -368,8 +366,6 @@ def train(text_version='ek', label_version=None, config_path='config93_naive.yam
             for batch_index in _index_iterator.iterate(batch_size, shuffle=False):
                 feed_dict = {nn.var(_key): _dataset[_key][batch_index] for _key in feed_key[TEST]}
                 feed_dict[nn.var(TEST_MODE)] = 1
-                # for _key in [TID_0, TID_1, TID_2]:
-                #     feed_dict[nn.var(_key)] = to_nn_input(feed_dict[nn.var(_key)], nn_config.seq_len)
                 res = sess.run(fetches=fetches[TEST], feed_dict=feed_dict)
 
                 labels_predict += res[LABEL_PREDICT].tolist()

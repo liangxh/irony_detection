@@ -438,15 +438,15 @@ def train(text_version='ek', label_version=None, config_path='config93_naive.yam
                 for _prob in prob_predict:
                     file_obj.write('\t'.join(map(str, _prob)) + '\n')
 
-        for mode in [TRAIN, VALID, TEST]:
-            if mode == VALID and train_config.valid_rate == 0.:
-                continue
-            res = best_res[mode]
-            print(mode)
-            print_evaluation(res)
+    for mode in [TRAIN, VALID, TEST]:
+        if mode == VALID and train_config.valid_rate == 0.:
+            continue
+        res = best_res[mode]
+        print(mode)
+        print_evaluation(res)
 
-            json.dump(res, open(data_config.output_path(output_key, mode, EVALUATION), 'w'))
-            print()
+        json.dump(res, open(data_config.output_path(output_key, mode, EVALUATION), 'w'))
+        print()
 
     test_score_list = map(lambda _item: _item['f1'], eval_history[TEST])
     print('best test f1 reached: {}'.format(max(test_score_list)))

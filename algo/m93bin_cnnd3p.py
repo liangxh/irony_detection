@@ -13,7 +13,7 @@ from algo.lib.dataset import IndexIterator, SimpleIndexIterator
 from algo.lib.evaluate93 import basic_evaluate
 from algo.model.const import *
 from algo.model.train_config import TrainConfig
-from algo.lib.common import print_evaluation, load_lookup_table2, tokenized_to_tid_list
+from algo.lib.common import print_evaluation_0 as print_evaluation, load_lookup_table2, tokenized_to_tid_list
 from algo.model.nn_config import BaseNNConfig
 from algo.nn.base import BaseNNModel
 from algo.nn.common import dense, cnn
@@ -46,7 +46,7 @@ class NNConfig(BaseNNConfig):
 
 
 class NNModel(BaseNNModel):
-    name = 'm93_cnn'
+    name = 'm93bin_cnnd3p'
 
     def build_neural_network(self, lookup_table):
         test_mode = tf.placeholder(tf.int8, None, name=TEST_MODE)
@@ -142,7 +142,10 @@ def to_nn_input(tid_list, max_seq_len):
     return tid_list, seq_len
 
 
-def load_dataset(mode, vocab_id_mapping, max_seq_len, sampling=False, with_label=True, label_version=None):
+def load_dataset(
+        mode, vocab_id_mapping, max_seq_len, sampling=False, with_label=True, label_version=None,
+        select_index=None
+        ):
     dataset = dict()
     for i in [0, 1, 2]:
         tid_list = tokenized_to_tid_list(
@@ -153,8 +156,11 @@ def load_dataset(mode, vocab_id_mapping, max_seq_len, sampling=False, with_label
 
     if with_label:
         label_path = data_config.path(mode, LABEL, label_version)
-        label_list = load_label_list(label_path)
-        dataset[LABEL_GOLD] = np.asarray(label_list)
+        dataset[LABEL_GOLD] = load_label_list(label_path)
+
+    if select_index:
+        for k, v in dataset.items():
+            dataset[k] = filter_by_index(v, select_index)
 
     if sampling:
         dataset = custom_sampling(dataset)
@@ -163,6 +169,7 @@ def load_dataset(mode, vocab_id_mapping, max_seq_len, sampling=False, with_label
         dataset[TID_[i]], dataset[SEQ_LEN_[i]] = to_nn_input(dataset[TID_[i]], max_seq_len=max_seq_len)
 
     if with_label:
+        dataset[LABEL_GOLD] = np.asarray(dataset[LABEL_GOLD])
         output_dim = max(dataset[LABEL_GOLD]) + 1
         return dataset, output_dim
     else:
@@ -175,7 +182,6 @@ def custom_sampling(dataset, dist=None):
     label_idx = [list() for _ in range(len(dist))]
     for i, label in enumerate(dataset[LABEL_GOLD]):
         label_idx[label].append(i)
-    dataset[LABEL_GOLD] = dataset[LABEL_GOLD].tolist()
 
     label = 0
     for i in label_idx[label]:
@@ -190,7 +196,6 @@ def custom_sampling(dataset, dist=None):
             dataset[TID_[j]].append(tid_[j])
         dataset[LABEL_GOLD].append(label)
 
-    dataset[LABEL_GOLD] = np.asarray(dataset[LABEL_GOLD])
     return dataset
 
 
@@ -205,8 +210,31 @@ fetch_key = {
 }
 
 
+def build_select_index(labels_predict):
+    """
+    返回被预测为HAS的样本ID
+    """
+    index = list()
+    for i, label in enumerate(labels_predict):
+        if label != 0:
+            index.append(i)
+    return index
+
+
+def filter_by_index(data, index):
+    """
+    根据ID选出数据
+    """
+    if len(data) != len(index):
+        raise Exception('length mismatch: data() != index()'.format(len(data), len(index)))
+    new_data = list()
+    for i in index:
+        new_data.append(data[i])
+    return new_data
+
+
 @commandr.command
-def train(text_version='ek', label_version=None, config_path='config93_naive.yaml'):
+def train(origin_output_key, text_version='ek', label_version='binary', config_path='config93_naive.yaml'):
     """
     python -m algo.main93_v2 train
     python3 -m algo.main93_v2 train -c config_ntua93.yaml
@@ -216,6 +244,15 @@ def train(text_version='ek', label_version=None, config_path='config93_naive.yam
     :param config_path: string
     :return:
     """
+    origin_labels_predict = {
+        mode: load_label_list(data_config.output_path(origin_output_key, mode, LABEL_PREDICT))
+        for mode in [TRAIN, TEST, FINAL]
+    }
+    select_index = {
+        mode: build_select_index(origin_labels_predict[mode])
+        for mode, labels_predict in origin_labels_predict.items()
+    }
+
     config_data = yaml.load(open(config_path))
 
     output_key = '{}_{}_{}'.format(NNModel.name, text_version, int(time.time()))
@@ -246,14 +283,14 @@ def train(text_version='ek', label_version=None, config_path='config93_naive.yam
     # 加载配置
     nn_config = NNConfig(config_data)
     train_config = TrainConfig(config_data['train'])
-    early_stop_metric = train_config.early_stop_metric
+    early_stop_metric = 'precision_0'
 
     # 加载训练数据
     datasets = dict()
     datasets[TRAIN], output_dim = load_dataset(
         mode=TRAIN, vocab_id_mapping=vocab_id_mapping,
         max_seq_len=nn_config.seq_len, sampling=train_config.train_sampling,
-        label_version=label_version
+        label_version=label_version, select_index=select_index[TRAIN]
     )
     datasets[TEST], _ = load_dataset(
         mode=TEST, vocab_id_mapping=vocab_id_mapping, max_seq_len=nn_config.seq_len,
@@ -389,6 +426,9 @@ def train(text_version='ek', label_version=None, config_path='config93_naive.yam
                 labels_predict += res[LABEL_PREDICT].tolist()
                 labels_gold += _dataset[LABEL_GOLD][batch_index].tolist()
             labels_predict, labels_gold = labels_predict[:_n_sample], labels_gold[:_n_sample]
+
+            labels_predict = filter_by_index(labels_predict, select_index[TEST])
+            labels_gold = filter_by_index(labels_gold, select_index[TEST])
             res = basic_evaluate(gold=labels_gold, pred=labels_predict)
             eval_history[TEST].append(res)
             print('TEST')
@@ -420,6 +460,7 @@ def train(text_version='ek', label_version=None, config_path='config93_naive.yam
                 )
             else:
                 dataset = datasets[mode]
+
             index_iterator = SimpleIndexIterator.from_dataset(dataset)
             n_sample = index_iterator.n_sample()
 
@@ -443,9 +484,11 @@ def train(text_version='ek', label_version=None, config_path='config93_naive.yam
             labels_gold = labels_gold[:n_sample]
             hidden_feats = hidden_feats[:n_sample]
 
-            if mode == TEST:
-                res = basic_evaluate(gold=labels_gold, pred=labels_predict)
-                best_res[TEST] = res
+            labels_predict_base = origin_labels_predict[mode]
+            for i, (old, new) in enumerate(zip(labels_predict_base, labels_predict)):
+                if old != 0 and new == 0:
+                    labels_predict_base[i] = 0
+            best_res[mode] = basic_evaluate(gold=labels_gold, pred=labels_predict_base)
 
             # 导出隐藏层
             with open(data_config.output_path(output_key, mode, HIDDEN_FEAT), 'w') as file_obj:
@@ -473,98 +516,6 @@ def train(text_version='ek', label_version=None, config_path='config93_naive.yam
     print('best test f1 reached: {}'.format(max(test_score_list)))
 
     print('OUTPUT_KEY: {}'.format(output_key))
-
-
-@commandr.command('test')
-def live_test(output_key):
-    config_path = data_config.output_path(output_key, ALL, CONFIG)
-    config_data = yaml.load(open(config_path))
-    nn_config = NNConfig(config_data)
-    vocab_id_mapping = json.load(open(data_config.output_path(output_key, ALL, VOCAB_ID_MAPPING), 'r'))
-
-    with tf.Session() as sess:
-        prefix_checkpoint = tf.train.latest_checkpoint(data_config.model_path(key=output_key))
-        saver = tf.train.import_meta_graph('{}.meta'.format(prefix_checkpoint))
-        saver.restore(sess, prefix_checkpoint)
-
-        nn = BaseNNModel(config=None)
-        nn.set_graph(tf.get_default_graph())
-
-        fetches = {_key: nn.var(_key) for _key in [LABEL_PREDICT, PROB_PREDICT]}
-        while True:
-            res = input('input: ')
-            if res == 'quit':
-                break
-
-            turns = res.strip().split('|')
-            if len(turns) != 3:
-                print('invalid turns')
-                continue
-
-            tokens_list = list()
-            for turn in turns:
-                tokens = re.sub('\s+', ' ', turn.strip()).split(' ')
-                tokens_list.append(tokens)
-
-            placeholder = [[]] * (nn_config.batch_size - 1)
-            tid_list_0 = tokenized_to_tid_list([tokens_list[0], ] + placeholder, vocab_id_mapping)
-            tid_list_1 = tokenized_to_tid_list([tokens_list[1], ] + placeholder, vocab_id_mapping)
-            tid_list_2 = tokenized_to_tid_list([tokens_list[2], ] + placeholder, vocab_id_mapping)
-
-            tid_0 = np.asarray(zero_pad_seq_list(tid_list_0, nn_config.seq_len))
-            tid_1 = np.asarray(zero_pad_seq_list(tid_list_1, nn_config.seq_len))
-            tid_2 = np.asarray(zero_pad_seq_list(tid_list_2, nn_config.seq_len))
-
-            feed_dict = {
-                nn.var(TID_0): tid_0,
-                nn.var(TID_1): tid_1,
-                nn.var(TID_2): tid_2,
-                nn.var(TEST_MODE): 1
-            }
-            res = sess.run(fetches=fetches, feed_dict=feed_dict)
-            label = res[LABEL_PREDICT][0]
-            prob = res[PROB_PREDICT][0]
-            print('label: {}'.format(label))
-            print('prob: {}'.format(prob))
-
-
-@commandr.command('pred')
-def predict(output_key, mode):
-    config_path = data_config.output_path(output_key, ALL, CONFIG)
-    config_data = yaml.load(open(config_path))
-    nn_config = NNConfig(config_data)
-    vocab_id_mapping = json.load(open(data_config.output_path(output_key, ALL, VOCAB_ID_MAPPING), 'r'))
-
-    dataset = load_dataset(
-        mode=mode, vocab_id_mapping=vocab_id_mapping,
-        max_seq_len=nn_config.seq_len, sampling=False, with_label=False
-    )
-    index_iterator = SimpleIndexIterator.from_dataset(dataset)
-    n_sample = index_iterator.n_sample()
-
-    with tf.Session() as sess:
-        prefix_checkpoint = tf.train.latest_checkpoint(data_config.model_path(key=output_key))
-        saver = tf.train.import_meta_graph('{}.meta'.format(prefix_checkpoint))
-        saver.restore(sess, prefix_checkpoint)
-
-        nn = BaseNNModel(config=None)
-        nn.set_graph(tf.get_default_graph())
-
-        fetches = {_key: nn.var(_key) for _key in [LABEL_PREDICT]}
-        labels_predict = list()
-
-        for batch_index in index_iterator.iterate(nn_config.batch_size, shuffle=False):
-            feed_dict = {nn.var(_key): dataset[_key][batch_index] for _key in feed_key[TEST]}
-            feed_dict[nn.var(TEST_MODE)] = 1
-            res = sess.run(fetches=fetches[TEST], feed_dict=feed_dict)
-            labels_predict += res[LABEL_PREDICT].tolist()
-
-        labels_predict = labels_predict[:n_sample]
-
-    # 导出预测的label
-    with open(data_config.output_path(output_key, mode, LABEL_PREDICT), 'w') as file_obj:
-        for _label in labels_predict:
-            file_obj.write('{}\n'.format(_label))
 
 
 if __name__ == '__main__':

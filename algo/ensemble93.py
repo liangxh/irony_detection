@@ -40,15 +40,49 @@ def argmax(value_list):
 
 
 @commandr.command
+def improve_others(main_output_key, sub_output_key):
+    labels_predict = dict()
+    labels_predict_after = dict()
+
+    labels_gold = dict()
+    for mode in [TRAIN, TEST]:
+        label_path = data_config.path(mode, LABEL, None)
+        labels_gold[mode] = load_label_list(label_path)
+
+        path = data_config.output_path(main_output_key, mode, PROB_PREDICT)
+        labels_predict_base = load_label_list(path)
+        labels_predict[mode] = list() + labels_predict_base
+
+        path = data_config.output_path(sub_output_key, mode, PROB_PREDICT)
+        labels = load_label_list(path)
+
+        for i, (p_base, p_sub) in enumerate(zip(labels_predict_base, labels)):
+            if p_sub == 0:
+                labels_predict_base[i] = 0
+        labels_predict_after[mode] = labels_predict_base
+
+    for mode in [TRAIN, TEST]:
+        res = basic_evaluate(gold=labels_gold[mode], pred=labels_predict[mode])
+        print(mode)
+        print_evaluation(res)
+        print()
+
+        res = basic_evaluate(gold=labels_gold[mode], pred=labels_predict_after[mode])
+        print(mode, '(AFTER)')
+        print_evaluation(res)
+        print()
+
+
+@commandr.command
 def main(ensemble_mode, config_path='config93_ensemble.yaml', build_analysis=False):
     """
     [Usage]
     python3 -m algo.ensemble93 main -e mv --build-analysis
 
-    :param ensemble_mode: 
+    :param ensemble_mode:
     :param config_path:
     :param build_analysis: bool
-    :return: 
+    :return:
     """
     dataset_key = 'semeval2019_task3_dev'
 

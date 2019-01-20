@@ -46,7 +46,7 @@ class NNConfig(BaseNNConfig):
 
 
 class NNModel(BaseNNModel):
-    name = 'm93_cnndist3'
+    name = 'm93_cnnd3b'
 
     def build_neural_network(self, lookup_table):
         test_mode = tf.placeholder(tf.int8, None, name=TEST_MODE)
@@ -123,7 +123,7 @@ class NNModel(BaseNNModel):
 
 
 class HasNNModel(BaseNNModel):
-    name = 'm93_cnndist3'
+    name = 'm93_cnnd3b'
 
     def build_neural_network(self, lookup_table):
         test_mode = tf.placeholder(tf.int8, None, name=TEST_MODE)
@@ -345,7 +345,7 @@ def train(text_version='ek', label_version=None, config_path='config93_naive.yam
     nn = NNModel(config=nn_config)
     nn.build_neural_network(lookup_table=lookup_table)
 
-    nn_has = HasNNModel(config.nn_config)
+    nn_has = HasNNModel(config=nn_config)
     nn_has.build_neural_network(lookup_table=lookup_table)
 
     batch_size = train_config.batch_size
@@ -384,26 +384,23 @@ def train(text_version='ek', label_version=None, config_path='config93_naive.yam
                 feed_dict[nn.var(TEST_MODE)] = 0
                 res = sess.run(fetches=fetches[TRAIN], feed_dict=feed_dict)
 
+                labels_gold += dataset[LABEL_GOLD][batch_index].tolist()
                 partial_label_predict = res[LABEL_PREDICT].tolist()
-                partial_label_gold = dataset[LABEL_GOLD][batch_index].tolist()
-                labels_predict += partial_label_predict
-                labels_gold += partial_label_gold
-
                 # 模型二
                 feed_dict = {nn_has.var(_key): dataset[_key][batch_index] for _key in feed_key[TRAIN]}
                 feed_dict[nn_has.var(LABEL_GOLD)] = np.asarray(feed_dict[nn_has.var(LABEL_GOLD)] != 0).astype(int)
 
-                sample_weight = list()
-                for p, g in zip(partial_label_predict, partial_label_gold):
-                    sample_weight.append(1 if p != 0 else 0)
-                feed_dict[nn_has.var(SAMPLE_WEIGHTS)] = np.asarray(sample_weight)
+                sample_weight_has = [.1 if p != 0 else 0. for p in partial_label_predict]
+                feed_dict[nn_has.var(SAMPLE_WEIGHTS)] = np.asarray(sample_weight_has)
                 feed_dict[nn_has.var(TEST_MODE)] = 0
                 res = sess.run(fetches=fetches_has[TRAIN], feed_dict=feed_dict)
 
-                labels_predict += res[LABEL_PREDICT].tolist()
-                labels_gold += dataset[LABEL_GOLD][batch_index].tolist()
+                partial_labels_predict_has = res[LABEL_PREDICT].tolist()
+                for i, (p, w) in enumerate(zip(partial_labels_predict_has, sample_weight_has)):
+                    if w != 0. and p == 0:
+                        partial_label_predict[i] = 0
 
-
+                labels_predict += partial_label_predict
 
             labels_predict, labels_gold = labels_predict[:n_sample], labels_gold[:n_sample]
             res = basic_evaluate(gold=labels_gold, pred=labels_predict)
@@ -437,8 +434,21 @@ def train(text_version='ek', label_version=None, config_path='config93_naive.yam
                     feed_dict[nn.var(TEST_MODE)] = 1
                     res = sess.run(fetches=fetches[TEST], feed_dict=feed_dict)
 
-                    labels_predict += res[LABEL_PREDICT].tolist()
                     labels_gold += dataset[LABEL_GOLD][batch_index].tolist()
+                    partial_label_predict = res[LABEL_PREDICT].tolist()
+
+                    # 模型二
+                    feed_dict = {nn_has.var(_key): dataset[_key][batch_index] for _key in feed_key[TEST]}
+                    sample_weight_has = [.1 if p != 0 else 0. for p in partial_label_predict]
+                    feed_dict[nn_has.var(TEST_MODE)] = 0
+                    res = sess.run(fetches=fetches_has[TEST], feed_dict=feed_dict)
+
+                    partial_labels_predict_has = res[LABEL_PREDICT].tolist()
+                    for i, (p, w) in enumerate(zip(partial_labels_predict_has, sample_weight_has)):
+                        if w != 0. and p == 0:
+                            partial_label_predict[i] = 0
+
+                    labels_predict += partial_label_predict
 
                 labels_predict, labels_gold = labels_predict[:n_sample], labels_gold[:n_sample]
                 res = basic_evaluate(gold=labels_gold, pred=labels_predict)
@@ -466,8 +476,22 @@ def train(text_version='ek', label_version=None, config_path='config93_naive.yam
                 feed_dict[nn.var(TEST_MODE)] = 1
                 res = sess.run(fetches=fetches[TEST], feed_dict=feed_dict)
 
-                labels_predict += res[LABEL_PREDICT].tolist()
                 labels_gold += _dataset[LABEL_GOLD][batch_index].tolist()
+                partial_label_predict = res[LABEL_PREDICT].tolist()
+
+                # 模型二
+                feed_dict = {nn_has.var(_key): _dataset[_key][batch_index] for _key in feed_key[TEST]}
+                sample_weight_has = [.1 if p != 0 else 0. for p in partial_label_predict]
+                feed_dict[nn_has.var(TEST_MODE)] = 0
+                res = sess.run(fetches=fetches_has[TEST], feed_dict=feed_dict)
+
+                partial_labels_predict_has = res[LABEL_PREDICT].tolist()
+                for i, (p, w) in enumerate(zip(partial_labels_predict_has, sample_weight_has)):
+                    if w != 0. and p == 0:
+                        partial_label_predict[i] = 0
+
+                labels_predict += partial_label_predict
+
             labels_predict, labels_gold = labels_predict[:_n_sample], labels_gold[:_n_sample]
             res = basic_evaluate(gold=labels_gold, pred=labels_predict)
             eval_history[TEST].append(res)
@@ -507,10 +531,22 @@ def train(text_version='ek', label_version=None, config_path='config93_naive.yam
                 feed_dict[nn.var(TEST_MODE)] = 1
                 res = sess.run(fetches=fetches[TEST], feed_dict=feed_dict)
                 prob_predict += res[PROB_PREDICT].tolist()
-                labels_predict += res[LABEL_PREDICT].tolist()
                 hidden_feats += res[HIDDEN_FEAT].tolist()
                 if LABEL_GOLD in dataset:
                     labels_gold += dataset[LABEL_GOLD][batch_index].tolist()
+
+                partial_label_predict = res[LABEL_PREDICT].tolist()
+                # 模型二
+                feed_dict = {nn_has.var(_key): dataset[_key][batch_index] for _key in feed_key[TEST]}
+                sample_weight_has = [.1 if p != 0 else 0. for p in partial_label_predict]
+                feed_dict[nn_has.var(TEST_MODE)] = 0
+                res = sess.run(fetches=fetches_has[TEST], feed_dict=feed_dict)
+
+                partial_labels_predict_has = res[LABEL_PREDICT].tolist()
+                for i, (p, w) in enumerate(zip(partial_labels_predict_has, sample_weight_has)):
+                    if w != 0. and p == 0:
+                        partial_label_predict[i] = 0
+                labels_predict += partial_label_predict
 
             prob_predict = prob_predict[:n_sample]
             labels_predict = labels_predict[:n_sample]

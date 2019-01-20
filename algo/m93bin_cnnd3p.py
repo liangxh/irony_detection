@@ -225,8 +225,6 @@ def filter_by_index(data, index):
     """
     根据ID选出数据
     """
-    if len(data) != len(index):
-        raise Exception('length mismatch: data() != index()'.format(len(data), len(index)))
     new_data = list()
     for i in index:
         new_data.append(data[i])

@@ -193,7 +193,7 @@ fetch_key = {
 
 
 @commandr.command
-def train(text_version='ek', label_version=None, config_path='config93_naive.yaml'):
+def train(text_version='ek', label_version='binary', config_path='config93_naive.yaml'):
     """
     python -m algo.main93_v2 train
     python3 -m algo.main93_v2 train -c config_ntua93.yaml

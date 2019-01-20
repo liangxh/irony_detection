@@ -32,6 +32,8 @@ ACCURACY = 'accuracy'
 PRECISION = 'precision'
 RECALL = 'recall'
 F1_SCORE = 'f1'
+PRECISION_0 = 'precision_0'
+RECALL_0 = 'recall_0'
 
 CONFUSION_MATRIX = 'confusion_matrix'
 

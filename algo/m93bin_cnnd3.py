@@ -13,7 +13,7 @@ from algo.lib.dataset import IndexIterator, SimpleIndexIterator
 from algo.lib.evaluate93 import basic_evaluate
 from algo.model.const import *
 from algo.model.train_config import TrainConfig
-from algo.lib.common import print_evaluation, load_lookup_table2, tokenized_to_tid_list
+from algo.lib.common import print_evaluation_0 as print_evaluation, load_lookup_table2, tokenized_to_tid_list
 from algo.model.nn_config import BaseNNConfig
 from algo.nn.base import BaseNNModel
 from algo.nn.common import dense, cnn
@@ -46,7 +46,7 @@ class NNConfig(BaseNNConfig):
 
 
 class NNModel(BaseNNModel):
-    name = 'm93_cnndist3'
+    name = 'm93bin_cnnd3'
 
     def build_neural_network(self, lookup_table):
         test_mode = tf.placeholder(tf.int8, None, name=TEST_MODE)
@@ -233,7 +233,7 @@ def train(text_version='ek', label_version=None, config_path='config93_naive.yam
     # 加载配置
     nn_config = NNConfig(config_data)
     train_config = TrainConfig(config_data['train'])
-    early_stop_metric = train_config.early_stop_metric
+    early_stop_metric = 'precision_0'
 
     # 加载训练数据
     datasets = dict()

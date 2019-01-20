@@ -45,7 +45,7 @@ def improve_others(main_output_key, sub_output_key):
     labels_predict_after = dict()
 
     labels_gold = dict()
-    for mode in [TRAIN, TEST]:
+    for mode in [TEST]:
         label_path = data_config.path(mode, LABEL, None)
         labels_gold[mode] = load_label_list(label_path)
 
@@ -61,7 +61,7 @@ def improve_others(main_output_key, sub_output_key):
                 labels_predict_base[i] = 0
         labels_predict_after[mode] = labels_predict_base
 
-    for mode in [TRAIN, TEST]:
+    for mode in [TEST]:
         res = basic_evaluate(gold=labels_gold[mode], pred=labels_predict[mode])
         print(mode)
         print_evaluation(res)

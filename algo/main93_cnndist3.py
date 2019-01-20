@@ -129,7 +129,7 @@ def to_nn_input(tid_list, max_seq_len):
     return tid_list, seq_len
 
 
-def load_dataset(mode, vocab_id_mapping, max_seq_len, sampling=False, with_label=True):
+def load_dataset(mode, vocab_id_mapping, max_seq_len, sampling=False, with_label=True, label_version=None):
     dataset = dict()
     for i in [0, 1, 2]:
         tid_list = tokenized_to_tid_list(
@@ -139,7 +139,7 @@ def load_dataset(mode, vocab_id_mapping, max_seq_len, sampling=False, with_label
         dataset[TID_[i]] = tid_list
 
     if with_label:
-        label_path = data_config.path(mode, LABEL)
+        label_path = data_config.path(mode, LABEL, label_version)
         label_list = load_label_list(label_path)
         dataset[LABEL_GOLD] = np.asarray(label_list)
 
@@ -238,11 +238,18 @@ def train(text_version='ek', label_version=None, config_path='config93_naive.yam
     # 加载训练数据
     datasets = dict()
     datasets[TRAIN], output_dim = load_dataset(
-        mode=TRAIN, vocab_id_mapping=vocab_id_mapping, max_seq_len=nn_config.seq_len, sampling=True)
+        mode=TRAIN, vocab_id_mapping=vocab_id_mapping,
+        max_seq_len=nn_config.seq_len, sampling=True,
+        label_version=label_version
+    )
     datasets[TEST], _ = load_dataset(
-        mode=TEST, vocab_id_mapping=vocab_id_mapping, max_seq_len=nn_config.seq_len)
+        mode=TEST, vocab_id_mapping=vocab_id_mapping, max_seq_len=nn_config.seq_len,
+        label_version=label_version
+    )
     datasets[FINAL] = load_dataset(
-        mode=FINAL, vocab_id_mapping=vocab_id_mapping, max_seq_len=nn_config.seq_len, with_label=False)
+        mode=FINAL, vocab_id_mapping=vocab_id_mapping, max_seq_len=nn_config.seq_len,
+        with_label=False, label_version=label_version
+    )
 
     # 初始化数据集的检索
     index_iterators = {
@@ -300,8 +307,6 @@ def train(text_version='ek', label_version=None, config_path='config93_naive.yam
                 feed_dict = {nn.var(_key): dataset[_key][batch_index] for _key in feed_key[TRAIN]}
                 feed_dict[nn.var(SAMPLE_WEIGHTS)] = list(map(label_weight.get, feed_dict[nn.var(LABEL_GOLD)]))
                 feed_dict[nn.var(TEST_MODE)] = 0
-                # for _key in [TID_0, TID_1, TID_2]:
-                #     feed_dict[nn.var(_key)] = to_nn_input(feed_dict[nn.var(_key)], nn_config.seq_len)
                 res = sess.run(fetches=fetches[TRAIN], feed_dict=feed_dict)
 
                 labels_predict += res[LABEL_PREDICT].tolist()

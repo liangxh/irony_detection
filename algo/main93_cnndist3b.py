@@ -44,13 +44,9 @@ class NNConfig(BaseNNConfig):
     def kernel_size(self):
         return self.data['cnn']['kernel_size']
 
-    @property
-    def max_out(self):
-        return self.data['max_out']
-
 
 class NNModel(BaseNNModel):
-    name = 'm93_cnndist3mo'
+    name = 'm93_cnndist3'
 
     def build_neural_network(self, lookup_table):
         test_mode = tf.placeholder(tf.int8, None, name=TEST_MODE)
@@ -105,15 +101,7 @@ class NNModel(BaseNNModel):
                 else:
                     l2_component += comp
 
-        l2_w_list = list()
-        y_list = list()
-        for dim in self.config.max_out:
-            y, w, b = dense.build(dense_input, dim_output=dim)
-            y = tf.expand_dims(tf.reduce_max(y, 1), axis=1)
-            y_list.append(y)
-            l2_w_list.append(w)
-
-        y = tf.concat(y_list, axis=1, name=PROB_PREDICT)
+        y, w, b = dense.build(dense_input, dim_output=self.config.output_dim, output_name=PROB_PREDICT)
 
         # 计算loss
         _loss_1 = tf.reduce_mean(tf.losses.sparse_softmax_cross_entropy(
@@ -121,8 +109,84 @@ class NNModel(BaseNNModel):
 
         _loss_2 = tf.constant(0., dtype=tf.float32)
         if self.config.l2_reg_lambda is not None and self.config.l2_reg_lambda > 0:
-            for w in l2_w_list:
-                _loss_2 += self.config.l2_reg_lambda * tf.nn.l2_loss(w)
+            _loss_2 += self.config.l2_reg_lambda * tf.nn.l2_loss(w)
+        if l2_component is not None:
+            _loss_2 += l2_component
+        loss = tf.add(_loss_1, _loss_2, name=LOSS)
+
+        # 预测标签
+        tf.cast(tf.argmax(y, 1), tf.int32, name=LABEL_PREDICT)
+
+        # 统一的后处理
+        self.build_optimizer(loss=loss)
+        self.set_graph(graph=tf.get_default_graph())
+
+
+class HasNNModel(BaseNNModel):
+    name = 'm93_cnndist3'
+
+    def build_neural_network(self, lookup_table):
+        test_mode = tf.placeholder(tf.int8, None, name=TEST_MODE)
+        label_gold = tf.placeholder(tf.int32, [None, ], name=LABEL_GOLD)
+        sample_weights = tf.placeholder(tf.float32, [None, ], name=SAMPLE_WEIGHTS)
+        lookup_table = tf.Variable(
+            lookup_table, dtype=tf.float32, name=LOOKUP_TABLE,
+            trainable=self.config.embedding_trainable
+        )
+        dropout_keep_prob = build_dropout_keep_prob(keep_prob=self.config.dropout_keep_prob, test_mode=test_mode)
+
+        tid_ = [list() for _ in range(3)]
+        seq_len_ = [list() for _ in range(3)]
+        embedded_ = [list() for _ in range(3)]
+        for i in range(3):
+            tid_[i] = tf.placeholder(tf.int32, [self.config.batch_size, self.config.seq_len], name=TID_[i])
+            seq_len_[i] = tf.placeholder(tf.int32, [None, ], name=SEQ_LEN_[i])
+            embedded_[i] = tf.nn.embedding_lookup(lookup_table, tid_[i])
+
+        if self.config.embedding_noise_type is None:
+            pass
+        elif self.config.embedding_noise_type == 'gaussian':
+            for i in range(3):
+                embedded_[i] = add_gaussian_noise_layer(
+                    embedded_[i], stddev=self.config.embedding_noise_stddev, test_mode=test_mode)
+        elif self.config.embedding_noise_type == 'dropout':
+            emb_dropout_keep_prob = build_dropout_keep_prob(
+                keep_prob=self.config.embedding_dropout_keep_prob, test_mode=test_mode)
+            for i in range(3):
+                embedded_[i] = tf.nn.dropout(embedded_[i], emb_dropout_keep_prob)
+        else:
+            raise Exception('unknown embedding noise type: {}'.format(self.config.embedding_noise_type))
+
+        last_states = list()
+        for i in range(3):
+            with tf.variable_scope('turn{}'.format(i)):
+                cnn_output = cnn.build2(embedded_[i], self.config.filter_num, self.config.kernel_size)
+                last_state = cnn.max_pooling(cnn_output)
+                last_states.append(last_state)
+
+        dense_input = tf.concat(last_states, axis=1, name=HIDDEN_FEAT)
+        dense_input = tf.nn.dropout(dense_input, keep_prob=dropout_keep_prob)
+
+        l2_component = None
+        for conf in self.config.dense_layers:
+            dense_input, w, _ = dense.build(
+                dense_input, dim_output=conf['dim'], activation=getattr(tf.nn, conf['activation']))
+            if conf.get('l2', 0.) > 0:
+                comp = conf['l2'] * tf.nn.l2_loss(w)
+                if l2_component is None:
+                    l2_component = comp
+                else:
+                    l2_component += comp
+
+        y, w, b = dense.build(dense_input, dim_output=2, output_name=PROB_PREDICT)
+
+        # 计算loss
+        _loss_1 = tf.reduce_mean(tf.losses.sparse_softmax_cross_entropy(
+            logits=y, labels=label_gold, weights=sample_weights))
+
+        _loss_2 = tf.constant(0., dtype=tf.float32)
+        if self.config.l2_reg_lambda is not None and self.config.l2_reg_lambda > 0:
+            _loss_2 += self.config.l2_reg_lambda * tf.nn.l2_loss(w)
         if l2_component is not None:
             _loss_2 += l2_component
         loss = tf.add(_loss_1, _loss_2, name=LOSS)
@@ -281,10 +345,15 @@ def train(text_version='ek', label_version=None, config_path='config93_naive.yam
     nn = NNModel(config=nn_config)
     nn.build_neural_network(lookup_table=lookup_table)
 
+    nn_has = HasNNModel(config.nn_config)
+    nn_has.build_neural_network(lookup_table=lookup_table)
+
     batch_size = train_config.batch_size
     fetches = {mode: {_key: nn.var(_key) for _key in fetch_key[mode]} for mode in [TRAIN, TEST]}
+    fetches_has = {mode: {_key: nn_has.var(_key) for _key in fetch_key[mode]} for mode in [TRAIN, TEST]}
 
     model_output_prefix = data_config.model_path(key=output_key) + '/model'
+    model_has_output_prefix = data_config.model_path(key=output_key) + '/model_has'
 
     best_res = {mode: None for mode in [TRAIN, VALID]}
     no_update_count = {mode: 0 for mode in [TRAIN, VALID]}
@@ -315,8 +384,26 @@ def train(text_version='ek', label_version=None, config_path='config93_naive.yam
                 feed_dict[nn.var(TEST_MODE)] = 0
                 res = sess.run(fetches=fetches[TRAIN], feed_dict=feed_dict)
 
+                partial_label_predict = res[LABEL_PREDICT].tolist()
+                partial_label_gold = dataset[LABEL_GOLD][batch_index].tolist()
+                labels_predict += partial_label_predict
+                labels_gold += partial_label_gold
+
+                # 模型二
+                feed_dict = {nn_has.var(_key): dataset[_key][batch_index] for _key in feed_key[TRAIN]}
+                feed_dict[nn_has.var(LABEL_GOLD)] = np.asarray(feed_dict[nn_has.var(LABEL_GOLD)] != 0).astype(int)
+
+                sample_weight = list()
+                for p, g in zip(partial_label_predict, partial_label_gold):
+                    sample_weight.append(1 if p != 0 else 0)
+                feed_dict[nn_has.var(SAMPLE_WEIGHTS)] = np.asarray(sample_weight)
+                feed_dict[nn_has.var(TEST_MODE)] = 0
+                res = sess.run(fetches=fetches_has[TRAIN], feed_dict=feed_dict)
+
                 labels_predict += res[LABEL_PREDICT].tolist()
                 labels_gold += dataset[LABEL_GOLD][batch_index].tolist()
+
+
 
             labels_predict, labels_gold = labels_predict[:n_sample], labels_gold[:n_sample]
             res = basic_evaluate(gold=labels_gold, pred=labels_predict)

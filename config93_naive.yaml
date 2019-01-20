@@ -27,6 +27,7 @@ nn:
     - dim: 32
       activation: relu
       l2: 0.2
+  max_out: [6, 2, 2, 2]
   learning_rate:
     init: 0.005
     decay_steps: 2

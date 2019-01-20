@@ -101,7 +101,19 @@ class NNModel(BaseNNModel):
                 else:
                     l2_component += comp
 
-        y, w, b = dense.build(dense_input, dim_output=self.config.output_dim, output_name=PROB_PREDICT)
+        l2_w_list = list()
+        if self.config.max_out is None:
+            y, w, b = dense.build(dense_input, dim_output=self.config.output_dim, output_name=PROB_PREDICT)
+            l2_w_list.append(w)
+        else:
+            y_list = list()
+            for dim in self.config.max_out:
+                y, w, b = dense.build(dense_input, dim_output=dim)
+                y = tf.expand_dims(tf.reduce_max(y, 1), axis=1)
+                y_list.append(y)
+                l2_w_list.append(w)
+
+            y = tf.concat(y_list, axis=1, name=PROB_PREDICT)
 
         # 计算loss
         _loss_1 = tf.reduce_mean(tf.losses.sparse_softmax_cross_entropy(
@@ -109,7 +121,8 @@ class NNModel(BaseNNModel):
 
         _loss_2 = tf.constant(0., dtype=tf.float32)
         if self.config.l2_reg_lambda is not None and self.config.l2_reg_lambda > 0:
-            _loss_2 += self.config.l2_reg_lambda * tf.nn.l2_loss(w)
+            for w in l2_w_list:
+                _loss_2 += self.config.l2_reg_lambda * tf.nn.l2_loss(w)
         if l2_component is not None:
             _loss_2 += l2_component
         loss = tf.add(_loss_1, _loss_2, name=LOSS)

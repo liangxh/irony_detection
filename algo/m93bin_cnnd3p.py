@@ -13,7 +13,7 @@ from algo.lib.dataset import IndexIterator, SimpleIndexIterator
 from algo.lib.evaluate93 import basic_evaluate
 from algo.model.const import *
 from algo.model.train_config import TrainConfig
-from algo.lib.common import print_evaluation_0 as print_evaluation, load_lookup_table2, tokenized_to_tid_list
+from algo.lib.common import print_evaluation_0, print_evaluation, load_lookup_table2, tokenized_to_tid_list
 from algo.model.nn_config import BaseNNConfig
 from algo.nn.base import BaseNNModel
 from algo.nn.common import dense, cnn
@@ -294,9 +294,9 @@ def train(origin_output_key, text_version='ek', label_version='binary', config_p
         mode=TEST, vocab_id_mapping=vocab_id_mapping, max_seq_len=nn_config.seq_len,
         label_version=label_version
     )
-    datasets[FINAL] = load_dataset(
+    datasets[FINAL], _ = load_dataset(
         mode=FINAL, vocab_id_mapping=vocab_id_mapping, max_seq_len=nn_config.seq_len,
-        with_label=False, label_version=label_version
+        label_version=label_version
     )
 
     # 初始化数据集的检索
@@ -362,7 +362,7 @@ def train(origin_output_key, text_version='ek', label_version='binary', config_p
 
             labels_predict, labels_gold = labels_predict[:n_sample], labels_gold[:n_sample]
             res = basic_evaluate(gold=labels_gold, pred=labels_predict)
-            print_evaluation(res)
+            print_evaluation_0(res)
             eval_history[TRAIN].append(res)
 
             global_step = tf.train.global_step(sess, nn.var(GLOBAL_STEP))
@@ -398,7 +398,7 @@ def train(origin_output_key, text_version='ek', label_version='binary', config_p
                 labels_predict, labels_gold = labels_predict[:n_sample], labels_gold[:n_sample]
                 res = basic_evaluate(gold=labels_gold, pred=labels_predict)
                 eval_history[VALID].append(res)
-                print_evaluation(res)
+                print_evaluation_0(res)
 
                 # Early Stop
                 if best_res[VALID] is None or res[early_stop_metric] > best_res[VALID][early_stop_metric]:
@@ -430,7 +430,7 @@ def train(origin_output_key, text_version='ek', label_version='binary', config_p
             res = basic_evaluate(gold=labels_gold, pred=labels_predict)
             eval_history[TEST].append(res)
             print('TEST')
-            print_evaluation(res)
+            print_evaluation_0(res)
 
             if no_update_count[TRAIN] >= max_no_update_count:
                 break
@@ -452,7 +452,7 @@ def train(origin_output_key, text_version='ek', label_version='binary', config_p
 
         for mode in [TRAIN, TEST, FINAL]:
             if mode == TRAIN and train_config.train_sampling:
-                dataset = load_dataset(
+                dataset, _ = load_dataset(
                     mode=TRAIN, vocab_id_mapping=vocab_id_mapping,
                     max_seq_len=nn_config.seq_len, sampling=False, label_version=label_version
                 )

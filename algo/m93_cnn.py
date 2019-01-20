@@ -414,7 +414,7 @@ def train(text_version='ek', label_version=None, config_path='config93_naive.yam
 
         for mode in [TRAIN, TEST, FINAL]:
             if mode == TRAIN and train_config.train_sampling:
-                dataset = load_dataset(
+                dataset, _ = load_dataset(
                     mode=TRAIN, vocab_id_mapping=vocab_id_mapping,
                     max_seq_len=nn_config.seq_len, sampling=False, label_version=label_version
                 )

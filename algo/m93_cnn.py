@@ -556,7 +556,7 @@ def predict(output_key, mode):
         for batch_index in index_iterator.iterate(nn_config.batch_size, shuffle=False):
             feed_dict = {nn.var(_key): dataset[_key][batch_index] for _key in feed_key[TEST]}
             feed_dict[nn.var(TEST_MODE)] = 1
-            res = sess.run(fetches=fetches[TEST], feed_dict=feed_dict)
+            res = sess.run(fetches=fetches, feed_dict=feed_dict)
             labels_predict += res[LABEL_PREDICT].tolist()
 
         labels_predict = labels_predict[:n_sample]

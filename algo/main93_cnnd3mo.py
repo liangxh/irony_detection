@@ -44,10 +44,6 @@ class NNConfig(BaseNNConfig):
     def kernel_size(self):
         return self.data['cnn']['kernel_size']
 
-    @property
-    def max_out(self):
-        return self.data['max_out']
-
 
 class NNModel(BaseNNModel):
     name = 'm93_cnndist3mo'

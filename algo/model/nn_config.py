@@ -74,3 +74,7 @@ class BaseNNConfig(object):
     @property
     def dense_layers(self):
         return self.data['dense']
+
+    @property
+    def max_out(self):
+        return self.data['max_out']

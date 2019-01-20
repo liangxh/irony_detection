@@ -49,11 +49,11 @@ def improve_others(main_output_key, sub_output_key):
         label_path = data_config.path(mode, LABEL, None)
         labels_gold[mode] = load_label_list(label_path)
 
-        path = data_config.output_path(main_output_key, mode, PROB_PREDICT)
+        path = data_config.output_path(main_output_key, mode, LABEL_PREDICT)
         labels_predict_base = load_label_list(path)
         labels_predict[mode] = list() + labels_predict_base
 
-        path = data_config.output_path(sub_output_key, mode, PROB_PREDICT)
+        path = data_config.output_path(sub_output_key, mode, LABEL_PREDICT)
         labels = load_label_list(path)
 
         for i, (p_base, p_sub) in enumerate(zip(labels_predict_base, labels)):

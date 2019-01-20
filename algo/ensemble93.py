@@ -65,11 +65,15 @@ def improve_others(main_output_key, sub_output_key):
         res = basic_evaluate(gold=labels_gold[mode], pred=labels_predict[mode])
         print(mode)
         print_evaluation(res)
+        for col in res[CONFUSION_MATRIX]:
+            print(','.join(map(str, col)))
         print()
 
         res = basic_evaluate(gold=labels_gold[mode], pred=labels_predict_after[mode])
         print(mode, '(AFTER)')
         print_evaluation(res)
+        for col in res[CONFUSION_MATRIX]:
+            print(','.join(map(str, col)))
         print()
 
 

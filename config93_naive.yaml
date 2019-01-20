@@ -42,6 +42,6 @@ train:
   epoch: 200
   valid_rate: 0.1
   batch_size: 100
-  use_class_weights: False
   early_stop_metric: precision
-  input_dropout_keep_prob: 1.
+  train_sampling: True
+  use_class_weights: False

@@ -35,5 +35,5 @@ class TrainConfig(object):
         return self.data['early_stop_metric'] if 'early_stop_metric' in self.data else F1_SCORE
 
     @property
-    def input_dropout_keep_prob(self):
-        return self.data.get('input_dropout_keep_prob', 1.)
+    def train_sampling(self):
+        return self.data['train_sampling']

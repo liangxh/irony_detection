@@ -239,7 +239,7 @@ def train(text_version='ek', label_version='binary', config_path='config93_naive
     datasets = dict()
     datasets[TRAIN], output_dim = load_dataset(
         mode=TRAIN, vocab_id_mapping=vocab_id_mapping,
-        max_seq_len=nn_config.seq_len, sampling=train_config.train_sampling,
+        max_seq_len=nn_config.seq_len, sampling=True,
         label_version=label_version
     )
     datasets[TEST], _ = load_dataset(

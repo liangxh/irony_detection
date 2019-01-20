@@ -15,7 +15,7 @@ def print_evaluation(res):
 def print_evaluation_0(res):
     keys_ = [RECALL_0, PRECISION_0]
     values = list(map(res.get, keys_))
-    print(','.join(keys))
+    print(','.join(keys_))
     print(','.join(list(map(str, values))))
 
 

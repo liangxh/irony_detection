@@ -16,7 +16,7 @@ from algo.model.train_config import TrainConfig
 from algo.lib.common import print_evaluation_0 as print_evaluation, load_lookup_table2, tokenized_to_tid_list
 from algo.model.nn_config import BaseNNConfig
 from algo.nn.base import BaseNNModel
-from algo.nn.common import dense, cnn
+from algo.nn.common import dense, cnn, rnn_cell
 from algo.nn.common.common import add_gaussian_noise_layer, build_dropout_keep_prob
 from dataset.common.const import *
 from dataset.common.load import *
@@ -83,8 +83,11 @@ class NNModel(BaseNNModel):
         last_states = list()
         for i in range(3):
             with tf.variable_scope('turn{}'.format(i)):
-                cnn_output = cnn.build2(embedded_[i], self.config.filter_num, self.config.kernel_size)
-                last_state = cnn.max_pooling(cnn_output)
+                rnn_outputs, last_state = tf.nn.dynamic_rnn(
+                    rnn_cell.build_gru(self.config.rnn_dim, dropout_keep_prob=dropout_keep_prob),
+                    inputs=embedded_[i], sequence_length=seq_len_[i], dtype=tf.float32
+                )
+                last_states.append(cnn.max_pooling(rnn_outputs))
                 last_states.append(last_state)
 
         dense_input = tf.concat(last_states, axis=1, name=HIDDEN_FEAT)
@@ -239,7 +242,7 @@ def train(text_version='ek', label_version='binary', config_path='config93_naive
     datasets = dict()
     datasets[TRAIN], output_dim = load_dataset(
         mode=TRAIN, vocab_id_mapping=vocab_id_mapping,
-        max_seq_len=nn_config.seq_len, sampling=True,
+        max_seq_len=nn_config.seq_len, sampling=train_config.train_sampling,
         label_version=label_version
     )
     datasets[TEST], _ = load_dataset(

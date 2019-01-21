@@ -184,18 +184,18 @@ def custom_sampling(dataset, dist=None):
     for i, label in enumerate(dataset[LABEL_GOLD]):
         label_idx[label].append(i)
 
-    label = 0
-    for i in label_idx[label]:
-        tid_ = [copy.deepcopy(dataset[TID_[j]][i]) for j in range(3)]
+    for label in [1, 2, 3]:
+        for i in label_idx[label]:
+            tid_ = [copy.deepcopy(dataset[TID_[j]][i]) for j in range(3)]
 
-        j = random.randint(0, 2)
-        if len(tid_[j]) > 1:
-            pop_idx = random.randint(0, len(tid_[j]) - 1)
-            tid_[j].pop(pop_idx)
+            j = random.randint(0, 2)
+            if len(tid_[j]) > 1:
+                pop_idx = random.randint(0, len(tid_[j]) - 1)
+                tid_[j].pop(pop_idx)
 
-        for j in range(3):
-            dataset[TID_[j]].append(tid_[j])
-        dataset[LABEL_GOLD].append(label)
+            for j in range(3):
+                dataset[TID_[j]].append(tid_[j])
+            dataset[LABEL_GOLD].append(label)
 
     return dataset
 

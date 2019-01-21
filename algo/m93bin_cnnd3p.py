@@ -246,6 +246,10 @@ def train(origin_output_key, text_version='ek', label_version='binary', config_p
         mode: load_label_list(data_config.output_path(origin_output_key, mode, LABEL_PREDICT))
         for mode in [TRAIN, TEST, FINAL]
     }
+    origin_labels_gold = {
+        mode: load_label_list(data_config.path(mode, LABEL))
+        for mode in [TRAIN, TEST, FINAL]
+    }
     select_index = {
         mode: build_select_index(origin_labels_predict[mode])
         for mode, labels_predict in origin_labels_predict.items()
@@ -464,7 +468,6 @@ def train(origin_output_key, text_version='ek', label_version='binary', config_p
 
             prob_predict = list()
             labels_predict = list()
-            labels_gold = list()
             hidden_feats = list()
 
             for batch_index in index_iterator.iterate(batch_size, shuffle=False):
@@ -474,19 +477,16 @@ def train(origin_output_key, text_version='ek', label_version='binary', config_p
                 prob_predict += res[PROB_PREDICT].tolist()
                 labels_predict += res[LABEL_PREDICT].tolist()
                 hidden_feats += res[HIDDEN_FEAT].tolist()
-                if LABEL_GOLD in dataset:
-                    labels_gold += dataset[LABEL_GOLD][batch_index].tolist()
 
             prob_predict = prob_predict[:n_sample]
             labels_predict = labels_predict[:n_sample]
-            labels_gold = labels_gold[:n_sample]
             hidden_feats = hidden_feats[:n_sample]
 
             labels_predict_base = origin_labels_predict[mode]
             for i, (old, new) in enumerate(zip(labels_predict_base, labels_predict)):
                 if old != 0 and new == 0:
                     labels_predict_base[i] = 0
-            best_res[mode] = basic_evaluate(gold=labels_gold, pred=labels_predict_base)
+            best_res[mode] = basic_evaluate(gold=origin_labels_gold[mode], pred=labels_predict_base)
 
             # 导出隐藏层
             with open(data_config.output_path(output_key, mode, HIDDEN_FEAT), 'w') as file_obj:

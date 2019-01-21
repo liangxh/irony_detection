@@ -1,10 +1,16 @@
 components:
-  - m93_cnn_ek_1546949659  # 0.7448
-  - m93_cnn_ek_1547039955  # 0.7480
-  - m93_cnn_ek_1547040124  # 0.7478
-  - m93_cnn_ek_1547041908  # 0.7440
-others_min_vote: all
+  #- m93_cnn_ek_1546949659  # 0.7448
+  #- m93_cnn_ek_1547039955  # 0.7480
+  #- m93_cnn_ek_1547040124  # 0.7478
+  #- m93_cnn_ek_1547041908  # 0.7440
+  - m93_cnn_ek_1547980948
+  - m93_cnndist3_ek_1547733626  # 0.7658
+  - m93_cnndist3_ek_1547797094  # 0.7646
+  #- m93_cnndist3_ek_1547886263  # 0.7635
+  #- m93_cnndist3_ek_1547886693  # 0.7620
+  #- m93_cnndist3_ek_1547886781  # 0.7618
+  #- m93_cnndist3_ek_1547970724  # 0.7609
+others_min_vote: 1
 others:
   - binary_m93bin_cnnd3_ek_1547973600
   - binary_m93bin_cnnd3_ek_1547978269
-  - binary_m93bin_cnnd4_ek_1548043123

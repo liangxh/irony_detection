@@ -438,7 +438,7 @@ def train(origin_output_key, text_version='ek', label_version='binary', config_p
             for i, (old, new) in enumerate(zip(labels_predict_base, labels_predict)):
                 if old != 0 and new == 0:
                     labels_predict_base[i] = 0
-            res[_mode] = basic_evaluate(gold=origin_labels_gold[_mode], pred=labels_predict_base)
+            res = basic_evaluate(gold=origin_labels_gold[_mode], pred=labels_predict_base)
             eval_history[TEST].append(res)
             print('TEST')
             print_evaluation_0(res)

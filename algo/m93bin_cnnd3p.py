@@ -220,7 +220,7 @@ def build_select_index(labels_predict, labels_gold):
     """
     index = list()
     for i, (p, g) in enumerate(zip(labels_predict, labels_gold)):
-        if p != g and p != 0:
+        if p != 0:
             index.append(i)
     return index
 

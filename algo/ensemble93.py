@@ -5,6 +5,7 @@ import numpy as np
 import yaml
 from algo.model.const import *
 from dataset.semeval2019_task3_dev.config import config as data_config
+from dataset.semeval2019_task3_dev.process import label_str
 from dataset.common.const import *
 from dataset.common.load import *
 from algo.lib.evaluate93 import basic_evaluate
@@ -301,6 +302,7 @@ def main(ensemble_mode, config_path='config93_ensemble.yaml', final_output=None)
                 lines = list(map(lambda l: l.strip(), lines))
 
                 labels = labels_predict_last[FINAL]
+                labels = list(map(lambda l: label_str[l], labels))
                 assert len(labels) == len(lines)
 
                 for line, label in zip(lines, labels):

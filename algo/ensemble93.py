@@ -32,6 +32,10 @@ class Config(object):
     def others(self):
         return self.data['others']
 
+    @property
+    def others_type(self):
+        return self.data['others_type']
+
 
 def argmax(value_list):
     idx = 0
@@ -170,21 +174,35 @@ def main(ensemble_mode, config_path='config93_ensemble.yaml', build_analysis=Fal
         print()
 
         if config.others is not None and len(config.others) > 0:
-            base = list() + labels_predict[mode]
-
-            for output_key in config.others:
-                path = data_config.output_path(output_key, mode, LABEL_PREDICT)
-                labels = load_label_list(path)
-
-                after = list()
-                for i, (p_base, p_sub) in enumerate(zip(labels_predict[mode], labels)):
-                    if p_sub == 0:
+            n_sample = len(labels_predict[mode])
+            if config.others_type == 'or':
+                base = list() + labels_predict[mode]
+                for output_key in config.others:
+                    path = data_config.output_path(output_key, mode, LABEL_PREDICT)
+                    labels = load_label_list(path)
+                    for i, (p_base, p_sub) in enumerate(zip(labels_predict[mode], labels)):
+                        if p_sub == 0:
+                            base[i] = 0
+            elif config.others_type == 'and':
+                flags = [True for _ in range(n_sample)]
+                for output_key in config.others:
+                    path = data_config.output_path(output_key, mode, LABEL_PREDICT)
+                    labels = load_label_list(path)
+                    for i, label in enumerate(labels):
+                        flags[i] &= (label == 0)
+                base = list() + labels_predict[mode]
+                for i, flag in enumerate(flags):
+                    if flag:
                         base[i] = 0
+            else:
+                raise Exception('unknown others_type')
 
             labels_predict_after[mode] = base
             res = basic_evaluate(gold=labels_gold[mode], pred=labels_predict_after[mode])
             print(mode, '(AFTER)')
             print_evaluation(res)
+            for col in res[CONFUSION_MATRIX]:
+                print(','.join(map(str, col)))
             print()
 
         if build_analysis:

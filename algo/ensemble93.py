@@ -75,7 +75,7 @@ def main(ensemble_mode, config_path='config93_ensemble.yaml', final_output=None)
     :param final_output: string
     :return:
     """
-    real_dist = [0.8490, 0.0516, 0.454, 0.0541]
+    real_dist = [0.8490, 0.0516, 0.0454, 0.0541]
 
     config_data = yaml.load(open(config_path))
     config = Config(data=config_data)

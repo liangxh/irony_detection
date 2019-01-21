@@ -291,7 +291,7 @@ def main(ensemble_mode, config_path='config93_ensemble.yaml', final_output=None)
                     print(','.join(map(str, col)))
                 print()
 
-        if final_output is not None:
+        if mode == FINAL and final_output is not None:
             first_line = open(data_config.path_train, 'r').readline()
             with open(final_output, 'w') as o_obj:
                 o_obj.write(first_line)

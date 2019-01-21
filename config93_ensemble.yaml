@@ -12,23 +12,17 @@ components:
   - m93_cnndist3_ek_1547970724  # 0.7609
 tri:
   enabled: True
-  min_vote: 2
+  min_vote: 1
   components:
     - m93tri_cnn_ek_1548059835
     - m93tri_cnn_ek_1548060898
     - m93tri_cnn_ek_1548061351
 others:
-  enabled: False
-  min_vote: 1
+  enabled: True
+  min_vote: 2
   components:
     - binary_m93bin_cnnd3_ek_1548056167
     - binary_m93bin_cnnd3_ek_1547973600
     - binary_m93bin_cnnd3_ek_1547978269
 oh:
   enabled: False
-  min_vote: 3
-  components:
-    - m93oh_cnn_ek_1548064189
-    - m93oh_cnn_ek_1548064872
-    - m93oh_cnn_ek_1548064515
-    - m93oh_cnn_ek_1548064524

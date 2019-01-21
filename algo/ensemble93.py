@@ -114,7 +114,7 @@ def improve_others(main_output_key, sub_output_key):
 
 
 @commandr.command
-def main(ensemble_mode, config_path='config93_ensemble.yaml', build_analysis=False):
+def main(ensemble_mode, config_path='config93_ensemble.yaml', final_output=None):
     """
     [Usage]
     python3 -m algo.ensemble93 main -e mv --build-analysis
@@ -124,8 +124,6 @@ def main(ensemble_mode, config_path='config93_ensemble.yaml', build_analysis=Fal
     :param build_analysis: bool
     :return:
     """
-    dataset_key = 'semeval2019_task3_dev'
-
     config_data = yaml.load(open(config_path))
     config = Config(data=config_data)
 
@@ -166,7 +164,7 @@ def main(ensemble_mode, config_path='config93_ensemble.yaml', build_analysis=Fal
 
     elif ensemble_mode == MAJORITY_VOTING:
 
-        for mode in [TRAIN, TEST]:
+        for mode in [TRAIN, TEST, FINAL]:
             components = list()
 
             for output_key in config.components:
@@ -195,16 +193,16 @@ def main(ensemble_mode, config_path='config93_ensemble.yaml', build_analysis=Fal
     else:
         raise ValueError('unknown mode: {}'.format(ensemble_mode))
 
-    for mode in [TRAIN, TEST]:
-        res = basic_evaluate(gold=labels_gold[mode], pred=labels_predict[mode])
-        print(mode)
-        print_evaluation(res)
-        for col in res[CONFUSION_MATRIX]:
-            print(','.join(map(str, col)))
-        print()
+    for mode in [TRAIN, TEST, FINAL]:
+        if not mode == FINAL:
+            res = basic_evaluate(gold=labels_gold[mode], pred=labels_predict[mode])
+            print(mode)
+            print_evaluation(res)
+            for col in res[CONFUSION_MATRIX]:
+                print(','.join(map(str, col)))
+            print()
 
         n_sample = len(labels_predict[mode])
-
         labels_predict_last[mode] = labels_predict[mode]
 
         # 修正HAS
@@ -227,12 +225,13 @@ def main(ensemble_mode, config_path='config93_ensemble.yaml', build_analysis=Fal
                         base[i] = arg_max
 
             labels_predict_last[mode] = base
-            res = basic_evaluate(gold=labels_gold[mode], pred=base)
-            print(mode, '(after TRI)')
-            print_evaluation(res)
-            for col in res[CONFUSION_MATRIX]:
-                print(','.join(map(str, col)))
-            print()
+            if not mode == FINAL:
+                res = basic_evaluate(gold=labels_gold[mode], pred=base)
+                print(mode, '(after TRI)')
+                print_evaluation(res)
+                for col in res[CONFUSION_MATRIX]:
+                    print(','.join(map(str, col)))
+                print()
 
         # 将判成HAS的样本修正为Others
         if config.others_enabled:
@@ -257,12 +256,13 @@ def main(ensemble_mode, config_path='config93_ensemble.yaml', build_analysis=Fal
                     base[i] = 0
 
             labels_predict_last[mode] = base
-            res = basic_evaluate(gold=labels_gold[mode], pred=base)
-            print(mode, '(after OTHERS)')
-            print_evaluation(res)
-            for col in res[CONFUSION_MATRIX]:
-                print(','.join(map(str, col)))
-            print()
+            if not mode == FINAL:
+                res = basic_evaluate(gold=labels_gold[mode], pred=base)
+                print(mode, '(after OTHERS)')
+                print_evaluation(res)
+                for col in res[CONFUSION_MATRIX]:
+                    print(','.join(map(str, col)))
+                print()
 
         if config.oh_enabled:
             votes = [[0 for _ in range(4)] for _ in range(n_sample)]
@@ -283,12 +283,28 @@ def main(ensemble_mode, config_path='config93_ensemble.yaml', build_analysis=Fal
                         base[i] = arg_max
 
             labels_predict_last[mode] = base
-            res = basic_evaluate(gold=labels_gold[mode], pred=base)
-            print(mode, '(after OH)')
-            print_evaluation(res)
-            for col in res[CONFUSION_MATRIX]:
-                print(','.join(map(str, col)))
-            print()
+            if not mode == FINAL:
+                res = basic_evaluate(gold=labels_gold[mode], pred=base)
+                print(mode, '(after OH)')
+                print_evaluation(res)
+                for col in res[CONFUSION_MATRIX]:
+                    print(','.join(map(str, col)))
+                print()
+
+        if final_output is not None:
+            first_line = open(data_config.path_train, 'r').readline()
+            with open(final_output, 'w') as o_obj:
+                o_obj.write(first_line)
+
+                lines = open(data_config.path_test_no_labels).read().strip().split('\n')
+                lines = lines[1:]
+                lines = list(map(lambda l: l.strip(), lines))
+
+                labels = labels_predict_last[FINAL]
+                assert len(labels) == len(lines)
+
+                for line, label in zip(lines, labels):
+                    o_obj.write('{}\t{}\n'.format(line, label))
 
 
 if __name__ == '__main__':

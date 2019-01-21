@@ -180,6 +180,8 @@ def main(ensemble_mode, config_path='config93_ensemble.yaml', build_analysis=Fal
         res = basic_evaluate(gold=labels_gold[mode], pred=labels_predict[mode])
         print(mode)
         print_evaluation(res)
+        for col in res[CONFUSION_MATRIX]:
+            print(','.join(map(str, col)))
         print()
 
         n_sample = len(labels_predict[mode])

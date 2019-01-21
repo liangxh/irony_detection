@@ -13,7 +13,7 @@ from algo.lib.dataset import IndexIterator, SimpleIndexIterator
 from algo.lib.evaluate93 import basic_evaluate
 from algo.model.const import *
 from algo.model.train_config import TrainConfig
-from algo.lib.common import print_evaluation_0, print_evaluation, load_lookup_table2, tokenized_to_tid_list
+from algo.lib.common import print_evaluation, load_lookup_table2, tokenized_to_tid_list
 from algo.model.nn_config import BaseNNConfig
 from algo.nn.base import BaseNNModel
 from algo.nn.common import dense, cnn
@@ -46,7 +46,7 @@ class NNConfig(BaseNNConfig):
 
 
 class NNModel(BaseNNModel):
-    name = 'm93bin_cnnd3p'
+    name = 'm93oh_cnn'
 
     def build_neural_network(self, lookup_table):
         test_mode = tf.placeholder(tf.int8, None, name=TEST_MODE)
@@ -106,10 +106,6 @@ class NNModel(BaseNNModel):
             y, w, b = dense.build(dense_input, dim_output=self.config.output_dim, output_name=PROB_PREDICT)
             l2_w_list.append(w)
         else:
-            if len(self.config.max_out) != self.config.output_dim:
-                raise Exception('invalid max_out config, expected dim={}, got {}'.format(
-                    self.config.output_dim, self.config.max_out))
-
             y_list = list()
             for dim in self.config.max_out:
                 y, w, b = dense.build(dense_input, dim_output=dim)
@@ -148,7 +144,7 @@ def to_nn_input(tid_list, max_seq_len):
 
 def load_dataset(
         mode, vocab_id_mapping, max_seq_len, sampling=False, with_label=True, label_version=None,
-        select_index=None
+        filter_others=False
         ):
     dataset = dict()
     for i in [0, 1, 2]:
@@ -162,7 +158,8 @@ def load_dataset(
         label_path = data_config.path(mode, LABEL, label_version)
         dataset[LABEL_GOLD] = load_label_list(label_path)
 
-    if select_index:
+    if filter_others:
+        select_index = build_select_index(dataset[LABEL_GOLD])
         for k, v in dataset.items():
             dataset[k] = filter_by_index(v, select_index)
 
@@ -187,18 +184,18 @@ def custom_sampling(dataset, dist=None):
     for i, label in enumerate(dataset[LABEL_GOLD]):
         label_idx[label].append(i)
 
-    label = 0
-    for i in label_idx[label]:
-        tid_ = [copy.deepcopy(dataset[TID_[j]][i]) for j in range(3)]
+    for label in [1, 2, 3]:
+        for i in label_idx[label]:
+            tid_ = [copy.deepcopy(dataset[TID_[j]][i]) for j in range(3)]
 
-        j = random.randint(0, 2)
-        if len(tid_[j]) > 1:
-            pop_idx = random.randint(0, len(tid_[j]) - 1)
-            tid_[j].pop(pop_idx)
+            j = random.randint(0, 2)
+            if len(tid_[j]) > 1:
+                pop_idx = random.randint(0, len(tid_[j]) - 1)
+                tid_[j].pop(pop_idx)
 
-        for j in range(3):
-            dataset[TID_[j]].append(tid_[j])
-        dataset[LABEL_GOLD].append(label)
+            for j in range(3):
+                dataset[TID_[j]].append(tid_[j])
+            dataset[LABEL_GOLD].append(label)
 
     return dataset
 
@@ -214,13 +211,13 @@ fetch_key = {
 }
 
 
-def build_select_index(labels_predict, labels_gold):
+def build_select_index(labels_gold):
     """
     返回被预测为HAS的样本ID
     """
     index = list()
-    for i, (p, g) in enumerate(zip(labels_predict, labels_gold)):
-        if p != 0:
+    for i, g in enumerate(labels_gold):
+        if g in {0, 1}:
             index.append(i)
     return index
 
@@ -236,34 +233,25 @@ def filter_by_index(data, index):
 
 
 @commandr.command
-def train(origin_output_key, text_version='ek', label_version='binary', config_path='config93_bin.yaml'):
+def train(text_version='ek', label_version=None, config_path='config93_oh.yaml'):
     """
-    python -m algo.main93_v2 train
-    python3 -m algo.main93_v2 train -c config_ntua93.yaml
-
     :param text_version: string
     :param label_version: string
     :param config_path: string
     :return:
     """
-    origin_labels_predict = {
-        mode: load_label_list(data_config.output_path(origin_output_key, mode, LABEL_PREDICT))
-        for mode in [TRAIN, TEST, FINAL]
-    }
-    origin_labels_gold = {
-        mode: load_label_list(data_config.path(mode, LABEL))
-        for mode in [TRAIN, TEST, FINAL]
-    }
-    select_index = {
-        mode: build_select_index(labels_predict=origin_labels_predict[mode], labels_gold=origin_labels_gold[mode])
-        for mode, labels_predict in origin_labels_predict.items()
-    }
     config_data = yaml.load(open(config_path))
 
     output_key = '{}_{}_{}'.format(NNModel.name, text_version, int(time.time()))
     if label_version is not None:
         output_key = '{}_{}'.format(label_version, output_key)
     print('OUTPUT_KEY: {}'.format(output_key))
+
+    # 准备输出路径的文件夹
+    data_config.prepare_output_folder(output_key=output_key)
+    data_config.prepare_model_folder(output_key=output_key)
+
+    shutil.copy(config_path, data_config.output_path(output_key, ALL, CONFIG))
 
     w2v_key = '{}_{}'.format(config_data['word']['w2v_version'], text_version)
     w2v_model_path = data_config.path(ALL, WORD2VEC, w2v_key)
@@ -273,9 +261,11 @@ def train(origin_output_key, text_version='ek', label_version='binary', config_p
     # 在模型中会采用所有模型中支持的词向量, 并为有足够出现次数的单词随机生成词向量
     vocab_meta_list = load_vocab_list(vocab_train_path)
     vocabs = [_meta['t'] for _meta in vocab_meta_list if _meta['tf'] >= config_data['word']['min_tf']]
+
     # 加载词向量与相关数据
     lookup_table, vocab_id_mapping, embedding_dim = load_lookup_table2(
         w2v_model_path=w2v_model_path, vocabs=vocabs)
+    json.dump(vocab_id_mapping, open(data_config.output_path(output_key, ALL, VOCAB_ID_MAPPING), 'w'))
 
     # 加载配置
     nn_config = NNConfig(config_data)
@@ -287,7 +277,7 @@ def train(origin_output_key, text_version='ek', label_version='binary', config_p
     datasets[TRAIN], output_dim = load_dataset(
         mode=TRAIN, vocab_id_mapping=vocab_id_mapping,
         max_seq_len=nn_config.seq_len, sampling=train_config.train_sampling,
-        label_version=label_version, select_index=select_index[TRAIN]
+        label_version=label_version, filter_others=True
     )
     datasets[TEST], _ = load_dataset(
         mode=TEST, vocab_id_mapping=vocab_id_mapping, max_seq_len=nn_config.seq_len,
@@ -304,7 +294,6 @@ def train(origin_output_key, text_version='ek', label_version='binary', config_p
     }
     # 按配置将训练数据切割成训练集和验证集
     index_iterators[TRAIN].split_train_valid(train_config.valid_rate)
-    print({mode: count for mode, count in index_iterators[TRAIN].label_count().items()})
 
     # 计算各个类的权重
     if train_config.use_class_weights:
@@ -334,15 +323,6 @@ def train(origin_output_key, text_version='ek', label_version='binary', config_p
 
     eval_history = {TRAIN: list(), VALID: list(), TEST: list()}
 
-    # 准备输出路径的文件夹
-    data_config.prepare_output_folder(output_key=output_key)
-    data_config.prepare_model_folder(output_key=output_key)
-
-    shutil.copy(config_path, data_config.output_path(output_key, ALL, CONFIG))
-    print('config copied')
-    json.dump(vocab_id_mapping, open(data_config.output_path(output_key, ALL, VOCAB_ID_MAPPING), 'w'))
-    print('vocab_id_mapping exported')
-
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
         saver = tf.train.Saver(tf.global_variables())
@@ -371,7 +351,7 @@ def train(origin_output_key, text_version='ek', label_version='binary', config_p
 
             labels_predict, labels_gold = labels_predict[:n_sample], labels_gold[:n_sample]
             res = basic_evaluate(gold=labels_gold, pred=labels_predict)
-            print_evaluation_0(res)
+            print_evaluation(res)
             eval_history[TRAIN].append(res)
 
             global_step = tf.train.global_step(sess, nn.var(GLOBAL_STEP))
@@ -407,7 +387,7 @@ def train(origin_output_key, text_version='ek', label_version='binary', config_p
                 labels_predict, labels_gold = labels_predict[:n_sample], labels_gold[:n_sample]
                 res = basic_evaluate(gold=labels_gold, pred=labels_predict)
                 eval_history[VALID].append(res)
-                print_evaluation_0(res)
+                print_evaluation(res)
 
                 # Early Stop
                 if best_res[VALID] is None or res[early_stop_metric] > best_res[VALID][early_stop_metric]:
@@ -433,15 +413,14 @@ def train(origin_output_key, text_version='ek', label_version='binary', config_p
                 labels_predict += res[LABEL_PREDICT].tolist()
                 labels_gold += _dataset[LABEL_GOLD][batch_index].tolist()
             labels_predict, labels_gold = labels_predict[:_n_sample], labels_gold[:_n_sample]
-
-            labels_predict_base = origin_labels_predict[_mode]
-            for i, (old, new) in enumerate(zip(labels_predict_base, labels_predict)):
-                if old != 0 and new == 0:
-                    labels_predict_base[i] = 0
-            res = basic_evaluate(gold=origin_labels_gold[_mode], pred=labels_predict_base)
+            select_index = build_select_index(labels_gold)
+            res = basic_evaluate(
+                gold=filter_by_index(labels_gold, select_index),
+                pred=filter_by_index(labels_predict, select_index)
+            )
             eval_history[TEST].append(res)
             print('TEST')
-            print_evaluation_0(res)
+            print_evaluation(res)
 
             if no_update_count[TRAIN] >= max_no_update_count:
                 break
@@ -462,19 +441,19 @@ def train(origin_output_key, text_version='ek', label_version='binary', config_p
         nn.set_graph(tf.get_default_graph())
 
         for mode in [TRAIN, TEST, FINAL]:
-            if mode == TRAIN and train_config.train_sampling:
+            if mode == TRAIN:
                 dataset, _ = load_dataset(
                     mode=TRAIN, vocab_id_mapping=vocab_id_mapping,
                     max_seq_len=nn_config.seq_len, sampling=False, label_version=label_version
                 )
             else:
                 dataset = datasets[mode]
-
             index_iterator = SimpleIndexIterator.from_dataset(dataset)
             n_sample = index_iterator.n_sample()
 
             prob_predict = list()
             labels_predict = list()
+            labels_gold = list()
             hidden_feats = list()
 
             for batch_index in index_iterator.iterate(batch_size, shuffle=False):
@@ -484,16 +463,13 @@ def train(origin_output_key, text_version='ek', label_version='binary', config_p
                 prob_predict += res[PROB_PREDICT].tolist()
                 labels_predict += res[LABEL_PREDICT].tolist()
                 hidden_feats += res[HIDDEN_FEAT].tolist()
+                if LABEL_GOLD in dataset:
+                    labels_gold += dataset[LABEL_GOLD][batch_index].tolist()
 
             prob_predict = prob_predict[:n_sample]
             labels_predict = labels_predict[:n_sample]
+            labels_gold = labels_gold[:n_sample]
             hidden_feats = hidden_feats[:n_sample]
-
-            labels_predict_base = origin_labels_predict[mode]
-            for i, (old, new) in enumerate(zip(labels_predict_base, labels_predict)):
-                if old != 0 and new == 0:
-                    labels_predict_base[i] = 0
-            best_res[mode] = basic_evaluate(gold=origin_labels_gold[mode], pred=labels_predict_base)
 
             # 导出隐藏层
             with open(data_config.output_path(output_key, mode, HIDDEN_FEAT), 'w') as file_obj:
@@ -506,6 +482,14 @@ def train(origin_output_key, text_version='ek', label_version='binary', config_p
             with open(data_config.output_path(output_key, mode, PROB_PREDICT), 'w') as file_obj:
                 for _prob in prob_predict:
                     file_obj.write('\t'.join(map(str, _prob)) + '\n')
+
+            if mode == TEST:
+                select_index = build_select_index(labels_gold)
+                res = basic_evaluate(
+                    gold=filter_by_index(labels_gold, select_index),
+                    pred=filter_by_index(labels_predict, select_index)
+                )
+                best_res[TEST] = res
 
     for mode in [TRAIN, VALID, TEST]:
         if mode == VALID and train_config.valid_rate == 0.:
@@ -521,6 +505,98 @@ def train(origin_output_key, text_version='ek', label_version='binary', config_p
     print('best test f1 reached: {}'.format(max(test_score_list)))
 
     print('OUTPUT_KEY: {}'.format(output_key))
+
+
+@commandr.command('test')
+def live_test(output_key):
+    config_path = data_config.output_path(output_key, ALL, CONFIG)
+    config_data = yaml.load(open(config_path))
+    nn_config = NNConfig(config_data)
+    vocab_id_mapping = json.load(open(data_config.output_path(output_key, ALL, VOCAB_ID_MAPPING), 'r'))
+
+    with tf.Session() as sess:
+        prefix_checkpoint = tf.train.latest_checkpoint(data_config.model_path(key=output_key))
+        saver = tf.train.import_meta_graph('{}.meta'.format(prefix_checkpoint))
+        saver.restore(sess, prefix_checkpoint)
+
+        nn = BaseNNModel(config=None)
+        nn.set_graph(tf.get_default_graph())
+
+        fetches = {_key: nn.var(_key) for _key in [LABEL_PREDICT, PROB_PREDICT]}
+        while True:
+            res = input('input: ')
+            if res == 'quit':
+                break
+
+            turns = res.strip().split('|')
+            if len(turns) != 3:
+                print('invalid turns')
+                continue
+
+            tokens_list = list()
+            for turn in turns:
+                tokens = re.sub('\s+', ' ', turn.strip()).split(' ')
+                tokens_list.append(tokens)
+
+            placeholder = [[]] * (nn_config.batch_size - 1)
+            tid_list_0 = tokenized_to_tid_list([tokens_list[0], ] + placeholder, vocab_id_mapping)
+            tid_list_1 = tokenized_to_tid_list([tokens_list[1], ] + placeholder, vocab_id_mapping)
+            tid_list_2 = tokenized_to_tid_list([tokens_list[2], ] + placeholder, vocab_id_mapping)
+
+            tid_0 = np.asarray(zero_pad_seq_list(tid_list_0, nn_config.seq_len))
+            tid_1 = np.asarray(zero_pad_seq_list(tid_list_1, nn_config.seq_len))
+            tid_2 = np.asarray(zero_pad_seq_list(tid_list_2, nn_config.seq_len))
+
+            feed_dict = {
+                nn.var(TID_0): tid_0,
+                nn.var(TID_1): tid_1,
+                nn.var(TID_2): tid_2,
+                nn.var(TEST_MODE): 1
+            }
+            res = sess.run(fetches=fetches, feed_dict=feed_dict)
+            label = res[LABEL_PREDICT][0]
+            prob = res[PROB_PREDICT][0]
+            print('label: {}'.format(label))
+            print('prob: {}'.format(prob))
+
+
+@commandr.command('pred')
+def predict(output_key, mode):
+    config_path = data_config.output_path(output_key, ALL, CONFIG)
+    config_data = yaml.load(open(config_path))
+    nn_config = NNConfig(config_data)
+    vocab_id_mapping = json.load(open(data_config.output_path(output_key, ALL, VOCAB_ID_MAPPING), 'r'))
+
+    dataset = load_dataset(
+        mode=mode, vocab_id_mapping=vocab_id_mapping,
+        max_seq_len=nn_config.seq_len, sampling=False, with_label=False
+    )
+    index_iterator = SimpleIndexIterator.from_dataset(dataset)
+    n_sample = index_iterator.n_sample()
+
+    with tf.Session() as sess:
+        prefix_checkpoint = tf.train.latest_checkpoint(data_config.model_path(key=output_key))
+        saver = tf.train.import_meta_graph('{}.meta'.format(prefix_checkpoint))
+        saver.restore(sess, prefix_checkpoint)
+
+        nn = BaseNNModel(config=None)
+        nn.set_graph(tf.get_default_graph())
+
+        fetches = {_key: nn.var(_key) for _key in [LABEL_PREDICT]}
+        labels_predict = list()
+
+        for batch_index in index_iterator.iterate(nn_config.batch_size, shuffle=False):
+            feed_dict = {nn.var(_key): dataset[_key][batch_index] for _key in feed_key[TEST]}
+            feed_dict[nn.var(TEST_MODE)] = 1
+            res = sess.run(fetches=fetches, feed_dict=feed_dict)
+            labels_predict += res[LABEL_PREDICT].tolist()
+
+        labels_predict = labels_predict[:n_sample]
+
+    # 导出预测的label
+    with open(data_config.output_path(output_key, mode, LABEL_PREDICT), 'w') as file_obj:
+        for _label in labels_predict:
+            file_obj.write('{}\n'.format(_label))
 
 
 if __name__ == '__main__':

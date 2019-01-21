@@ -184,7 +184,7 @@ def custom_sampling(dataset, dist=None):
     for i, label in enumerate(dataset[LABEL_GOLD]):
         label_idx[label].append(i)
 
-    for label in [1, 2, 3]:
+    for label in [0, ]:
         for i in label_idx[label]:
             tid_ = [copy.deepcopy(dataset[TID_[j]][i]) for j in range(3)]
 

@@ -24,7 +24,7 @@ tri:
     - m93tri_cnn_ek_1548059835
     - m93tri_cnn_ek_1548060898
     - m93tri_cnn_ek_1548061351
-oh_min_vote:
+oh:
   enabled: True
   min_vote: 2
   components:

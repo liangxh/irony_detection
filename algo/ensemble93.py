@@ -130,8 +130,7 @@ def main(ensemble_mode, config_path='config93_ensemble.yaml', build_analysis=Fal
     config = Config(data=config_data)
 
     labels_predict = dict()
-    labels_predict_after = dict()
-    labels_predict_has = dict()
+    labels_predict_last = dict()
     labels_gold = dict()
 
     n_sample = dict()
@@ -228,8 +227,8 @@ def main(ensemble_mode, config_path='config93_ensemble.yaml', build_analysis=Fal
                 if vote >= min_vote:
                     base[i] = 0
 
-            labels_predict_after[mode] = base
-            res = basic_evaluate(gold=labels_gold[mode], pred=labels_predict_after[mode])
+            labels_predict_last[mode] = base
+            res = basic_evaluate(gold=labels_gold[mode], pred=base)
             print(mode, '(after OTHERS)')
             print_evaluation(res)
             for col in res[CONFUSION_MATRIX]:
@@ -248,15 +247,15 @@ def main(ensemble_mode, config_path='config93_ensemble.yaml', build_analysis=Fal
                 for i, label in enumerate(labels):
                     votes[i][label] += 1
 
-            base = list() + labels_predict_after[mode]
+            base = list() + labels_predict_last[mode]
             for i, vote in enumerate(votes):
                 if base[i] != 0:
                     arg_max = int(np.argmax(vote))
                     if arg_max != 0 and vote[arg_max] >= config.tri_min_vote:
                         base[i] = arg_max
 
-            labels_predict_has[mode] = base
-            res = basic_evaluate(gold=labels_gold[mode], pred=labels_predict_has[mode])
+            labels_predict_last[mode] = base
+            res = basic_evaluate(gold=labels_gold[mode], pred=base)
             print(mode, '(after TRI)')
             print_evaluation(res)
             for col in res[CONFUSION_MATRIX]:
@@ -274,15 +273,15 @@ def main(ensemble_mode, config_path='config93_ensemble.yaml', build_analysis=Fal
                 for i, label in enumerate(labels):
                     votes[i][label] += 1
 
-            base = list() + labels_predict_after[mode]
+            base = list() + labels_predict_last[mode]
             for i, vote in enumerate(votes):
                 if base[i] != 0:
                     arg_max = int(np.argmax(vote))
                     if base[i] == 1 and arg_max == 0 and vote[arg_max] >= config.oh_min_vote:
                         base[i] = arg_max
 
-            labels_predict_has[mode] = base
-            res = basic_evaluate(gold=labels_gold[mode], pred=labels_predict_has[mode])
+            labels_predict_last[mode] = base
+            res = basic_evaluate(gold=labels_gold[mode], pred=base)
             print(mode, '(after OH)')
             print_evaluation(res)
             for col in res[CONFUSION_MATRIX]:

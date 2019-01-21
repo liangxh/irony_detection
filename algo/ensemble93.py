@@ -132,7 +132,7 @@ def main(ensemble_mode, config_path='config93_ensemble.yaml', final_output=None)
     labels_gold = dict()
 
     n_sample = dict()
-    for mode in [TRAIN, TEST]:
+    for mode in [TRAIN, TEST, FINAL]:
         label_path = data_config.path(mode, LABEL, None)
         labels_gold[mode] = load_label_list(label_path)
         n_sample[mode] = len(labels_gold[mode])

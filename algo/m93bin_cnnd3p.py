@@ -300,8 +300,7 @@ def train(origin_output_key, text_version='ek', label_version='binary', config_p
     }
     # 按配置将训练数据切割成训练集和验证集
     index_iterators[TRAIN].split_train_valid(train_config.valid_rate)
-    print({mode: len(index) for mode, index in index_iterators[TRAIN].label_count()})
-    return
+    print({mode: count for mode, count in index_iterators[TRAIN].label_count().items()})
 
     # 计算各个类的权重
     if train_config.use_class_weights:

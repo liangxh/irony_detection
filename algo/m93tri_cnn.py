@@ -467,10 +467,6 @@ def train(text_version='ek', label_version=None, config_path='config93_tri.yaml'
             labels_gold = labels_gold[:n_sample]
             hidden_feats = hidden_feats[:n_sample]
 
-            if mode == TEST:
-                res = basic_evaluate(gold=labels_gold, pred=labels_predict)
-                best_res[TEST] = res
-
             # 导出隐藏层
             with open(data_config.output_path(output_key, mode, HIDDEN_FEAT), 'w') as file_obj:
                 for _feat in hidden_feats:
@@ -482,6 +478,14 @@ def train(text_version='ek', label_version=None, config_path='config93_tri.yaml'
             with open(data_config.output_path(output_key, mode, PROB_PREDICT), 'w') as file_obj:
                 for _prob in prob_predict:
                     file_obj.write('\t'.join(map(str, _prob)) + '\n')
+
+            if mode == TEST:
+                select_index = build_select_index(labels_gold)
+                res = basic_evaluate(
+                    gold=filter_by_index(labels_gold, select_index),
+                    pred=filter_by_index(labels_predict, select_index)
+                )
+                best_res[TEST] = res
 
     for mode in [TRAIN, VALID, TEST]:
         if mode == VALID and train_config.valid_rate == 0.:

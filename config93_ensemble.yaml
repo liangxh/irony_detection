@@ -4,5 +4,6 @@ components:
   - m93_cnn_ek_1547040124  # 0.7478
   - m93_cnn_ek_1547041908  # 0.7440
 others:
+  - binary_m93bin_cnnd3_ek_1547973600
   - binary_m93bin_cnnd3_ek_1547978269
-  -
+  - binary_m93bin_cnnd4_ek_1548043123

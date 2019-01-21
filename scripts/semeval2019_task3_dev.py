@@ -337,5 +337,15 @@ def test_submit(filename_pred, filename_gold):
     print_evaluation(res)
 
 
+@commandr.command('ana_submit')
+def analyse_submit(filename):
+    dataset = Processor.load_origin(filename)
+    label_count = defaultdict(lambda: 0)
+    for res in dataset:
+        label = res[-1]
+        label_count[label] += 1
+    print(label_count)
+
+
 if __name__ == '__main__':
     commandr.Run()

@@ -96,7 +96,7 @@ def confusion_matrix_to_score(mat):
     return score
 
 
-def basic_evaluate(gold, pred):
+def basic_evaluate(gold, pred, real_dist=None):
     dim = max(max(gold), max(pred)) + 1
     matrix = np.zeros((dim, dim))
     for g, p in zip(gold, pred):
@@ -118,7 +118,7 @@ def basic_evaluate(gold, pred):
     microF1 = (2 * microRecall * microPrecision) / (microPrecision + microRecall) if (microPrecision + microRecall) > 0 else 0
     accuracy = float(match.sum()) / n_sample
 
-    test_score = estimate_test_score(matrix) if dim == 4 else None
+    test_score = estimate_test_score(matrix, real_distribution=real_dist) if dim == 4 else None
 
     n_pred_0 = float(predictions[:, 0].sum())
     n_gold_0 = float(ground[:, 0].sum())

@@ -53,18 +53,6 @@ class Config(object):
     def tri_min_vote(self):
         return self.data['tri']['min_vote']
 
-    @property
-    def oh(self):
-        return self.data['oh']['components']
-
-    @property
-    def oh_enabled(self):
-        return self.data['oh']['enabled']
-
-    @property
-    def oh_min_vote(self):
-        return self.data['oh']['min_vote']
-
 
 def argmax(value_list):
     idx = 0
@@ -77,44 +65,6 @@ def argmax(value_list):
 
 
 @commandr.command
-def improve_others(main_output_key, sub_output_key):
-    labels_predict = dict()
-    labels_predict_after = dict()
-
-    labels_gold = dict()
-    for mode in [TEST]:
-        label_path = data_config.path(mode, LABEL, None)
-        labels_gold[mode] = load_label_list(label_path)
-
-        path = data_config.output_path(main_output_key, mode, LABEL_PREDICT)
-        labels_predict_base = load_label_list(path)
-        labels_predict[mode] = list() + labels_predict_base
-
-        path = data_config.output_path(sub_output_key, mode, LABEL_PREDICT)
-        labels = load_label_list(path)
-
-        for i, (p_base, p_sub) in enumerate(zip(labels_predict_base, labels)):
-            if p_sub == 0:
-                labels_predict_base[i] = 0
-        labels_predict_after[mode] = labels_predict_base
-
-    for mode in [TEST]:
-        res = basic_evaluate(gold=labels_gold[mode], pred=labels_predict[mode])
-        print(mode)
-        print_evaluation(res)
-        for col in res[CONFUSION_MATRIX]:
-            print(','.join(map(str, col)))
-        print()
-
-        res = basic_evaluate(gold=labels_gold[mode], pred=labels_predict_after[mode])
-        print(mode, '(AFTER)')
-        print_evaluation(res)
-        for col in res[CONFUSION_MATRIX]:
-            print(','.join(map(str, col)))
-        print()
-
-
-@commandr.command
 def main(ensemble_mode, config_path='config93_ensemble.yaml', final_output=None):
     """
     [Usage]
@@ -122,9 +72,11 @@ def main(ensemble_mode, config_path='config93_ensemble.yaml', final_output=None)
 
     :param ensemble_mode:
     :param config_path:
-    :param build_analysis: bool
+    :param final_output: string
     :return:
     """
+    real_dist = [0.8490, 0.0516, 0.454, 0.0541]
+
     config_data = yaml.load(open(config_path))
     config = Config(data=config_data)
 
@@ -196,7 +148,7 @@ def main(ensemble_mode, config_path='config93_ensemble.yaml', final_output=None)
 
     for mode in [TRAIN, TEST, FINAL]:
         if not mode == FINAL:
-            res = basic_evaluate(gold=labels_gold[mode], pred=labels_predict[mode])
+            res = basic_evaluate(gold=labels_gold[mode], pred=labels_predict[mode], real_dist=real_dist)
             print(mode)
             print_evaluation(res)
             for col in res[CONFUSION_MATRIX]:
@@ -227,7 +179,7 @@ def main(ensemble_mode, config_path='config93_ensemble.yaml', final_output=None)
 
             labels_predict_last[mode] = base
             if not mode == FINAL:
-                res = basic_evaluate(gold=labels_gold[mode], pred=base)
+                res = basic_evaluate(gold=labels_gold[mode], pred=base, real_dist=real_dist)
                 print(mode, '(after TRI)')
                 print_evaluation(res)
                 for col in res[CONFUSION_MATRIX]:
@@ -258,35 +210,8 @@ def main(ensemble_mode, config_path='config93_ensemble.yaml', final_output=None)
 
             labels_predict_last[mode] = base
             if not mode == FINAL:
-                res = basic_evaluate(gold=labels_gold[mode], pred=base)
+                res = basic_evaluate(gold=labels_gold[mode], pred=base, real_dist=real_dist)
                 print(mode, '(after OTHERS)')
-                print_evaluation(res)
-                for col in res[CONFUSION_MATRIX]:
-                    print(','.join(map(str, col)))
-                print()
-
-        if config.oh_enabled:
-            votes = [[0 for _ in range(4)] for _ in range(n_sample)]
-            for output_key in config.oh:
-                path = data_config.output_path(output_key, mode, LABEL_PREDICT)
-                labels = load_label_list(path)
-                if len(labels) != n_sample:
-                    raise Exception('mismatch {}({}) != {}'.format(output_key, len(labels), n_sample))
-
-                for i, label in enumerate(labels):
-                    votes[i][label] += 1
-
-            base = list() + labels_predict_last[mode]
-            for i, vote in enumerate(votes):
-                if base[i] != 0:
-                    arg_max = int(np.argmax(vote))
-                    if base[i] == 1 and arg_max == 0 and vote[arg_max] >= config.oh_min_vote:
-                        base[i] = arg_max
-
-            labels_predict_last[mode] = base
-            if not mode == FINAL:
-                res = basic_evaluate(gold=labels_gold[mode], pred=base)
-                print(mode, '(after OH)')
                 print_evaluation(res)
                 for col in res[CONFUSION_MATRIX]:
                     print(','.join(map(str, col)))

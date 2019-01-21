@@ -254,19 +254,12 @@ def train(origin_output_key, text_version='ek', label_version='binary', config_p
         mode: build_select_index(origin_labels_predict[mode])
         for mode, labels_predict in origin_labels_predict.items()
     }
-
     config_data = yaml.load(open(config_path))
 
     output_key = '{}_{}_{}'.format(NNModel.name, text_version, int(time.time()))
     if label_version is not None:
         output_key = '{}_{}'.format(label_version, output_key)
     print('OUTPUT_KEY: {}'.format(output_key))
-
-    # 准备输出路径的文件夹
-    data_config.prepare_output_folder(output_key=output_key)
-    data_config.prepare_model_folder(output_key=output_key)
-
-    shutil.copy(config_path, data_config.output_path(output_key, ALL, CONFIG))
 
     w2v_key = '{}_{}'.format(config_data['word']['w2v_version'], text_version)
     w2v_model_path = data_config.path(ALL, WORD2VEC, w2v_key)
@@ -276,11 +269,9 @@ def train(origin_output_key, text_version='ek', label_version='binary', config_p
     # 在模型中会采用所有模型中支持的词向量, 并为有足够出现次数的单词随机生成词向量
     vocab_meta_list = load_vocab_list(vocab_train_path)
     vocabs = [_meta['t'] for _meta in vocab_meta_list if _meta['tf'] >= config_data['word']['min_tf']]
-
     # 加载词向量与相关数据
     lookup_table, vocab_id_mapping, embedding_dim = load_lookup_table2(
         w2v_model_path=w2v_model_path, vocabs=vocabs)
-    json.dump(vocab_id_mapping, open(data_config.output_path(output_key, ALL, VOCAB_ID_MAPPING), 'w'))
 
     # 加载配置
     nn_config = NNConfig(config_data)
@@ -309,6 +300,8 @@ def train(origin_output_key, text_version='ek', label_version='binary', config_p
     }
     # 按配置将训练数据切割成训练集和验证集
     index_iterators[TRAIN].split_train_valid(train_config.valid_rate)
+    print({mode: len(index) for mode, index in index_iterators[TRAIN].label_count()})
+    return
 
     # 计算各个类的权重
     if train_config.use_class_weights:
@@ -337,6 +330,15 @@ def train(origin_output_key, text_version='ek', label_version='binary', config_p
     max_no_update_count = 10
 
     eval_history = {TRAIN: list(), VALID: list(), TEST: list()}
+
+    # 准备输出路径的文件夹
+    data_config.prepare_output_folder(output_key=output_key)
+    data_config.prepare_model_folder(output_key=output_key)
+
+    shutil.copy(config_path, data_config.output_path(output_key, ALL, CONFIG))
+    print('config copied')
+    json.dump(vocab_id_mapping, open(data_config.output_path(output_key, ALL, VOCAB_ID_MAPPING), 'w'))
+    print('vocab_id_mapping exported')
 
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
@@ -429,9 +431,11 @@ def train(origin_output_key, text_version='ek', label_version='binary', config_p
                 labels_gold += _dataset[LABEL_GOLD][batch_index].tolist()
             labels_predict, labels_gold = labels_predict[:_n_sample], labels_gold[:_n_sample]
 
-            labels_predict = filter_by_index(labels_predict, select_index[TEST])
-            labels_gold = filter_by_index(labels_gold, select_index[TEST])
-            res = basic_evaluate(gold=labels_gold, pred=labels_predict)
+            labels_predict_base = origin_labels_predict[_mode]
+            for i, (old, new) in enumerate(zip(labels_predict_base, labels_predict)):
+                if old != 0 and new == 0:
+                    labels_predict_base[i] = 0
+            res[_mode] = basic_evaluate(gold=origin_labels_gold[_mode], pred=labels_predict_base)
             eval_history[TEST].append(res)
             print('TEST')
             print_evaluation_0(res)

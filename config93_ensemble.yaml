@@ -10,13 +10,23 @@ components:
   #- m93_cnndist3_ek_1547886693  # 0.7620
   #- m93_cnndist3_ek_1547886781  # 0.7618
   #- m93_cnndist3_ek_1547970724  # 0.7609
-others_min_vote: 1
 others:
-  - binary_m93bin_cnnd3_ek_1548056167
-  - binary_m93bin_cnnd3_ek_1547973600
-  - binary_m93bin_cnnd3_ek_1547978269
-tri_min_vote: 1
+  enabled: True
+  min_vote: 1
+  components:
+    - binary_m93bin_cnnd3_ek_1548056167
+    - binary_m93bin_cnnd3_ek_1547973600
+    - binary_m93bin_cnnd3_ek_1547978269
 tri:
-  - m93tri_cnn_ek_1548059835
-  - m93tri_cnn_ek_1548060898
-  - m93tri_cnn_ek_1548061351
+  enabled: True
+  min_vote: 2
+  components:
+    - m93tri_cnn_ek_1548059835
+    - m93tri_cnn_ek_1548060898
+    - m93tri_cnn_ek_1548061351
+oh_min_vote:
+  enabled: True
+  min_vote: 1
+  components:
+     - m93oh_cnn_ek_1548062801
+     - m93oh_cnn_ek_1548062733

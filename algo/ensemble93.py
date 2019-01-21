@@ -30,19 +30,39 @@ class Config(object):
 
     @property
     def others(self):
-        return self.data['others']
+        return self.data['others']['components']
+
+    @property
+    def others_enabled(self):
+        return self.data['others']['enabled']
 
     @property
     def others_min_vote(self):
-        return self.data['others_min_vote']
+        return self.data['others']['min_vote']
 
     @property
     def tri(self):
-        return self.data['tri']
+        return self.data['tri']['components']
+
+    @property
+    def tri_enabled(self):
+        return self.data['tri']['enabled']
 
     @property
     def tri_min_vote(self):
-        return self.data['tri_min_vote']
+        return self.data['tri']['min_vote']
+
+    @property
+    def oh(self):
+        return self.data['oh']['components']
+
+    @property
+    def oh_enabled(self):
+        return self.data['oh']['enabled']
+
+    @property
+    def oh_min_vote(self):
+        return self.data['oh']['min_vote']
 
 
 def argmax(value_list):
@@ -187,7 +207,7 @@ def main(ensemble_mode, config_path='config93_ensemble.yaml', build_analysis=Fal
         n_sample = len(labels_predict[mode])
 
         # 将判成HAS的样本修正为Others
-        if config.others is not None and len(config.others) > 0:
+        if config.others_enabled:
             votes = [0 for i in range(n_sample)]
 
             for output_key in config.others:
@@ -210,14 +230,14 @@ def main(ensemble_mode, config_path='config93_ensemble.yaml', build_analysis=Fal
 
             labels_predict_after[mode] = base
             res = basic_evaluate(gold=labels_gold[mode], pred=labels_predict_after[mode])
-            print(mode, '(AFTER)')
+            print(mode, '(after OTHERS)')
             print_evaluation(res)
             for col in res[CONFUSION_MATRIX]:
                 print(','.join(map(str, col)))
             print()
 
         # 修正HAS
-        if config.tri is not None and len(config.tri) > 0:
+        if config.tri_enabled:
             votes = [[0 for _ in range(4)] for _ in range(n_sample)]
             for output_key in config.tri:
                 path = data_config.output_path(output_key, mode, LABEL_PREDICT)
@@ -237,7 +257,33 @@ def main(ensemble_mode, config_path='config93_ensemble.yaml', build_analysis=Fal
 
             labels_predict_has[mode] = base
             res = basic_evaluate(gold=labels_gold[mode], pred=labels_predict_has[mode])
-            print(mode, '(AFTER_HAS)')
+            print(mode, '(after TRI)')
+            print_evaluation(res)
+            for col in res[CONFUSION_MATRIX]:
+                print(','.join(map(str, col)))
+            print()
+
+        if config.oh_enabled:
+            votes = [[0 for _ in range(4)] for _ in range(n_sample)]
+            for output_key in config.tri:
+                path = data_config.output_path(output_key, mode, LABEL_PREDICT)
+                labels = load_label_list(path)
+                if len(labels) != n_sample:
+                    raise Exception('mismatch {}({}) != {}'.format(output_key, len(labels), n_sample))
+
+                for i, label in enumerate(labels):
+                    votes[i][label] += 1
+
+            base = list() + labels_predict_after[mode]
+            for i, vote in enumerate(votes):
+                if base[i] != 0:
+                    arg_max = int(np.argmax(vote))
+                    if base[i] == 1 and arg_max == 0 and vote[arg_max] >= config.oh_min_vote:
+                        base[i] = arg_max
+
+            labels_predict_has[mode] = base
+            res = basic_evaluate(gold=labels_gold[mode], pred=labels_predict_has[mode])
+            print(mode, '(after OH)')
             print_evaluation(res)
             for col in res[CONFUSION_MATRIX]:
                 print(','.join(map(str, col)))

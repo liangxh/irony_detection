@@ -3,7 +3,7 @@ components:
   - m93_cnn_ek_1547039955  # 0.7480
   - m93_cnn_ek_1547040124  # 0.7478
   - m93_cnn_ek_1547041908  # 0.7440
-others_type: and
+others_min_vote: all
 others:
   - binary_m93bin_cnnd3_ek_1547973600
   - binary_m93bin_cnnd3_ek_1547978269

@@ -33,8 +33,8 @@ class Config(object):
         return self.data['others']
 
     @property
-    def others_type(self):
-        return self.data['others_type']
+    def others_min_vote(self):
+        return self.data['others_min_vote']
 
 
 def argmax(value_list):
@@ -175,34 +175,24 @@ def main(ensemble_mode, config_path='config93_ensemble.yaml', build_analysis=Fal
 
         if config.others is not None and len(config.others) > 0:
             n_sample = len(labels_predict[mode])
-            if config.others_type == 'or':
-                flags = [False for _ in range(n_sample)]
+            votes = [0 for i in range(n_sample)]
 
-                for output_key in config.others:
-                    path = data_config.output_path(output_key, mode, LABEL_PREDICT)
-                    labels = load_label_list(path)
-                    if len(labels) != n_sample:
-                        raise Exception('mismatch {}({}) != {}'.format(output_key, len(labels), n_sample))
+            for output_key in config.others:
+                path = data_config.output_path(output_key, mode, LABEL_PREDICT)
+                labels = load_label_list(path)
+                if len(labels) != n_sample:
+                    raise Exception('mismatch {}({}) != {}'.format(output_key, len(labels), n_sample))
 
-                    for i, label in enumerate(labels):
-                        flags[i] |= (label == 0)
-
-            elif config.others_type == 'and':
-                flags = [True for _ in range(n_sample)]
-                for output_key in config.others:
-                    path = data_config.output_path(output_key, mode, LABEL_PREDICT)
-                    labels = load_label_list(path)
-                    if len(labels) != n_sample:
-                        raise Exception('mismatch {}({}) != {}'.format(output_key, len(labels), n_sample))
-
-                    for i, label in enumerate(labels):
-                        flags[i] &= (label == 0)
+                for i, label in enumerate(labels):
+                    if label == 0:
+                        votes[i] += 1
+            if config.others_min_vote == 'all':
+                min_vote = len(config.others)
             else:
-                raise Exception('unknown others_type')
-
+                min_vote = int(config.others_min_vote)
             base = list() + labels_predict[mode]
-            for i, flag in enumerate(flags):
-                if flag:
+            for i, vote in enumerate(votes):
+                if vote >= min_vote:
                     base[i] = 0
 
             labels_predict_after[mode] = base

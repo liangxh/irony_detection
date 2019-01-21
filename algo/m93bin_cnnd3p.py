@@ -214,13 +214,13 @@ fetch_key = {
 }
 
 
-def build_select_index(labels_predict):
+def build_select_index(labels_predict, labels_gold):
     """
     返回被预测为HAS的样本ID
     """
     index = list()
-    for i, label in enumerate(labels_predict):
-        if label != 0:
+    for i, (p, g) in enumerate(zip(labels_predict, labels_gold)):
+        if g == 0 and p == 0:
             index.append(i)
     return index
 
@@ -255,7 +255,7 @@ def train(origin_output_key, text_version='ek', label_version='binary', config_p
         for mode in [TRAIN, TEST, FINAL]
     }
     select_index = {
-        mode: build_select_index(origin_labels_predict[mode])
+        mode: build_select_index(labels_predict=origin_labels_predict[mode], labels_gold=origin_labels_gold[mode])
         for mode, labels_predict in origin_labels_predict.items()
     }
     config_data = yaml.load(open(config_path))

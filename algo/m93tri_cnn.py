@@ -413,7 +413,11 @@ def train(text_version='ek', label_version=None, config_path='config93_tri.yaml'
                 labels_predict += res[LABEL_PREDICT].tolist()
                 labels_gold += _dataset[LABEL_GOLD][batch_index].tolist()
             labels_predict, labels_gold = labels_predict[:_n_sample], labels_gold[:_n_sample]
-            res = basic_evaluate(gold=labels_gold, pred=labels_predict)
+            select_index = build_select_index(labels_gold)
+            res = basic_evaluate(
+                gold=filter_by_index(labels_gold, select_index),
+                pred=filter_by_index(labels_predict, select_index)
+            )
             eval_history[TEST].append(res)
             print('TEST')
             print_evaluation(res)

@@ -36,6 +36,10 @@ class Config(object):
     def others_min_vote(self):
         return self.data['others_min_vote']
 
+    @property
+    def tri(self):
+        return self.data['tri']
+
 
 def argmax(value_list):
     idx = 0
@@ -103,6 +107,7 @@ def main(ensemble_mode, config_path='config93_ensemble.yaml', build_analysis=Fal
 
     labels_predict = dict()
     labels_predict_after = dict()
+    labels_predict_has = dict()
     labels_gold = dict()
 
     n_sample = dict()
@@ -173,8 +178,10 @@ def main(ensemble_mode, config_path='config93_ensemble.yaml', build_analysis=Fal
         print_evaluation(res)
         print()
 
+        n_sample = len(labels_predict[mode])
+
+        # 将判成HAS的样本修正为Others
         if config.others is not None and len(config.others) > 0:
-            n_sample = len(labels_predict[mode])
             votes = [0 for i in range(n_sample)]
 
             for output_key in config.others:
@@ -203,15 +210,31 @@ def main(ensemble_mode, config_path='config93_ensemble.yaml', build_analysis=Fal
                 print(','.join(map(str, col)))
             print()
 
-        if build_analysis:
-            output_path = data_config.path(mode, ANALYSIS, WRONG_PREDICT)
-            text_list = load_text_list(data_config.path(mode, TEXT, EK))
-            res = generate_wrong_prediction_report(
-                labels_gold=labels_gold[mode], labels_predict=labels_predict[mode], text_list=text_list)
-            with open(output_path, 'w') as file_obj:
-                file_obj.write('gold\tpredict\ttext')
-                for l_gold, l_predict, t in res:
-                    file_obj.write('{} {} {}\n'.format(l_gold, l_predict, t))
+        # 修正HAS
+        if config.tri is not None and len(config.tri) > 0:
+            votes = [[0 for _ in range(4)] for _ in range(n_sample)]
+            for output_key in config.tri:
+                path = data_config.output_path(output_key, mode, LABEL_PREDICT)
+                labels = load_label_list(path)
+                if len(labels) != n_sample:
+                    raise Exception('mismatch {}({}) != {}'.format(output_key, len(labels), n_sample))
+
+                for i, label in enumerate(labels):
+                    if label == 0:
+                        votes[i][label] += 1
+
+            base = list() + labels_predict_after[mode]
+            for i, vote in enumerate(votes):
+                if base[i] != 0:
+                    base[i] = np.argmax(vote)
+
+            labels_predict_has[mode] = base
+            res = basic_evaluate(gold=labels_gold[mode], pred=labels_predict_has[mode])
+            print(mode, '(AFTER_HAS)')
+            print_evaluation(res)
+            for col in res[CONFUSION_MATRIX]:
+                print(','.join(map(str, col)))
+            print()
 
 
 if __name__ == '__main__':

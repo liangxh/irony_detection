@@ -1,0 +1,43 @@
+analyzer: word
+word:
+  w2v_version: ntua
+  randomize_not_supported: True
+  min_tf: 2.
+
+nn:
+  seq_len: 30
+  embedding:
+    trainable: False
+    noise_stddev: 0.1
+    noise_type: gaussian
+    dropout_keep_prob: 0.9
+  rnn:
+    dim: 50
+  attention:
+    dim: 50
+  cnn:
+    kernel_size: 3
+    filter_num: 64
+  dense: []
+  dense_bk:
+    - dim: 32
+      activation: relu
+      l2: 0.2
+  max_out:
+  learning_rate:
+    init: 0.005
+    decay_steps: 2
+    decay_rate: 0.9
+  l2_reg_lambda: 0.2
+  output:
+    dim: _
+  dropout_keep_prob: 0.5
+  binary_classification: False
+
+train:
+  epoch: 200
+  valid_rate: 0.1
+  batch_size: 100
+  early_stop_metric: precision
+  train_sampling: True
+  use_class_weights: False

@@ -106,6 +106,10 @@ class NNModel(BaseNNModel):
             y, w, b = dense.build(dense_input, dim_output=self.config.output_dim, output_name=PROB_PREDICT)
             l2_w_list.append(w)
         else:
+            if len(self.config.max_out) != self.config.output_dim:
+                raise Exception('invalid max_out config, expected dim={}, got {}'.format(
+                    self.config.output_dim, self.config.max_out))
+
             y_list = list()
             for dim in self.config.max_out:
                 y, w, b = dense.build(dense_input, dim_output=dim)
@@ -232,7 +236,7 @@ def filter_by_index(data, index):
 
 
 @commandr.command
-def train(origin_output_key, text_version='ek', label_version='binary', config_path='config93_naive.yaml'):
+def train(origin_output_key, text_version='ek', label_version='binary', config_path='config93_bin.yaml'):
     """
     python -m algo.main93_v2 train
     python3 -m algo.main93_v2 train -c config_ntua93.yaml

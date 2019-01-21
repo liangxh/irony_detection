@@ -362,7 +362,6 @@ def clear_output(output_key):
     python algo/main.py clear A_ntua_ek_1542595525
     python3 -m algo.main93 clear xxxxxxx
 
-    :param dataset_key: string
     :param output_key: string
     :return:
     """

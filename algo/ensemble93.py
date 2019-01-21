@@ -266,7 +266,7 @@ def main(ensemble_mode, config_path='config93_ensemble.yaml', build_analysis=Fal
 
         if config.oh_enabled:
             votes = [[0 for _ in range(4)] for _ in range(n_sample)]
-            for output_key in config.tri:
+            for output_key in config.oh:
                 path = data_config.output_path(output_key, mode, LABEL_PREDICT)
                 labels = load_label_list(path)
                 if len(labels) != n_sample:

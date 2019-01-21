@@ -170,6 +170,8 @@ def main(ensemble_mode, config_path='config93_ensemble.yaml', build_analysis=Fal
         print()
 
         if config.others is not None and len(config.others) > 0:
+            base = list() + labels_predict[mode]
+
             for output_key in config.others:
                 path = data_config.output_path(output_key, mode, LABEL_PREDICT)
                 labels = load_label_list(path)
@@ -177,15 +179,13 @@ def main(ensemble_mode, config_path='config93_ensemble.yaml', build_analysis=Fal
                 after = list()
                 for i, (p_base, p_sub) in enumerate(zip(labels_predict[mode], labels)):
                     if p_sub == 0:
-                        after.append(0)
-                    else:
-                        after.append(p_base)
+                        base[i] = 0
 
-                labels_predict_after[mode] = after
-                res = basic_evaluate(gold=labels_gold[mode], pred=labels_predict_after[mode])
-                print(mode, '(AFTER)')
-                print_evaluation(res)
-                print()
+            labels_predict_after[mode] = base
+            res = basic_evaluate(gold=labels_gold[mode], pred=labels_predict_after[mode])
+            print(mode, '(AFTER)')
+            print_evaluation(res)
+            print()
 
         if build_analysis:
             output_path = data_config.path(mode, ANALYSIS, WRONG_PREDICT)

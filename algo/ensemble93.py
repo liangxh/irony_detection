@@ -220,13 +220,14 @@ def main(ensemble_mode, config_path='config93_ensemble.yaml', build_analysis=Fal
                     raise Exception('mismatch {}({}) != {}'.format(output_key, len(labels), n_sample))
 
                 for i, label in enumerate(labels):
-                    if label == 0:
-                        votes[i][label] += 1
+                    votes[i][label] += 1
 
             base = list() + labels_predict_after[mode]
             for i, vote in enumerate(votes):
                 if base[i] != 0:
-                    base[i] = np.argmax(vote)
+                    arg_max = np.argmax(vote)
+                    if arg_max != 0:
+                        base[i] = arg_max
 
             labels_predict_has[mode] = base
             res = basic_evaluate(gold=labels_gold[mode], pred=labels_predict_has[mode])

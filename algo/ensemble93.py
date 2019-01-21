@@ -28,6 +28,10 @@ class Config(object):
     def components(self):
         return self.data['components']
 
+    @property
+    def others(self):
+        return self.data['others']
+
 
 def argmax(value_list):
     idx = 0
@@ -94,7 +98,9 @@ def main(ensemble_mode, config_path='config93_ensemble.yaml', build_analysis=Fal
     config = Config(data=config_data)
 
     labels_predict = dict()
+    labels_predict_after = dict()
     labels_gold = dict()
+
     n_sample = dict()
     for mode in [TRAIN, TEST]:
         label_path = data_config.path(mode, LABEL, None)
@@ -162,6 +168,24 @@ def main(ensemble_mode, config_path='config93_ensemble.yaml', build_analysis=Fal
         print(mode)
         print_evaluation(res)
         print()
+
+        if config.others is not None and len(config.others) > 0:
+            for output_key in config.others:
+                path = data_config.output_path(output_key, mode, LABEL_PREDICT)
+                labels = load_label_list(path)
+
+                after = list()
+                for i, (p_base, p_sub) in enumerate(zip(labels_predict[mode], labels)):
+                    if p_sub == 0:
+                        after.append(0)
+                    else:
+                        after.append(p_base)
+
+                labels_predict_after[mode] = after
+                res = basic_evaluate(gold=labels_gold[mode], pred=labels_predict_after[mode])
+                print(mode, '(AFTER)')
+                print_evaluation(res)
+                print()
 
         if build_analysis:
             output_path = data_config.path(mode, ANALYSIS, WRONG_PREDICT)

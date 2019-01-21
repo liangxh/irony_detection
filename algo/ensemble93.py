@@ -194,7 +194,7 @@ def main(ensemble_mode, config_path='config93_ensemble.yaml', build_analysis=Fal
                     labels = load_label_list(path)
                     if len(labels) != n_sample:
                         raise Exception('mismatch {}({}) != {}'.format(output_key, len(labels), n_sample))
-    
+
                     for i, label in enumerate(labels):
                         flags[i] &= (label == 0)
             else:

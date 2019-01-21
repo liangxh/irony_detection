@@ -40,6 +40,10 @@ class Config(object):
     def tri(self):
         return self.data['tri']
 
+    @property
+    def tri_min_vote(self):
+        return self.data['tri_min_vote']
+
 
 def argmax(value_list):
     idx = 0
@@ -225,8 +229,8 @@ def main(ensemble_mode, config_path='config93_ensemble.yaml', build_analysis=Fal
             base = list() + labels_predict_after[mode]
             for i, vote in enumerate(votes):
                 if base[i] != 0:
-                    arg_max = np.argmax(vote)
-                    if arg_max != 0:
+                    arg_max = int(np.argmax(vote))
+                    if arg_max != 0 and vote[arg_max] >= config.tri_min_vote:
                         base[i] = arg_max
 
             labels_predict_has[mode] = base

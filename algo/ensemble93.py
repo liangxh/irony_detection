@@ -205,6 +205,8 @@ def main(ensemble_mode, config_path='config93_ensemble.yaml', build_analysis=Fal
 
         n_sample = len(labels_predict[mode])
 
+        labels_predict_last[mode] = labels_predict[mode]
+
         # 将判成HAS的样本修正为Others
         if config.others_enabled:
             votes = [0 for i in range(n_sample)]
@@ -222,7 +224,7 @@ def main(ensemble_mode, config_path='config93_ensemble.yaml', build_analysis=Fal
                 min_vote = len(config.others)
             else:
                 min_vote = int(config.others_min_vote)
-            base = list() + labels_predict[mode]
+            base = list() + labels_predict_last[mode]
             for i, vote in enumerate(votes):
                 if vote >= min_vote:
                     base[i] = 0

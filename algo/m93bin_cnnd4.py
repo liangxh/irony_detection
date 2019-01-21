@@ -46,7 +46,7 @@ class NNConfig(BaseNNConfig):
 
 
 class NNModel(BaseNNModel):
-    name = 'm93bin_cnnd3'
+    name = 'm93bin_cnnd4'
 
     def build_neural_network(self, lookup_table):
         test_mode = tf.placeholder(tf.int8, None, name=TEST_MODE)
@@ -177,7 +177,7 @@ def custom_sampling(dataset, dist=None):
         label_idx[label].append(i)
     dataset[LABEL_GOLD] = dataset[LABEL_GOLD].tolist()
 
-    for label in [0, ]:
+    for label in [1, 2, 3]:
         for i in label_idx[label]:
             tid_ = [copy.deepcopy(dataset[TID_[j]][i]) for j in range(3)]
 

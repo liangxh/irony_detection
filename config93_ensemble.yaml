@@ -26,7 +26,9 @@ tri:
     - m93tri_cnn_ek_1548061351
 oh_min_vote:
   enabled: True
-  min_vote: 1
+  min_vote: 2
   components:
-     - m93oh_cnn_ek_1548062801
-     - m93oh_cnn_ek_1548062733
+    - m93oh_cnn_ek_1548062801
+    - m93oh_cnn_ek_1548062733
+    - m93oh_cnn_ek_1548063099
+    - m93oh_cnn_ek_1548063097

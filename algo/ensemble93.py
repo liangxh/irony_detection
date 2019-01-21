@@ -176,26 +176,34 @@ def main(ensemble_mode, config_path='config93_ensemble.yaml', build_analysis=Fal
         if config.others is not None and len(config.others) > 0:
             n_sample = len(labels_predict[mode])
             if config.others_type == 'or':
-                base = list() + labels_predict[mode]
+                flags = [False for _ in range(n_sample)]
+
                 for output_key in config.others:
                     path = data_config.output_path(output_key, mode, LABEL_PREDICT)
                     labels = load_label_list(path)
-                    for i, (p_base, p_sub) in enumerate(zip(labels_predict[mode], labels)):
-                        if p_sub == 0:
-                            base[i] = 0
+                    if len(labels) != n_sample:
+                        raise Exception('mismatch {}({}) != {}'.format(output_key, len(labels), n_sample))
+
+                    for i, label in enumerate(labels):
+                        flags[i] |= (label == 0)
+
             elif config.others_type == 'and':
                 flags = [True for _ in range(n_sample)]
                 for output_key in config.others:
                     path = data_config.output_path(output_key, mode, LABEL_PREDICT)
                     labels = load_label_list(path)
+                    if len(labels) != n_sample:
+                        raise Exception('mismatch {}({}) != {}'.format(output_key, len(labels), n_sample))
+    
                     for i, label in enumerate(labels):
                         flags[i] &= (label == 0)
-                base = list() + labels_predict[mode]
-                for i, flag in enumerate(flags):
-                    if flag:
-                        base[i] = 0
             else:
                 raise Exception('unknown others_type')
+
+            base = list() + labels_predict[mode]
+            for i, flag in enumerate(flags):
+                if flag:
+                    base[i] = 0
 
             labels_predict_after[mode] = base
             res = basic_evaluate(gold=labels_gold[mode], pred=labels_predict_after[mode])

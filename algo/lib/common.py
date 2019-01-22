@@ -3,7 +3,7 @@ import numpy as np
 from algo.model.const import *
 from nlp.word2vec import PlainModel
 
-keys = [ACCURACY, PRECISION, RECALL, F1_SCORE, 'test_score']
+keys = [ACCURACY, PRECISION, RECALL, F1_SCORE]
 
 
 def print_evaluation(res):

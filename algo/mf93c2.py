@@ -88,14 +88,10 @@ class NNModel(BaseNNModel):
         last_states = list()
         for i in range(3):
             with tf.variable_scope('turn{}'.format(i)):
-                cnn_output = cnn.build2(embedded_[i], self.config.filter_num, self.config.kernel_size)
-                last_state = cnn.max_pooling(cnn_output)
-                last_states.append(last_state)
-
-                cnn_output = cnn.build(
+                cnn_output = cnn.build2(
                     embedded_[i], filter_num=self.config.cnn_filter_num(0), kernel_size=self.config.cnn_kernel_size(0))
                 cnn_output = tf.nn.dropout(cnn_output, dropout_keep_prob)
-                cnn_output = cnn.build(
+                cnn_output = cnn.build2(
                     cnn_output, filter_num=self.config.cnn_filter_num(1), kernel_size=self.config.cnn_kernel_size(1))
                 last_state = cnn.max_pooling(cnn_output)
                 last_states.append(last_state)

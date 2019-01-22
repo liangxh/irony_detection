@@ -421,6 +421,13 @@ def train(text_version='ek', label_version=None, config_path='c93f.yaml'):
                 for _prob in prob_predict:
                     file_obj.write('\t'.join(map(str, _prob)) + '\n')
 
+    print('VALID')
+    res = best_res[VALID]
+    print_evaluation(res)
+    for col in res[CONFUSION_MATRIX]:
+        print(','.join(map(str, col)))
+    print()
+
     res = basic_evaluate(
         gold=labels_gold_[TRAIN] + labels_gold_[TEST],
         pred=labels_predict_[TRAIN] + labels_predict_[TEST]
@@ -470,6 +477,30 @@ def predict(output_key, mode):
     with open(data_config.output_path(output_key, mode, LABEL_PREDICT), 'w') as file_obj:
         for _label in labels_predict:
             file_obj.write('{}\n'.format(_label))
+
+
+@commandr.command('eval')
+def show_eval(output_key):
+    """
+    [Usage]
+    python algo/main.py eval A_ntua_ek_1542454066
+
+    :param output_key: string
+    :return:
+    """
+    labels_predict = list()
+    labels_gold = list()
+    for mode in [TRAIN, TEST]:
+        path = data_config.output_path(output_key, mode, LABEL_PREDICT)
+        labels_predict += load_label_list(path)
+
+        path = data_config.path(mode, LABEL)
+        labels_gold += load_label_list(path)
+
+    res = basic_evaluate(gold=labels_gold, pred=labels_predict)
+    print_evaluation(res)
+    for col in res[CONFUSION_MATRIX]:
+        print(','.join(map(str, col)))
 
 
 if __name__ == '__main__':

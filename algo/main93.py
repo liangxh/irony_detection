@@ -355,8 +355,8 @@ def show_eval2(output_key):
 
         res = basic_evaluate(gold=labels_gold, pred=labels_predict)
         print(mode)
-        print_evaluation(res[mode])
-        for col in res[mode][CONFUSION_MATRIX]:
+        print_evaluation(res)
+        for col in res[CONFUSION_MATRIX]:
             print(','.join(map(str, col)))
         print()
 

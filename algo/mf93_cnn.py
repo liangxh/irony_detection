@@ -21,11 +21,9 @@ from algo.nn.common.common import add_gaussian_noise_layer, build_dropout_keep_p
 from dataset.common.const import *
 from dataset.common.load import *
 from dataset.semeval2019_task3_dev.config import config as data_config
-from dataset.semeval2019_task3_dev.process import label_str
 
 TID_ = [TID_0, TID_1, TID_2]
 SEQ_LEN_ = [SEQ_LEN_0, SEQ_LEN_1, SEQ_LEN_2]
-REAL_DIST = [4677, 284, 250, 298]
 
 
 class NNConfig(BaseNNConfig):
@@ -47,7 +45,7 @@ class NNConfig(BaseNNConfig):
 
 
 class NNModel(BaseNNModel):
-    name = 'mf93_cnn'
+    name = 'm93_cnn'
 
     def build_neural_network(self, lookup_table):
         test_mode = tf.placeholder(tf.int8, None, name=TEST_MODE)
@@ -143,17 +141,10 @@ def to_nn_input(tid_list, max_seq_len):
     return tid_list, seq_len
 
 
-def load_dataset(
-        mode, vocab_id_mapping, max_seq_len, sampling=False, with_label=True, label_version=None,
-        split_valid=None
-        ):
-    if isinstance(mode, list):
-        modes = mode
-    else:
-        modes = [mode, ]
+def load_dataset(mode, vocab_id_mapping, max_seq_len, sampling=False, with_label=True, label_version=None):
+    modes = mode if isinstance(mode, list) else [mode, ]
 
     dataset = dict()
-    dataset_valid = None
     for i in [0, 1, 2]:
         tid_list = list()
         for mode in modes:
@@ -170,41 +161,16 @@ def load_dataset(
             label_list += load_label_list(label_path)
         dataset[LABEL_GOLD] = label_list
 
-    if split_valid is not None:
-        label_idx = [list() for _ in range(4)]
-        for i, label in enumerate(dataset[LABEL_GOLD]):
-            label_idx[label].append(i)
-        for idx in label_idx:
-            random.shuffle(idx)
-
-        dataset_train = {k: list() for k in dataset.keys()}
-        dataset_valid = {k: list() for k in dataset.keys()}
-        for label, idx in enumerate(label_idx):
-            for i in idx[:-split_valid[label]]:
-                for k, v in dataset:
-                    dataset_train[k].append(v[i])
-
-            for i in idx[-split_valid[label]:]:
-                for k, v in dataset:
-                    dataset_valid[k].append(v[i])
-        dataset = dataset_train
-
     if sampling:
         dataset = custom_sampling(dataset)
 
     for i in [0, 1, 2]:
         dataset[TID_[i]], dataset[SEQ_LEN_[i]] = to_nn_input(dataset[TID_[i]], max_seq_len=max_seq_len)
-        if split_valid:
-            dataset_valid[TID_[i]], dataset_valid[SEQ_LEN_[i]] = to_nn_input(
-                dataset_valid[TID_[i]], max_seq_len=max_seq_len)
 
     if with_label:
         dataset[LABEL_GOLD] = np.asarray(dataset[LABEL_GOLD])
         output_dim = max(dataset[LABEL_GOLD]) + 1
-        if split_valid is None:
-            return dataset, output_dim
-        else:
-            return dataset, dataset_valid, output_dim
+        return dataset, output_dim
     else:
         return dataset
 
@@ -237,7 +203,7 @@ feed_key = {
 
 fetch_key = {
     TRAIN: [OPTIMIZER, LOSS, LABEL_PREDICT],
-    TEST: [LABEL_PREDICT, PROB_PREDICT, HIDDEN_FEAT]
+    TEST: [LABEL_PREDICT, PROB_PREDICT]
 }
 
 
@@ -254,7 +220,7 @@ def train(text_version='ek', label_version=None, config_path='config93_naive.yam
     """
     config_data = yaml.load(open(config_path))
 
-    output_key = '{}_{}_{}'.format(NNModel.name, text_version, int(time.time()))
+    output_key = 'f_{}_{}_{}'.format(NNModel.name, text_version, int(time.time()))
     if label_version is not None:
         output_key = '{}_{}'.format(label_version, output_key)
     print('OUTPUT_KEY: {}'.format(output_key))
@@ -286,16 +252,10 @@ def train(text_version='ek', label_version=None, config_path='config93_naive.yam
 
     # 加载训练数据
     datasets = dict()
-    datasets[TRAIN], datasets[TEST], output_dim = load_dataset(
-        mode=[TRAIN, TEST], vocab_id_mapping=vocab_id_mapping,
-        max_seq_len=nn_config.seq_len, sampling=train_config.train_sampling,
-        label_version=label_version, split_valid=REAL_DIST--
+    datasets[TRAIN], output_dim = load_dataset(
+        mode=[TRAIN, TEST], vocab_id_mapping=vocab_id_mapping, max_seq_len=nn_config.seq_len,
+        label_version=label_version, sampling=train_config.train_sampling
     )
-    datasets[FINAL] = load_dataset(
-        mode=FINAL, vocab_id_mapping=vocab_id_mapping, max_seq_len=nn_config.seq_len,
-        with_label=False, label_version=label_version
-    )
-
     # 初始化数据集的检索
     index_iterators = {
         TRAIN: IndexIterator.from_dataset(datasets[TRAIN]),
@@ -405,27 +365,6 @@ def train(text_version='ek', label_version=None, config_path='config93_naive.yam
                 else:
                     no_update_count[VALID] += 1
 
-            # eval test
-            _mode = TEST
-            _dataset = datasets[_mode]
-            _index_iterator = SimpleIndexIterator.from_dataset(_dataset)
-            _n_sample = _index_iterator.n_sample()
-
-            labels_predict = list()
-            labels_gold = list()
-            for batch_index in _index_iterator.iterate(batch_size, shuffle=False):
-                feed_dict = {nn.var(_key): _dataset[_key][batch_index] for _key in feed_key[TEST]}
-                feed_dict[nn.var(TEST_MODE)] = 1
-                res = sess.run(fetches=fetches[TEST], feed_dict=feed_dict)
-
-                labels_predict += res[LABEL_PREDICT].tolist()
-                labels_gold += _dataset[LABEL_GOLD][batch_index].tolist()
-            labels_predict, labels_gold = labels_predict[:_n_sample], labels_gold[:_n_sample]
-            res = basic_evaluate(gold=labels_gold, pred=labels_predict)
-            eval_history[TEST].append(res)
-            print('TEST')
-            print_evaluation(res)
-
             if no_update_count[TRAIN] >= max_no_update_count:
                 break
 
@@ -436,6 +375,9 @@ def train(text_version='ek', label_version=None, config_path='config93_naive.yam
 
     json.dump(eval_history, open(data_config.output_path(output_key, 'eval', 'json'), 'w'))
 
+    labels_predict_ = dict()
+    labels_gold_ = dict()
+
     with tf.Session() as sess:
         prefix_checkpoint = tf.train.latest_checkpoint(data_config.model_path(key=output_key))
         saver = tf.train.import_meta_graph('{}.meta'.format(prefix_checkpoint))
@@ -443,22 +385,17 @@ def train(text_version='ek', label_version=None, config_path='config93_naive.yam
 
         nn = BaseNNModel(config=None)
         nn.set_graph(tf.get_default_graph())
-
         for mode in [TRAIN, TEST, FINAL]:
-            if mode == TRAIN and train_config.train_sampling:
-                dataset, _ = load_dataset(
-                    mode=TRAIN, vocab_id_mapping=vocab_id_mapping,
-                    max_seq_len=nn_config.seq_len, sampling=False, label_version=label_version
-                )
-            else:
-                dataset = datasets[mode]
+            dataset, _ = load_dataset(
+                mode=mode, vocab_id_mapping=vocab_id_mapping, max_seq_len=nn_config.seq_len,
+                label_version=label_version
+            )
             index_iterator = SimpleIndexIterator.from_dataset(dataset)
             n_sample = index_iterator.n_sample()
 
             prob_predict = list()
             labels_predict = list()
             labels_gold = list()
-            hidden_feats = list()
 
             for batch_index in index_iterator.iterate(batch_size, shuffle=False):
                 feed_dict = {nn.var(_key): dataset[_key][batch_index] for _key in feed_key[TEST]}
@@ -466,23 +403,16 @@ def train(text_version='ek', label_version=None, config_path='config93_naive.yam
                 res = sess.run(fetches=fetches[TEST], feed_dict=feed_dict)
                 prob_predict += res[PROB_PREDICT].tolist()
                 labels_predict += res[LABEL_PREDICT].tolist()
-                hidden_feats += res[HIDDEN_FEAT].tolist()
-                if LABEL_GOLD in dataset:
-                    labels_gold += dataset[LABEL_GOLD][batch_index].tolist()
+                labels_gold += dataset[LABEL_GOLD][batch_index].tolist()
 
             prob_predict = prob_predict[:n_sample]
             labels_predict = labels_predict[:n_sample]
             labels_gold = labels_gold[:n_sample]
-            hidden_feats = hidden_feats[:n_sample]
 
-            if mode == TEST:
-                res = basic_evaluate(gold=labels_gold, pred=labels_predict)
-                best_res[TEST] = res
+            if mode != FINAL:
+                labels_predict_[mode] = labels_predict
+                labels_gold_[mode] = labels_gold
 
-            # 导出隐藏层
-            with open(data_config.output_path(output_key, mode, HIDDEN_FEAT), 'w') as file_obj:
-                for _feat in hidden_feats:
-                    file_obj.write('\t'.join(map(str, _feat)) + '\n')
             # 导出预测的label
             with open(data_config.output_path(output_key, mode, LABEL_PREDICT), 'w') as file_obj:
                 for _label in labels_predict:
@@ -491,73 +421,16 @@ def train(text_version='ek', label_version=None, config_path='config93_naive.yam
                 for _prob in prob_predict:
                     file_obj.write('\t'.join(map(str, _prob)) + '\n')
 
-    for mode in [TRAIN, VALID, TEST]:
-        if mode == VALID and train_config.valid_rate == 0.:
-            continue
-        res = best_res[mode]
-        print(mode)
-        print_evaluation(res)
-
-        json.dump(res, open(data_config.output_path(output_key, mode, EVALUATION), 'w'))
-        print()
-
-    test_score_list = map(lambda _item: _item['f1'], eval_history[TEST])
-    print('best test f1 reached: {}'.format(max(test_score_list)))
+    res = basic_evaluate(
+        gold=labels_gold_[TRAIN] + labels_gold_[TEST],
+        pred=labels_predict_[TRAIN] + labels_predict_[TEST]
+    )
+    print_evaluation(res)
+    for col in res[CONFUSION_MATRIX]:
+        print(','.join(map(str, col)))
+    print()
 
     print('OUTPUT_KEY: {}'.format(output_key))
-
-
-@commandr.command('test')
-def live_test(output_key):
-    config_path = data_config.output_path(output_key, ALL, CONFIG)
-    config_data = yaml.load(open(config_path))
-    nn_config = NNConfig(config_data)
-    vocab_id_mapping = json.load(open(data_config.output_path(output_key, ALL, VOCAB_ID_MAPPING), 'r'))
-
-    with tf.Session() as sess:
-        prefix_checkpoint = tf.train.latest_checkpoint(data_config.model_path(key=output_key))
-        saver = tf.train.import_meta_graph('{}.meta'.format(prefix_checkpoint))
-        saver.restore(sess, prefix_checkpoint)
-
-        nn = BaseNNModel(config=None)
-        nn.set_graph(tf.get_default_graph())
-
-        fetches = {_key: nn.var(_key) for _key in [LABEL_PREDICT, PROB_PREDICT]}
-        while True:
-            res = input('input: ')
-            if res == 'quit':
-                break
-
-            turns = res.strip().split('|')
-            if len(turns) != 3:
-                print('invalid turns')
-                continue
-
-            tokens_list = list()
-            for turn in turns:
-                tokens = re.sub('\s+', ' ', turn.strip()).split(' ')
-                tokens_list.append(tokens)
-
-            placeholder = [[]] * (nn_config.batch_size - 1)
-            tid_list_0 = tokenized_to_tid_list([tokens_list[0], ] + placeholder, vocab_id_mapping)
-            tid_list_1 = tokenized_to_tid_list([tokens_list[1], ] + placeholder, vocab_id_mapping)
-            tid_list_2 = tokenized_to_tid_list([tokens_list[2], ] + placeholder, vocab_id_mapping)
-
-            tid_0 = np.asarray(zero_pad_seq_list(tid_list_0, nn_config.seq_len))
-            tid_1 = np.asarray(zero_pad_seq_list(tid_list_1, nn_config.seq_len))
-            tid_2 = np.asarray(zero_pad_seq_list(tid_list_2, nn_config.seq_len))
-
-            feed_dict = {
-                nn.var(TID_0): tid_0,
-                nn.var(TID_1): tid_1,
-                nn.var(TID_2): tid_2,
-                nn.var(TEST_MODE): 1
-            }
-            res = sess.run(fetches=fetches, feed_dict=feed_dict)
-            label = res[LABEL_PREDICT][0]
-            prob = res[PROB_PREDICT][0]
-            print('label: {}'.format(label))
-            print('prob: {}'.format(prob))
 
 
 @commandr.command('pred')

@@ -481,13 +481,6 @@ def predict(output_key, mode):
 
 @commandr.command('eval')
 def show_eval(output_key):
-    """
-    [Usage]
-    python algo/main.py eval A_ntua_ek_1542454066
-
-    :param output_key: string
-    :return:
-    """
     labels_predict = list()
     labels_gold = list()
     for mode in [TRAIN, TEST]:
@@ -501,6 +494,12 @@ def show_eval(output_key):
     print_evaluation(res)
     for col in res[CONFUSION_MATRIX]:
         print(','.join(map(str, col)))
+
+
+@commandr.command('clear')
+def clear_output(output_key):
+    shutil.rmtree(data_config.output_folder(output_key))
+    shutil.rmtree(data_config.model_folder(output_key))
 
 
 if __name__ == '__main__':

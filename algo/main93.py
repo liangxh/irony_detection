@@ -346,8 +346,14 @@ def show_eval(output_key):
 
 @commandr.command('eval2')
 def show_eval2(output_key):
-    res = json.load(open(data_config.output_path(output_key, ALL, 'best_eval')))
-    for mode in [TRAIN, VALID, TEST]:
+    for mode in [TRAIN, TEST]:
+        path_predict = data_config.output_path(output_key, mode, LABEL_PREDICT)
+        labels_predict = load_label_list(path_predict)
+
+        path_gold = data_config.path(mode, LABEL)
+        labels_gold = load_label_list(path_gold)
+
+        res = basic_evaluate(gold=labels_gold, pred=labels_predict)
         print(mode)
         print_evaluation(res[mode])
         for col in res[mode][CONFUSION_MATRIX]:

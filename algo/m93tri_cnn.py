@@ -107,6 +107,9 @@ class NNModel(BaseNNModel):
             l2_w_list.append(w)
         else:
             y_list = list()
+            if len(self.config.max_out) != self.config.output_dim:
+                raise ValueError('invalid max_out config')
+
             for dim in self.config.max_out:
                 y, w, b = dense.build(dense_input, dim_output=dim)
                 y = tf.expand_dims(tf.reduce_max(y, 1), axis=1)

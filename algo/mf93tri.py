@@ -45,7 +45,7 @@ class NNConfig(BaseNNConfig):
 
 
 class NNModel(BaseNNModel):
-    name = 'm93_cnn'
+    name = 'm93tri'
 
     def build_neural_network(self, lookup_table):
         test_mode = tf.placeholder(tf.int8, None, name=TEST_MODE)
@@ -144,7 +144,10 @@ def to_nn_input(tid_list, max_seq_len):
     return tid_list, seq_len
 
 
-def load_dataset(mode, vocab_id_mapping, max_seq_len, sampling=False, with_label=True, label_version=None):
+def load_dataset(
+        mode, vocab_id_mapping, max_seq_len, sampling=False, with_label=True, label_version=None,
+        filter_others=False
+        ):
     modes = mode if isinstance(mode, list) else [mode, ]
 
     dataset = dict()
@@ -163,6 +166,11 @@ def load_dataset(mode, vocab_id_mapping, max_seq_len, sampling=False, with_label
             label_path = data_config.path(mode, LABEL, label_version)
             label_list += load_label_list(label_path)
         dataset[LABEL_GOLD] = label_list
+
+    if filter_others:
+        select_index = build_select_index(dataset[LABEL_GOLD])
+        for k, v in dataset.items():
+            dataset[k] = filter_by_index(v, select_index)
 
     if sampling:
         dataset = custom_sampling(dataset)
@@ -183,20 +191,41 @@ def custom_sampling(dataset):
     for i, label in enumerate(dataset[LABEL_GOLD]):
         label_idx[label].append(i)
 
-    label = 0
-    for i in label_idx[label]:
-        tid_ = [copy.deepcopy(dataset[TID_[j]][i]) for j in range(3)]
+    for label in [1, 2, 3]:
+        for i in label_idx[label]:
+            tid_ = [copy.deepcopy(dataset[TID_[j]][i]) for j in range(3)]
 
-        j = random.randint(0, 2)
-        if len(tid_[j]) > 1:
-            pop_idx = random.randint(0, len(tid_[j]) - 1)
-            tid_[j].pop(pop_idx)
+            j = random.randint(0, 2)
+            if len(tid_[j]) > 1:
+                pop_idx = random.randint(0, len(tid_[j]) - 1)
+                tid_[j].pop(pop_idx)
 
-        for j in range(3):
-            dataset[TID_[j]].append(tid_[j])
-        dataset[LABEL_GOLD].append(label)
+            for j in range(3):
+                dataset[TID_[j]].append(tid_[j])
+            dataset[LABEL_GOLD].append(label)
 
     return dataset
+
+
+def build_select_index(labels_gold):
+    """
+    返回被预测为HAS的样本ID
+    """
+    index = list()
+    for i, g in enumerate(labels_gold):
+        if g != 0:
+            index.append(i)
+    return index
+
+
+def filter_by_index(data, index):
+    """
+    根据ID选出数据
+    """
+    new_data = list()
+    for i in index:
+        new_data.append(data[i])
+    return new_data
 
 
 feed_key = {
@@ -211,7 +240,7 @@ fetch_key = {
 
 
 @commandr.command
-def train(text_version='ek', label_version=None, config_path='c93f.yaml'):
+def train(text_version='ek', label_version=None, config_path='c93ftri.yaml'):
     """
     python -m algo.main93_v2 train
     python3 -m algo.main93_v2 train -c config_ntua93.yaml
@@ -257,7 +286,7 @@ def train(text_version='ek', label_version=None, config_path='c93f.yaml'):
     datasets = dict()
     datasets[TRAIN], output_dim = load_dataset(
         mode=[TRAIN, TEST], vocab_id_mapping=vocab_id_mapping, max_seq_len=nn_config.seq_len,
-        label_version=label_version, sampling=train_config.train_sampling
+        label_version=label_version, sampling=train_config.train_sampling, filter_others=True
     )
     # 初始化数据集的检索
     index_iterators = {
@@ -431,9 +460,13 @@ def train(text_version='ek', label_version=None, config_path='c93f.yaml'):
         print(','.join(map(str, col)))
     print()
 
+    gold = labels_gold_[TRAIN] + labels_gold_[TEST]
+    pred = labels_predict_[TRAIN] + labels_predict_[TEST]
+    select_index = build_select_index(gold)
+
     res = basic_evaluate(
-        gold=labels_gold_[TRAIN] + labels_gold_[TEST],
-        pred=labels_predict_[TRAIN] + labels_predict_[TEST]
+        gold=filter_by_index(gold, select_index),
+        pred=filter_by_index(pred, select_index)
     )
     print_evaluation(res)
     for col in res[CONFUSION_MATRIX]:
@@ -441,68 +474,6 @@ def train(text_version='ek', label_version=None, config_path='c93f.yaml'):
     print()
 
     print('OUTPUT_KEY: {}'.format(output_key))
-
-
-@commandr.command('pred')
-def predict(output_key, mode):
-    config_path = data_config.output_path(output_key, ALL, CONFIG)
-    config_data = yaml.load(open(config_path))
-    nn_config = NNConfig(config_data)
-    vocab_id_mapping = json.load(open(data_config.output_path(output_key, ALL, VOCAB_ID_MAPPING), 'r'))
-
-    dataset = load_dataset(
-        mode=mode, vocab_id_mapping=vocab_id_mapping,
-        max_seq_len=nn_config.seq_len, sampling=False, with_label=False
-    )
-    index_iterator = SimpleIndexIterator.from_dataset(dataset)
-    n_sample = index_iterator.n_sample()
-
-    with tf.Session() as sess:
-        prefix_checkpoint = tf.train.latest_checkpoint(data_config.model_path(key=output_key))
-        saver = tf.train.import_meta_graph('{}.meta'.format(prefix_checkpoint))
-        saver.restore(sess, prefix_checkpoint)
-
-        nn = BaseNNModel(config=None)
-        nn.set_graph(tf.get_default_graph())
-
-        fetches = {_key: nn.var(_key) for _key in [LABEL_PREDICT]}
-        labels_predict = list()
-
-        for batch_index in index_iterator.iterate(nn_config.batch_size, shuffle=False):
-            feed_dict = {nn.var(_key): dataset[_key][batch_index] for _key in feed_key[TEST]}
-            feed_dict[nn.var(TEST_MODE)] = 1
-            res = sess.run(fetches=fetches, feed_dict=feed_dict)
-            labels_predict += res[LABEL_PREDICT].tolist()
-
-        labels_predict = labels_predict[:n_sample]
-
-    # 导出预测的label
-    with open(data_config.output_path(output_key, mode, LABEL_PREDICT), 'w') as file_obj:
-        for _label in labels_predict:
-            file_obj.write('{}\n'.format(_label))
-
-
-@commandr.command('eval')
-def show_eval(output_key):
-    labels_predict = list()
-    labels_gold = list()
-    for mode in [TRAIN, TEST]:
-        path = data_config.output_path(output_key, mode, LABEL_PREDICT)
-        labels_predict += load_label_list(path)
-
-        path = data_config.path(mode, LABEL)
-        labels_gold += load_label_list(path)
-
-    res = basic_evaluate(gold=labels_gold, pred=labels_predict)
-    print_evaluation(res)
-    for col in res[CONFUSION_MATRIX]:
-        print(','.join(map(str, col)))
-
-
-@commandr.command('clear')
-def clear_output(output_key):
-    shutil.rmtree(data_config.output_folder(output_key))
-    shutil.rmtree(data_config.model_folder(output_key))
 
 
 if __name__ == '__main__':

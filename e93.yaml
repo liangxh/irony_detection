@@ -1,6 +1,6 @@
 components:
+  - f_m93_cnn_ek_1548162982
   - f_m93_cnn_ek_1548162865
-  - f_m93_cnn_ek_1548164805
   - f_m93_cnn2_ek_1548176536
 tri:
   enabled: False

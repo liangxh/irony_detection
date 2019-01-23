@@ -160,6 +160,8 @@ def main(ensemble_mode, config_path='e93.yaml', final_output=None):
 
         # 修正HAS
         if config.tri_enabled:
+            n_changed = 0
+
             votes = [[0 for _ in range(4)] for _ in range(n_sample)]
             for output_key in config.tri:
                 labels = list()
@@ -177,7 +179,11 @@ def main(ensemble_mode, config_path='e93.yaml', final_output=None):
                 if base[i] != 0:
                     arg_max = int(np.argmax(vote))
                     if arg_max != 0 and vote[arg_max] >= config.tri_min_vote:
+                        if base[i] != arg_max:
+                            n_changed += 1
                         base[i] = arg_max
+
+            print('n_exchanged within "HAS": {}'.format(n_changed))
 
             labels_predict_last[mode] = base
             if not mode == FINAL:

@@ -1,16 +1,29 @@
 components:
   - f_m93_cnn_ek_1548162982
-  - f_m93_cnn_ek_1548162865
-  - f_m93_cnn2_ek_1548176536
+  #- f_m93_cnn_ek_1548162865
+  #- f_m93_cnn2_ek_1548176536
 tri:
   enabled: False
   min_vote: 1
   components:
-    -
+    - f_m93tri_ek_1548250906
+    - f_m93tri_ek_1548250886
+    - f_m93tri_ek_1548251309
+    - f_m93tri_ek_1548251312
+    - f_m93tri_ek_1548251718
+    - f_m93tri_ek_1548251550
+
 others:
   enabled: False
   min_vote: 2
   components:
-    -
+    - binary_f_m93b_ek_1548248677
+    - binary_f_m93b_ek_1548248678
+    - binary_f_m93b_ek_1548248271
+    - binary_f_m93b_ek_1548248274
+    - binary_f_m93b_ek_1548249178
+    - binary_f_m93b_ek_1548249177
+    - binary_f_m93b_ek_1548250137
+    - binary_f_m93b_ek_1548250135
 oh:
   enabled: False

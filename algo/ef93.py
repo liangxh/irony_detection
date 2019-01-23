@@ -191,6 +191,7 @@ def main(ensemble_mode, config_path='e93.yaml', final_output=None):
         # 将判成HAS的样本修正为Others
         if config.others_enabled:
             votes = [0 for i in range(n_sample)]
+            n_changed = 0
 
             for output_key in config.others:
                 labels = list()
@@ -210,7 +211,10 @@ def main(ensemble_mode, config_path='e93.yaml', final_output=None):
             base = list() + labels_predict_last[mode]
             for i, vote in enumerate(votes):
                 if vote >= min_vote:
+                    if base[i] != 0:
+                        n_changed += 1
                     base[i] = 0
+            print('n_changed to "OTHERS": {}'.format(n_changed))
 
             labels_predict_last[mode] = base
             if not mode == FINAL:
@@ -236,6 +240,43 @@ def main(ensemble_mode, config_path='e93.yaml', final_output=None):
 
                 for line, label in zip(lines, labels):
                     o_obj.write('{}\t{}\n'.format(line, label))
+
+
+@commandr.command('others')
+def analyse_others(config_path='e93.yaml'):
+    config_data = yaml.load(open(config_path))
+    config = Config(data=config_data)
+
+    modes = {
+        TRAIN: [TRAIN, TEST],
+        FINAL: [FINAL, ]
+    }
+    for mode in [TRAIN, FINAL]:
+        n_sample = None
+        n_effective = 0
+        for output_key in config.others:
+            labels = list()
+            for _mode in modes[mode]:
+                path = data_config.output_path(output_key, _mode, LABEL_PREDICT)
+                labels += load_label_list(path)
+
+            if n_sample is None:
+                n_sample = len(labels)
+                votes = [0 for _ in range(n_sample)]
+
+            for i, label in enumerate(labels):
+                if label == 0:
+                    votes[i] += 1
+
+        if config.others_min_vote == 'all':
+            min_vote = len(config.others)
+        else:
+            min_vote = int(config.others_min_vote)
+
+        for i, vote in enumerate(votes):
+            if vote >= min_vote:
+                n_effective += 1
+        print('{}: {}'.format(mode, n_effective))
 
 
 if __name__ == '__main__':

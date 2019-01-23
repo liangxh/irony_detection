@@ -64,7 +64,7 @@ def argmax(value_list):
 
 
 @commandr.command
-def main(ensemble_mode, config_path='c93f_ensemble.yaml', final_output=None):
+def main(ensemble_mode, config_path='e93.yaml', final_output=None):
     """
     [Usage]
     python3 -m algo.ensemble93 main -e mv --build-analysis

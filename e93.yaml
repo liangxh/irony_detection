@@ -6,7 +6,7 @@ tri:
   enabled: False
   min_vote: 1
   components:
-    - 
+    -
 others:
   enabled: False
   min_vote: 2

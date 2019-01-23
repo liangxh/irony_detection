@@ -10,7 +10,6 @@ from dataset.common.const import *
 from dataset.common.load import *
 from algo.lib.evaluate93 import basic_evaluate
 from algo.lib.common import print_evaluation
-from algo.lib.common import generate_wrong_prediction_report
 
 MAJORITY_VOTING = 'mv'
 WEIGHTED_MAJORITY_VOTE = 'wmv'
@@ -83,11 +82,20 @@ def main(ensemble_mode, config_path='c93f_ensemble.yaml', final_output=None):
     labels_gold = dict()
 
     n_sample = dict()
-    for mode in [TRAIN, TEST, FINAL]:
-        label_path = data_config.path(mode, LABEL, None)
-        labels_gold[mode] = load_label_list(label_path)
-        n_sample[mode] = len(labels_gold[mode])
-    output_dim = max(labels_gold[TEST]) + 1
+
+    modes = {
+        TRAIN: [TRAIN, TEST],
+        FINAL: [FINAL, ]
+    }
+
+    for mode in [TRAIN, FINAL]:
+        labels = list()
+        for _mode in modes[mode]:
+            label_path = data_config.path(_mode, LABEL, None)
+            labels += load_label_list(label_path)
+        labels_gold[mode] = labels
+        n_sample[mode] = len(labels)
+    output_dim = max(labels_gold[TRAIN]) + 1
 
     if ensemble_mode == SOFT_VOTING:
         for mode in [TRAIN, TEST]:
@@ -114,19 +122,14 @@ def main(ensemble_mode, config_path='c93f_ensemble.yaml', final_output=None):
             labels_predict[mode] = labels
 
     elif ensemble_mode == MAJORITY_VOTING:
-        for mode in [TRAIN, TEST, FINAL]:
+        for mode in [TRAIN, FINAL]:
             components = list()
 
             for output_key in config.components:
-                path = data_config.output_path(output_key, mode, LABEL_PREDICT)
                 label_list = list()
-                with open(path) as file_obj:
-                    for line in file_obj:
-                        line = line.strip()
-                        if line == '':
-                            continue
-                        label = int(line)
-                        label_list.append(label)
+                for _mode in modes[mode]:
+                    path = data_config.output_path(output_key, _mode, LABEL_PREDICT)
+                    label_list += load_label_list(path)
                 components.append(label_list)
 
             labels = list()
@@ -143,7 +146,7 @@ def main(ensemble_mode, config_path='c93f_ensemble.yaml', final_output=None):
     else:
         raise ValueError('unknown mode: {}'.format(ensemble_mode))
 
-    for mode in [TRAIN, TEST, FINAL]:
+    for mode in [TRAIN, FINAL]:
         if not mode == FINAL:
             res = basic_evaluate(gold=labels_gold[mode], pred=labels_predict[mode])
             print(mode)
@@ -159,8 +162,10 @@ def main(ensemble_mode, config_path='c93f_ensemble.yaml', final_output=None):
         if config.tri_enabled:
             votes = [[0 for _ in range(4)] for _ in range(n_sample)]
             for output_key in config.tri:
-                path = data_config.output_path(output_key, mode, LABEL_PREDICT)
-                labels = load_label_list(path)
+                labels = list()
+                for _mode in modes[mode]:
+                    path = data_config.output_path(output_key, _mode, LABEL_PREDICT)
+                    labels += load_label_list(path)
                 if len(labels) != n_sample:
                     raise Exception('mismatch {}({}) != {}'.format(output_key, len(labels), n_sample))
 
@@ -188,8 +193,10 @@ def main(ensemble_mode, config_path='c93f_ensemble.yaml', final_output=None):
             votes = [0 for i in range(n_sample)]
 
             for output_key in config.others:
-                path = data_config.output_path(output_key, mode, LABEL_PREDICT)
-                labels = load_label_list(path)
+                labels = list()
+                for _mode in modes[mode]:
+                    path = data_config.output_path(output_key, _mode, LABEL_PREDICT)
+                    labels += load_label_list(path)
                 if len(labels) != n_sample:
                     raise Exception('mismatch {}({}) != {}'.format(output_key, len(labels), n_sample))
 

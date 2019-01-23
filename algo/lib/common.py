@@ -9,7 +9,7 @@ keys = [ACCURACY, PRECISION, RECALL, F1_SCORE]
 def print_evaluation(res):
     values = list(map(res.get, keys))
     print(','.join(keys))
-    print(','.join(list(map(str, values))))
+    print(','.join(list(map(lambda _v: '{:.4f}'.format(v), values))))
 
 
 def print_evaluation_0(res):

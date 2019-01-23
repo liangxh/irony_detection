@@ -4,7 +4,7 @@ components:
   #- f_m93_cnn2_ek_1548176536
 tri:
   enabled: False
-  min_vote: 1
+  min_vote: 6
   components:
     - f_m93tri_ek_1548250906
     - f_m93tri_ek_1548250886
@@ -12,10 +12,11 @@ tri:
     - f_m93tri_ek_1548251312
     - f_m93tri_ek_1548251718
     - f_m93tri_ek_1548251550
-
+    - f_m93tri_ek_1548252270
+    - f_m93tri_ek_1548252272
 others:
   enabled: False
-  min_vote: 2
+  min_vote: 6
   components:
     - binary_f_m93b_ek_1548248677
     - binary_f_m93b_ek_1548248678

@@ -67,6 +67,12 @@ def argmax(value_list):
     return idx, max_value
 
 
+modes = {
+    TRAIN: [TRAIN, TEST],
+    FINAL: [FINAL, ]
+}
+
+
 @commandr.command
 def main(input_filename, config_path='e93.yaml', final_output=None):
     """
@@ -82,11 +88,6 @@ def main(input_filename, config_path='e93.yaml', final_output=None):
 
     dataset = Processor.load_origin(input_filename)
     labels_predict[FINAL] = list(map(lambda _item: _item[-1], dataset))
-
-    modes = {
-        TRAIN: [TRAIN, TEST],
-        FINAL: [FINAL, ]
-    }
 
     for mode in [FINAL, ]:
         if not mode == FINAL:
@@ -193,6 +194,49 @@ def main(input_filename, config_path='e93.yaml', final_output=None):
 
                 for line, label in zip(lines, labels):
                     o_obj.write('{}\t{}\n'.format(line, label))
+
+
+@commandr.command('diff')
+def diff(a_filename, b_filename, output_filename, config_path='e93.yaml'):
+    config_data = yaml.load(open(config_path))
+    config = Config(data=config_data)
+
+    votes = None
+    n_changed = 0
+
+    for output_key in config.others:
+        labels = list()
+        for _mode in modes[FINAL]:
+            path = data_config.output_path(output_key, _mode, LABEL_PREDICT)
+            labels += load_label_list(path)
+
+        if votes is None:
+            n_sample = len(labels)
+            votes = [0 for _ in range(n_sample)]
+
+        for i, label in enumerate(labels):
+            if label == 0:
+                votes[i] += 1
+
+    dataset = Processor.load_origin(a_filename)
+    labels_a = list(map(lambda _item: _item[-1], dataset))
+
+    dataset = Processor.load_origin(b_filename)
+    labels_b = list(map(lambda _item: _item[-1], dataset))
+
+    assert len(votes) == len(labels_a) == len(labels_b)
+
+    n_match = 0
+    with open(output_filename, 'w') as file_obj:
+        for i, (a, b, d) in enumerate(zip(labels_a, labels_b, dataset)):
+            if a == 3:
+                if b == 0:
+                    file_obj.write('{}\t{}\t{}\t{}\t{}->{} ({})\n'.format(
+                        i, d[0], d[1], d[2], label_str[a], label_str[b], votes[i]
+                    ))
+                else:
+                    n_match += 1
+    print(n_match)
 
 
 if __name__ == '__main__':

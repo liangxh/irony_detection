@@ -28,6 +28,12 @@ others:
   enabled: False
   min_vote: 6
   components:
+    # CNN(3, 32)                  # prec    recall      prec    recall
+    - binary_f_m93b_ek_1548318733 # 0.9254  0.9434      0.9457  0.9427
+    - binary_f_m93b_ek_1548318729 # 0.9356  0.9499      0.9477  0.9436
+    - binary_f_m93b_ek_1548324673 # 0.9602  0.9481      0.9561  0.9395
+    - binary_f_m93b_ek_1548324675 # 0.9568  0.9573      0.9524  0.9482
+
     # CNN(3, 64)                  # prec    recall      prec    recall
     - binary_f_m93b_ek_1548248677 # 0.9566  0.9507      0.9542  0.9456
     - binary_f_m93b_ek_1548248678 # 0.9491  0.9486      0.9523  0.9462

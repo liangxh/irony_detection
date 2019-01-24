@@ -279,5 +279,47 @@ def filter_by_others(input_filename, output_filename, thr, config_path='e93.yaml
     export_final('test.txt', labels)
 
 
+@commandr.command
+def export(config_path='e93.yaml'):
+    """
+    [Usage]
+    python3 -m algo.ensemble93 main -e mv --build-analysis
+    """
+    config_data = yaml.load(open(config_path))
+    config = Config(data=config_data)
+
+    mode = FINAL
+
+    n_sample = 5509
+    votes = [[0 for _ in range(4)] for _ in range(n_sample)]
+    for output_key in config.tri:
+        labels = list()
+        for _mode in modes[mode]:
+            path = data_config.output_path(output_key, _mode, LABEL_PREDICT)
+            labels += load_label_list(path)
+
+        for i, label in enumerate(labels):
+            votes[i][label] += 1
+
+    with open('out/vote_tri.txt', 'w') as file_obj:
+        file_obj.write('{} {}\n'.format(i, votes[i]))
+
+    votes = [0 for _ in range(n_sample)]
+    for output_key in config.others:
+        labels = list()
+        for _mode in modes[mode]:
+            path = data_config.output_path(output_key, _mode, LABEL_PREDICT)
+            labels += load_label_list(path)
+        if len(labels) != n_sample:
+            raise Exception('mismatch {}({}) != {}'.format(output_key, len(labels), n_sample))
+
+        for i, label in enumerate(labels):
+            if label == 0:
+                votes[i] += 1
+
+    with open('out/vote_bin.txt', 'w') as file_obj:
+        file_obj.write('{} {}\n'.format(i, votes[i]))
+
+
 if __name__ == '__main__':
     commandr.Run()

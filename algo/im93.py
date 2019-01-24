@@ -73,6 +73,22 @@ modes = {
 }
 
 
+def export_final(output_filename, labels):
+    first_line = open(data_config.path_train, 'r').readline()
+    with open(output_filename, 'w') as o_obj:
+        o_obj.write(first_line)
+
+        lines = open(data_config.path_test_no_labels).read().strip().split('\n')
+        lines = lines[1:]
+        lines = list(map(lambda l: l.strip(), lines))
+
+        labels = list(map(lambda l: label_str[l], labels))
+        assert len(labels) == len(lines)
+
+        for line, label in zip(lines, labels):
+            o_obj.write('{}\t{}\n'.format(line, label))
+
+
 @commandr.command
 def main(input_filename, config_path='e93.yaml', final_output=None):
     """
@@ -180,20 +196,8 @@ def main(input_filename, config_path='e93.yaml', final_output=None):
                 print()
 
         if mode == FINAL and final_output is not None:
-            first_line = open(data_config.path_train, 'r').readline()
-            with open(final_output, 'w') as o_obj:
-                o_obj.write(first_line)
-
-                lines = open(data_config.path_test_no_labels).read().strip().split('\n')
-                lines = lines[1:]
-                lines = list(map(lambda l: l.strip(), lines))
-
-                labels = labels_predict_last[FINAL]
-                labels = list(map(lambda l: label_str[l], labels))
-                assert len(labels) == len(lines)
-
-                for line, label in zip(lines, labels):
-                    o_obj.write('{}\t{}\n'.format(line, label))
+            labels = labels_predict_last[FINAL]
+            export_final(final_output, labels)
 
 
 @commandr.command('diff')
@@ -202,7 +206,6 @@ def diff(a_filename, b_filename, output_filename, config_path='e93.yaml'):
     config = Config(data=config_data)
 
     votes = None
-    n_changed = 0
 
     for output_key in config.others:
         labels = list()
@@ -272,6 +275,8 @@ def filter_by_others(input_filename, output_filename, thr, config_path='e93.yaml
                 file_obj.write('{}\t{}\t{}\t{}\t{} ({})\n'.format(
                     i, d[0], d[1], d[2], p, votes[i]
                 ))
+                labels[i] = 0
+    export_final('test.txt', labels)
 
 
 if __name__ == '__main__':

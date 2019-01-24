@@ -239,5 +239,40 @@ def diff(a_filename, b_filename, output_filename, config_path='e93.yaml'):
     print(n_match)
 
 
+@commandr.command('others')
+def filter_by_others(input_filename, output_filename, thr, config_path='e93.yaml'):
+    thr = int(thr)
+    config_data = yaml.load(open(config_path))
+    config = Config(data=config_data)
+
+    votes = None
+
+    for output_key in config.others:
+        labels = list()
+        for _mode in modes[FINAL]:
+            path = data_config.output_path(output_key, _mode, LABEL_PREDICT)
+            labels += load_label_list(path)
+
+        if votes is None:
+            n_sample = len(labels)
+            votes = [0 for _ in range(n_sample)]
+
+        for i, label in enumerate(labels):
+            if label == 0:
+                votes[i] += 1
+
+    dataset = Processor.load_origin(input_filename)
+    labels = list(map(lambda _item: _item[-1], dataset))
+
+    assert len(votes) == len(labels)
+
+    with open(output_filename, 'w') as file_obj:
+        for i, (p, d) in enumerate(zip(labels, dataset)):
+            if p != 0 and votes[i] >= thr:
+                file_obj.write('{}\t{}\t{}\t{}\t{} ({})\n'.format(
+                    i, d[0], d[1], d[2], p, votes[i]
+                ))
+
+
 if __name__ == '__main__':
     commandr.Run()

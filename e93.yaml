@@ -5,6 +5,7 @@ components:
 tri:
   enabled: False
   min_vote: 6
+  out_vote: 10
   components:
     # CNN(3, 64)             # TRAIN   TEST
     - f_m93tri_ek_1548250906 # 0.9962  0.9747

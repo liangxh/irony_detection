@@ -68,7 +68,7 @@ def argmax(value_list):
 
 
 @commandr.command
-def main(filename, config_path='e93.yaml', final_output=None):
+def main(input_filename, config_path='e93.yaml', final_output=None):
     """
     [Usage]
     python3 -m algo.ensemble93 main -e mv --build-analysis
@@ -80,7 +80,7 @@ def main(filename, config_path='e93.yaml', final_output=None):
     labels_predict = dict()
     labels_predict_last = dict()
 
-    dataset = Processor.load_origin(filename)
+    dataset = Processor.load_origin(input_filename)
     labels_predict[FINAL] = list(map(lambda _item: _item[-1], dataset))
 
     modes = {

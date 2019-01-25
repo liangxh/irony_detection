@@ -352,7 +352,7 @@ def others_out(filename, thr, output_file, config_path='e93.yaml'):
     dataset = Processor.load_origin(filename)
     with open(output_file, 'w') as file_obj:
         for i, (d, v_others, v_tri) in enumerate(zip(dataset, votes_others, votes_tri)):
-            if p == 0 and v_others <= thr:
+            if d[-1] == 0 and v_others <= thr:
                 file_obj.write('{}\t{}\t{}\t{}\t{} ({}->{})\n'.format(
                     i, d[0], d[1], d[2], d[-1], v_others, v_tri
                 ))

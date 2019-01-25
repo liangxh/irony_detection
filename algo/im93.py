@@ -298,7 +298,7 @@ def load_others_votes(config, modes):
     votes = [0 for _ in range(n_sample)]
     for output_key in config.others:
         labels = list()
-        for _mode in modes[mode]:
+        for _mode in modes:
             path = data_config.output_path(output_key, _mode, LABEL_PREDICT)
             labels += load_label_list(path)
         if len(labels) != n_sample:

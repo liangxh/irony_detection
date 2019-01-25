@@ -362,7 +362,7 @@ def others_out(filename, a_thr, b_thr, output_file='test.txt', config_path='e93.
                     file_obj.write('{}\t{}\t{}\t{}\t{} ({} {})\n'.format(
                         i, d[0], d[1], d[2], d[-1], new_label, v_tri
                     ))
-                    label = new_label
+                    label = idx
             labels.append(label)
     export_final(output_file, labels)
 

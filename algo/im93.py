@@ -382,7 +382,7 @@ def tri_out(filename, thr, output_file='test.txt', config_path='e93.yaml'):
             label = d[-1]
             if label != 0:
                 idx, max_value = argmax(v_tri)
-                if max_value >= thr:
+                if label != idx and max_value >= thr:
                     new_label = label_str[idx]
                     file_obj.write('{}\t{}\t{}\t{}\t{} ({}->{}, {})\n'.format(
                         i, d[0], d[1], d[2], d[-1], label, new_label, v_tri

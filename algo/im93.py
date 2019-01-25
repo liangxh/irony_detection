@@ -332,7 +332,7 @@ def export(config_path='e93.yaml'):
 
 
 @commandr.command('oout')
-def others_out(filename, a_thr, b_thr output_file, config_path='e93.yaml'):
+def others_out(filename, a_thr, b_thr, output_file, config_path='e93.yaml'):
     """
     [Usage]
     python3 -m algo.ensemble93 main -e mv --build-analysis

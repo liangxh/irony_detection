@@ -89,6 +89,38 @@ def export_final(output_filename, labels):
             o_obj.write('{}\t{}\n'.format(line, label))
 
 
+
+def load_tri_votes(config, modes):
+    n_sample = 5509
+    votes = [[0 for _ in range(4)] for _ in range(n_sample)]
+    for output_key in config.tri:
+        labels = list()
+        for _mode in modes:
+            path = data_config.output_path(output_key, _mode, LABEL_PREDICT)
+            labels += load_label_list(path)
+
+        for i, label in enumerate(labels):
+            votes[i][label] += 1
+    return votes
+
+
+def load_others_votes(config, modes):
+    n_sample = 5509
+    votes = [0 for _ in range(n_sample)]
+    for output_key in config.others:
+        labels = list()
+        for _mode in modes:
+            path = data_config.output_path(output_key, _mode, LABEL_PREDICT)
+            labels += load_label_list(path)
+        if len(labels) != n_sample:
+            raise Exception('mismatch {}({}) != {}'.format(output_key, len(labels), n_sample))
+
+        for i, label in enumerate(labels):
+            if label == 0:
+                votes[i] += 1
+    return votes
+
+
 @commandr.command
 def main(input_filename, config_path='e93.yaml', final_output=None):
     """
@@ -279,37 +311,6 @@ def filter_by_others(input_filename, output_filename, thr, config_path='e93.yaml
     export_final('test.txt', labels)
 
 
-def load_tri_votes(config, modes):
-    n_sample = 5509
-    votes = [[0 for _ in range(4)] for _ in range(n_sample)]
-    for output_key in config.tri:
-        labels = list()
-        for _mode in modes:
-            path = data_config.output_path(output_key, _mode, LABEL_PREDICT)
-            labels += load_label_list(path)
-
-        for i, label in enumerate(labels):
-            votes[i][label] += 1
-    return votes
-
-
-def load_others_votes(config, modes):
-    n_sample = 5509
-    votes = [0 for _ in range(n_sample)]
-    for output_key in config.others:
-        labels = list()
-        for _mode in modes:
-            path = data_config.output_path(output_key, _mode, LABEL_PREDICT)
-            labels += load_label_list(path)
-        if len(labels) != n_sample:
-            raise Exception('mismatch {}({}) != {}'.format(output_key, len(labels), n_sample))
-
-        for i, label in enumerate(labels):
-            if label == 0:
-                votes[i] += 1
-    return votes
-
-
 @commandr.command
 def export(config_path='e93.yaml'):
     """
@@ -328,6 +329,33 @@ def export(config_path='e93.yaml'):
     with open('out/vote_bin.txt', 'w') as file_obj:
         for i, vote in enumerate(votes):
             file_obj.write('{} {}\n'.format(i, vote))
+
+
+@commandr.command('oout')
+def others_out(filename, thr, output_file, config_path='e93.yaml'):
+    """
+    [Usage]
+    python3 -m algo.ensemble93 main -e mv --build-analysis
+    """
+    thr = int(thr)
+    config_data = yaml.load(open(config_path))
+    config = Config(data=config_data)
+
+    votes = load_tri_votes(config, [FINAL, ])
+    with open('out/vote_tri.txt', 'w') as file_obj:
+        for i, vote in enumerate(votes):
+            file_obj.write('{} {}\n'.format(i, vote))
+
+    votes_others = load_others_votes(config, [FINAL, ])
+    votes_tri = load_tri_votes(config, [FINAL, ])
+
+    dataset = Processor.load_origin(filename)
+    with open(output_file, 'w') as file_obj:
+        for i, (d, v_others, v_tri) in enumerate(zip(dataset, votes_others, votes_tri)):
+            if p == 0 and v_others <= thr:
+                file_obj.write('{}\t{}\t{}\t{}\t{} ({}->{})\n'.format(
+                    i, d[0], d[1], d[2], d[-1], v_others, v_tri
+                ))
 
 
 if __name__ == '__main__':

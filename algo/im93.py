@@ -332,7 +332,7 @@ def export(config_path='e93.yaml'):
 
 
 @commandr.command('oout')
-def others_out(filename, a_thr, b_thr, output_file, config_path='e93.yaml'):
+def others_out(filename, a_thr, b_thr, output_file='test.txt', config_path='e93.yaml'):
     """
     [Usage]
     python3 -m algo.ensemble93 main -e mv --build-analysis
@@ -349,10 +349,12 @@ def others_out(filename, a_thr, b_thr, output_file, config_path='e93.yaml'):
 
     votes_others = load_others_votes(config, [FINAL, ])
     votes_tri = load_tri_votes(config, [FINAL, ])
+    labels = list()
 
     dataset = Processor.load_origin(filename)
-    with open(output_file, 'w') as file_obj:
+    with open('out/oout.txt', 'w') as file_obj:
         for i, (d, v_others, v_tri) in enumerate(zip(dataset, votes_others, votes_tri)):
+            label = d[-1]
             if d[-1] == 0 and v_others <= a_thr:
                 idx, max_value = argmax(v_tri)
                 if max_value >= b_thr:
@@ -360,6 +362,9 @@ def others_out(filename, a_thr, b_thr, output_file, config_path='e93.yaml'):
                     file_obj.write('{}\t{}\t{}\t{}\t{} ({} {})\n'.format(
                         i, d[0], d[1], d[2], d[-1], new_label, v_tri
                     ))
+                    label = new_label
+            labels.append(label)
+    export_final(output_file, labels)
 
 
 if __name__ == '__main__':

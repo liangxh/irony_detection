@@ -353,13 +353,13 @@ def others_out(filename, a_thr, b_thr, output_file, config_path='e93.yaml'):
     dataset = Processor.load_origin(filename)
     with open(output_file, 'w') as file_obj:
         for i, (d, v_others, v_tri) in enumerate(zip(dataset, votes_others, votes_tri)):
-            if d[-1] == 0 and v_others <= thr:
+            if d[-1] == 0 and v_others <= a_thr:
                 idx, max_value = argmax(v_tri)
-                if max_value >=
-                new_label = label_str[idx]
-                file_obj.write('{}\t{}\t{}\t{}\t{} ({} {})\n'.format(
-                    i, d[0], d[1], d[2], d[-1], new_label, v_tri
-                ))
+                if max_value >= b_thr:
+                    new_label = label_str[idx]
+                    file_obj.write('{}\t{}\t{}\t{}\t{} ({} {})\n'.format(
+                        i, d[0], d[1], d[2], d[-1], new_label, v_tri
+                    ))
 
 
 if __name__ == '__main__':

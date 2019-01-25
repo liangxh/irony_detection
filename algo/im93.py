@@ -342,11 +342,6 @@ def others_out(filename, a_thr, b_thr, output_file='test.txt', config_path='e93.
     config_data = yaml.load(open(config_path))
     config = Config(data=config_data)
 
-    votes = load_tri_votes(config, [FINAL, ])
-    with open('out/vote_tri.txt', 'w') as file_obj:
-        for i, vote in enumerate(votes):
-            file_obj.write('{} {}\n'.format(i, vote))
-
     votes_others = load_others_votes(config, [FINAL, ])
     votes_tri = load_tri_votes(config, [FINAL, ])
     labels = list()
@@ -361,6 +356,36 @@ def others_out(filename, a_thr, b_thr, output_file='test.txt', config_path='e93.
                     new_label = label_str[idx]
                     file_obj.write('{}\t{}\t{}\t{}\t{} ({} {})\n'.format(
                         i, d[0], d[1], d[2], d[-1], new_label, v_tri
+                    ))
+                    label = idx
+            labels.append(label)
+    export_final(output_file, labels)
+
+
+@commandr.command('tri')
+def tri_out(filename, thr, output_file='test.txt', config_path='e93.yaml'):
+    """
+    [Usage]
+    python3 -m algo.ensemble93 main -e mv --build-analysis
+    """
+    thr = int(thr)
+    config_data = yaml.load(open(config_path))
+    config = Config(data=config_data)
+
+    votes_others = load_others_votes(config, [FINAL, ])
+    votes_tri = load_tri_votes(config, [FINAL, ])
+    labels = list()
+
+    dataset = Processor.load_origin(filename)
+    with open('out/otri.txt', 'w') as file_obj:
+        for i, (d, v_others, v_tri) in enumerate(zip(dataset, votes_others, votes_tri)):
+            label = d[-1]
+            if label != 0:
+                idx, max_value = argmax(v_tri)
+                if max_value >= thr:
+                    new_label = label_str[idx]
+                    file_obj.write('{}\t{}\t{}\t{}\t{} ({}->{}, {})\n'.format(
+                        i, d[0], d[1], d[2], d[-1], label, new_label, v_tri
                     ))
                     label = idx
             labels.append(label)

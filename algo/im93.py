@@ -332,12 +332,13 @@ def export(config_path='e93.yaml'):
 
 
 @commandr.command('oout')
-def others_out(filename, thr, output_file, config_path='e93.yaml'):
+def others_out(filename, a_thr, b_thr output_file, config_path='e93.yaml'):
     """
     [Usage]
     python3 -m algo.ensemble93 main -e mv --build-analysis
     """
-    thr = int(thr)
+    a_thr = int(a_thr)
+    b_thr = int(b_thr)
     config_data = yaml.load(open(config_path))
     config = Config(data=config_data)
 
@@ -354,6 +355,7 @@ def others_out(filename, thr, output_file, config_path='e93.yaml'):
         for i, (d, v_others, v_tri) in enumerate(zip(dataset, votes_others, votes_tri)):
             if d[-1] == 0 and v_others <= thr:
                 idx, max_value = argmax(v_tri)
+                if max_value >=
                 new_label = label_str[idx]
                 file_obj.write('{}\t{}\t{}\t{}\t{} ({} {})\n'.format(
                     i, d[0], d[1], d[2], d[-1], new_label, v_tri

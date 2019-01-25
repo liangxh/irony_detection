@@ -353,7 +353,8 @@ def others_out(filename, thr, output_file, config_path='e93.yaml'):
     with open(output_file, 'w') as file_obj:
         for i, (d, v_others, v_tri) in enumerate(zip(dataset, votes_others, votes_tri)):
             if d[-1] == 0 and v_others <= thr:
-                new_label = label_str[argmax(v_tri)]
+                idx, max_value = argmax(v_tri)
+                new_label = label_str[idx]
                 file_obj.write('{}\t{}\t{}\t{}\t{} ({} {})\n'.format(
                     i, d[0], d[1], d[2], d[-1], new_label, v_tri
                 ))

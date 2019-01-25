@@ -279,31 +279,22 @@ def filter_by_others(input_filename, output_filename, thr, config_path='e93.yaml
     export_final('test.txt', labels)
 
 
-@commandr.command
-def export(config_path='e93.yaml'):
-    """
-    [Usage]
-    python3 -m algo.ensemble93 main -e mv --build-analysis
-    """
-    config_data = yaml.load(open(config_path))
-    config = Config(data=config_data)
-
-    mode = FINAL
-
+def load_tri_votes(config, modes):
     n_sample = 5509
     votes = [[0 for _ in range(4)] for _ in range(n_sample)]
     for output_key in config.tri:
         labels = list()
-        for _mode in modes[mode]:
+        for _mode in modes:
             path = data_config.output_path(output_key, _mode, LABEL_PREDICT)
             labels += load_label_list(path)
 
         for i, label in enumerate(labels):
             votes[i][label] += 1
+    return votes
 
-    with open('out/vote_tri.txt', 'w') as file_obj:
-        file_obj.write('{} {}\n'.format(i, votes[i]))
 
+def load_others_votes(config, modes):
+    n_sample = 5509
     votes = [0 for _ in range(n_sample)]
     for output_key in config.others:
         labels = list()
@@ -316,9 +307,27 @@ def export(config_path='e93.yaml'):
         for i, label in enumerate(labels):
             if label == 0:
                 votes[i] += 1
+    return votes
 
+
+@commandr.command
+def export(config_path='e93.yaml'):
+    """
+    [Usage]
+    python3 -m algo.ensemble93 main -e mv --build-analysis
+    """
+    config_data = yaml.load(open(config_path))
+    config = Config(data=config_data)
+
+    votes = load_tri_votes(config, [FINAL, ])
+    with open('out/vote_tri.txt', 'w') as file_obj:
+        for i, vote in enumerate(votes):
+            file_obj.write('{} {}\n'.format(i, vote))
+
+    votes = load_others_votes(config, [FINAL, ])
     with open('out/vote_bin.txt', 'w') as file_obj:
-        file_obj.write('{} {}\n'.format(i, votes[i]))
+        for i, vote in enumerate(votes):
+            file_obj.write('{} {}\n'.format(i, vote))
 
 
 if __name__ == '__main__':

@@ -61,8 +61,7 @@ def build_basic():
     # FINAL
     labels = list()
     text_turns = [[] for _ in range(3)]
-    for turn_1, turn_2, turn_3 in Processor.load_origin_test_no_labels():
-        label_idx = 0
+    for turn_1, turn_2, turn_3, label_idx in Processor.load_origin_test():
         turns = [turn_1, turn_2, turn_3]
         for i, r in enumerate(turns):
             text_turns[i].append(r)

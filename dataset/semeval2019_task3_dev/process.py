@@ -57,6 +57,10 @@ class Processor(object):
         return cls.load_origin(config.path_dev)
 
     @classmethod
+    def load_origin_test(cls):
+        return cls.load_origin(config.path_test)
+
+    @classmethod
     def load_origin_dev_no_labels(cls):
         return cls.load_origin_no_labels(config.path_dev_no_labels)
 

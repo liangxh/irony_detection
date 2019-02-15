@@ -89,7 +89,6 @@ def export_final(output_filename, labels):
             o_obj.write('{}\t{}\n'.format(line, label))
 
 
-
 def load_tri_votes(config, modes):
     n_sample = 5509
     votes = [[0 for _ in range(4)] for _ in range(n_sample)]

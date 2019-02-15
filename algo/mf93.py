@@ -501,7 +501,7 @@ def show_eval(output_key):
         labels_predict_[mode] = load_label_list(path)
 
         path = data_config.path(mode, LABEL)
-        labels_predict_[mode] = load_label_list(path)
+        labels_gold_[mode] = load_label_list(path)
 
     print('TRAIN + TEST')
     res = basic_evaluate(

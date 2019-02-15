@@ -494,19 +494,34 @@ def predict(output_key, mode):
 
 @commandr.command('eval')
 def show_eval(output_key):
-    labels_predict = list()
-    labels_gold = list()
-    for mode in [TRAIN, TEST]:
+    labels_predict_ = dict()
+    labels_gold_ = dict()
+    for mode in [TRAIN, TEST, FINAL]:
         path = data_config.output_path(output_key, mode, LABEL_PREDICT)
-        labels_predict += load_label_list(path)
+        labels_predict_[mode] = load_label_list(path)
 
         path = data_config.path(mode, LABEL)
-        labels_gold += load_label_list(path)
+        labels_predict_[mode] = load_label_list(path)
 
-    res = basic_evaluate(gold=labels_gold, pred=labels_predict)
+    print('TRAIN + TEST')
+    res = basic_evaluate(
+        gold=labels_gold_[TRAIN] + labels_gold_[TEST],
+        pred=labels_predict_[TRAIN] + labels_predict_[TEST]
+    )
     print_evaluation(res)
     for col in res[CONFUSION_MATRIX]:
         print(','.join(map(str, col)))
+    print()
+
+    print('FINAL')
+    res = basic_evaluate(
+        gold=labels_gold_[FINAL],
+        pred=labels_predict_[FINAL]
+    )
+    print_evaluation(res)
+    for col in res[CONFUSION_MATRIX]:
+        print(','.join(map(str, col)))
+    print()
 
 
 @commandr.command('clear')

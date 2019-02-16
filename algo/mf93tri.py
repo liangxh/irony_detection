@@ -441,9 +441,8 @@ def train(text_version='ek', label_version=None, config_path='c93ftri.yaml'):
             labels_predict = labels_predict[:n_sample]
             labels_gold = labels_gold[:n_sample]
 
-            if mode != FINAL:
-                labels_predict_[mode] = labels_predict
-                labels_gold_[mode] = labels_gold
+            labels_predict_[mode] = labels_predict
+            labels_gold_[mode] = labels_gold
 
             # 导出预测的label
             with open(data_config.output_path(output_key, mode, LABEL_PREDICT), 'w') as file_obj:

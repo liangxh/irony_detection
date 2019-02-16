@@ -223,13 +223,13 @@ def main(ensemble_mode, config_path='e93.yaml', final_output=None):
             print('n_changed to "OTHERS": {}'.format(n_changed))
 
             labels_predict_last[mode] = base
-            if not mode == FINAL:
-                res = basic_evaluate(gold=labels_gold[mode], pred=base)
-                print(mode, '(after OTHERS)')
-                print_evaluation(res)
-                for col in res[CONFUSION_MATRIX]:
-                    print(','.join(map(str, col)))
-                print()
+
+            res = basic_evaluate(gold=labels_gold[mode], pred=base)
+            print(mode, '(after OTHERS)')
+            print_evaluation(res)
+            for col in res[CONFUSION_MATRIX]:
+                print(','.join(map(str, col)))
+            print()
 
         if mode == FINAL and final_output is not None:
             first_line = open(data_config.path_train, 'r').readline()

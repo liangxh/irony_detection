@@ -1,7 +1,22 @@
 components:
   #- f_m93_cnn_ek_1548162982
-  - f_m93_cnn_ek_1548162865
+  #- f_m93_cnn_ek_1548162865
   #- f_m93_cnn2_ek_1548176536
+
+  # base
+  - f_m93_cnn_ek_1550218476
+  - f_m93_cnn_ek_1550218374
+  #- f_m93_cnn_ek_1550220794
+  - f_m93_cnn_ek_1550220832
+  #- f_m93_cnn_ek_1550221336
+
+  # No sampling
+  #- f_m93_cnn_ek_1550217475
+  #- f_m93_cnn_ek_1550217472
+  #- f_m93_cnn_ek_1550217826
+  #- f_m93_cnn_ek_1550217824
+  #- f_m93_cnn_ek_1550218112
+
 tri:
   enabled: True
   min_vote: 6

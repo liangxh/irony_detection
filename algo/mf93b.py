@@ -428,13 +428,9 @@ def train(text_version='ek', label_version='binary', config_path='c93fb.yaml'):
     print()
 
     print('TRAIN + TEST')
-    gold = labels_gold_[TRAIN] + labels_gold_[TEST]
-    pred = labels_predict_[TRAIN] + labels_predict_[TEST]
-    select_index = build_select_index(gold)
-
     res = basic_evaluate(
-        gold=filter_by_index(gold, select_index),
-        pred=filter_by_index(pred, select_index)
+        gold=labels_gold_[TRAIN] + labels_gold_[TEST],
+        pred=labels_predict_[TRAIN] + labels_predict_[TEST]
     )
     print_evaluation(res)
     for col in res[CONFUSION_MATRIX]:
@@ -442,13 +438,9 @@ def train(text_version='ek', label_version='binary', config_path='c93fb.yaml'):
     print()
 
     print('FINAL')
-    gold = labels_gold_[FINAL]
-    pred = labels_predict_[FINAL]
-    select_index = build_select_index(gold)
-
     res = basic_evaluate(
-        gold=filter_by_index(gold, select_index),
-        pred=filter_by_index(pred, select_index)
+        gold=labels_gold_[FINAL],
+        pred=labels_predict_[FINAL]
     )
     print_evaluation(res)
     for col in res[CONFUSION_MATRIX]:

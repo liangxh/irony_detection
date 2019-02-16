@@ -147,6 +147,8 @@ def main(ensemble_mode, config_path='e93.yaml', final_output=None):
         raise ValueError('unknown mode: {}'.format(ensemble_mode))
 
     for mode in [TRAIN, FINAL]:
+        if mode == TRAIN: continue
+
         print('=== {} ==='.format(mode))
         res = basic_evaluate(gold=labels_gold[mode], pred=labels_predict[mode])
         print(mode)

@@ -147,13 +147,13 @@ def main(ensemble_mode, config_path='e93.yaml', final_output=None):
         raise ValueError('unknown mode: {}'.format(ensemble_mode))
 
     for mode in [TRAIN, FINAL]:
-        if not mode == FINAL:
-            res = basic_evaluate(gold=labels_gold[mode], pred=labels_predict[mode])
-            print(mode)
-            print_evaluation(res)
-            for col in res[CONFUSION_MATRIX]:
-                print(','.join(map(str, col)))
-            print()
+        print('=== {} ==='.format(mode))
+        res = basic_evaluate(gold=labels_gold[mode], pred=labels_predict[mode])
+        print(mode)
+        print_evaluation(res)
+        for col in res[CONFUSION_MATRIX]:
+            print(','.join(map(str, col)))
+        print()
 
         n_sample = len(labels_predict[mode])
         labels_predict_last[mode] = labels_predict[mode]
@@ -186,13 +186,12 @@ def main(ensemble_mode, config_path='e93.yaml', final_output=None):
             print('n_exchanged within "HAS": {}'.format(n_changed))
 
             labels_predict_last[mode] = base
-            if not mode == FINAL:
-                res = basic_evaluate(gold=labels_gold[mode], pred=base)
-                print(mode, '(after TRI)')
-                print_evaluation(res)
-                for col in res[CONFUSION_MATRIX]:
-                    print(','.join(map(str, col)))
-                print()
+            res = basic_evaluate(gold=labels_gold[mode], pred=base)
+            print(mode, '(after TRI)')
+            print_evaluation(res)
+            for col in res[CONFUSION_MATRIX]:
+                print(','.join(map(str, col)))
+            print()
 
         # 将判成HAS的样本修正为Others
         if config.others_enabled:

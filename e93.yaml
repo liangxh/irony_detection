@@ -4,11 +4,11 @@ components:
   #- f_m93_cnn2_ek_1548176536
 
   # base
-  - f_m93_cnn_ek_1550218476
+  #- f_m93_cnn_ek_1550218476
   - f_m93_cnn_ek_1550218374
-  #- f_m93_cnn_ek_1550220794
+  - f_m93_cnn_ek_1550220794
   - f_m93_cnn_ek_1550220832
-  #- f_m93_cnn_ek_1550221336
+  - f_m93_cnn_ek_1550221336
 
   # No sampling
   #- f_m93_cnn_ek_1550217475
@@ -19,7 +19,7 @@ components:
 
 tri:
   enabled: True
-  min_vote: 6
+  min_vote: 2
   out_vote: 10
   components:
     # CNN(3, 64)             # TRAIN   TEST
@@ -43,13 +43,13 @@ tri:
     - f_m93tri_ek_1550300133 # 0.9435
     - f_m93tri_ek_1550300130 # 0.9411
 
-    - f_m93tri_ek_1550300328 # 0.9387
-    - f_m93tri_ek_1550300326 # 0.9471
-    - f_m93tri_ek_1550300464 # 0.9471
-    - f_m93tri_ek_1550300462 # 0.9363
+    #- f_m93tri_ek_1550300328 # 0.9387
+    #- f_m93tri_ek_1550300326 # 0.9471
+    #- f_m93tri_ek_1550300464 # 0.9471
+    #- f_m93tri_ek_1550300462 # 0.9363
 
-    - f_m93tri_ek_1550300611 # 0.9387
-    - f_m93tri_ek_1550300633 # 0.9339
+    #- f_m93tri_ek_1550300611 # 0.9387
+    #- f_m93tri_ek_1550300633 # 0.9339
 
 others:
   enabled: True

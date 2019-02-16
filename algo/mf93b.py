@@ -409,9 +409,8 @@ def train(text_version='ek', label_version='binary', config_path='c93fb.yaml'):
             labels_predict = labels_predict[:n_sample]
             labels_gold = labels_gold[:n_sample]
 
-            if mode != FINAL:
-                labels_predict_[mode] = labels_predict
-                labels_gold_[mode] = labels_gold
+            labels_predict_[mode] = labels_predict
+            labels_gold_[mode] = labels_gold
 
             # 导出预测的label
             with open(data_config.output_path(output_key, mode, LABEL_PREDICT), 'w') as file_obj:
@@ -428,9 +427,28 @@ def train(text_version='ek', label_version='binary', config_path='c93fb.yaml'):
         print(','.join(map(str, col)))
     print()
 
+    print('TRAIN + TEST')
+    gold = labels_gold_[TRAIN] + labels_gold_[TEST]
+    pred = labels_predict_[TRAIN] + labels_predict_[TEST]
+    select_index = build_select_index(gold)
+
     res = basic_evaluate(
-        gold=labels_gold_[TRAIN] + labels_gold_[TEST],
-        pred=labels_predict_[TRAIN] + labels_predict_[TEST]
+        gold=filter_by_index(gold, select_index),
+        pred=filter_by_index(pred, select_index)
+    )
+    print_evaluation(res)
+    for col in res[CONFUSION_MATRIX]:
+        print(','.join(map(str, col)))
+    print()
+
+    print('FINAL')
+    gold = labels_gold_[FINAL]
+    pred = labels_predict_[FINAL]
+    select_index = build_select_index(gold)
+
+    res = basic_evaluate(
+        gold=filter_by_index(gold, select_index),
+        pred=filter_by_index(pred, select_index)
     )
     print_evaluation(res)
     for col in res[CONFUSION_MATRIX]:

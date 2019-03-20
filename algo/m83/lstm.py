@@ -76,6 +76,10 @@ class NNModel(BaseNNModel):
                 inputs=embedded, sequence_length=seq_len, dtype=tf.float32
             )
 
+        print(last_state.shape)
+        print(last_state[1].shape)
+        print(last_state[1, :].shape)
+
         dense_input = tf.concat([last_state[1], ], axis=1, name=HIDDEN_FEAT)
         dense_input = tf.nn.dropout(dense_input, keep_prob=dropout_keep_prob)
 

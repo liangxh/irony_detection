@@ -23,7 +23,8 @@ nn:
       filter_num: 128
     - kernel_size: 3
       filter_num: 64
-  dense:
+  dense: []
+  dense_bk:
     - dim: 32
       activation: relu
       l2: 0.2

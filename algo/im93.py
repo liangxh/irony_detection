@@ -391,5 +391,18 @@ def tri_out(filename, thr, output_file='test.txt', config_path='e93.yaml'):
     export_final(output_file, labels)
 
 
+@commandr.command('eval')
+def eval_sub(input_filename):
+    dataset = Processor.load_origin(input_filename)
+    labels_predict = list(map(lambda _item: _item[-1], dataset))
+    labels_gold = load_label_list(data_config.path(FINAL, LABEL))
+
+    res = basic_evaluate(gold=labels_gold, pred=labels_predict)
+    print_evaluation(res)
+    for col in res[CONFUSION_MATRIX]:
+        print(','.join(map(str, col)))
+    print()
+
+
 if __name__ == '__main__':
     commandr.Run()

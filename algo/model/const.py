@@ -41,6 +41,7 @@ PRECISION_COMPONENTS = PRECISION + '_components'
 RECALL_COMPONENTS = RECALL + '_components'
 F1_SCORE_COMPONENTS = F1_SCORE + '_components'
 
+TID = 'tid'
 TID_0 = 'tid_0'
 TID_1 = 'tid_1'
 TID_2 = 'tid_2'

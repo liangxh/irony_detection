@@ -71,9 +71,6 @@ class NNModel(BaseNNModel):
             raise Exception('unknown embedding noise type: {}'.format(self.config.embedding_noise_type))
 
         with tf.variable_scope('bgru'):
-            #cell_fw = rnn_cell.build_lstm(self.config.rnn_dim, dropout_keep_prob=dropout_keep_prob)
-            #cell_bw = rnn_cell.build_lstm(self.config.rnn_dim, dropout_keep_prob=dropout_keep_prob)
-
             cell_fw = rnn_cell.build_gru(self.config.rnn_dim, dropout_keep_prob=dropout_keep_prob)
             cell_bw = rnn_cell.build_gru(self.config.rnn_dim, dropout_keep_prob=dropout_keep_prob)
 
@@ -83,9 +80,12 @@ class NNModel(BaseNNModel):
                 cell_bw.zero_state(self.config.batch_size, tf.float32)
             )
             outputs = tf.concat(outputs, axis=-1)
-        attention_output, _ = attention.build(outputs, self.config.attention_dim)
+            last_state = tf.concat(output_states, axis=-1)
 
-        dense_input = tf.concat([attention_output, ], axis=1, name=HIDDEN_FEAT)
+        if self.config.use_attention:
+            last_state = attention.build(outputs, self.config.attention_dim)
+
+        dense_input = tf.concat([last_state, ], axis=1, name=HIDDEN_FEAT)
         dense_input = tf.nn.dropout(dense_input, keep_prob=dropout_keep_prob)
 
         l2_component = None

@@ -12,9 +12,10 @@ nn:
     noise_type: gaussian
     dropout_keep_prob: 0.9
   rnn:
-    dim: 150
-  attention:
     dim: 50
+  use_attention: False
+  attention:
+    dim: 32
   cnn:
     kernel_size: 3
     filter_num: 64
@@ -33,10 +34,10 @@ nn:
     init: 0.01
     decay_steps: 1
     decay_rate: 0.9
-  l2_reg_lambda: 0.1
+  l2_reg_lambda: 0.2
   output:
     dim: _
-  dropout_keep_prob: 0.2
+  dropout_keep_prob: 0.5
   binary_classification: False
 
 train:

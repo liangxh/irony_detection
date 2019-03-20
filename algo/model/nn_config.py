@@ -78,3 +78,7 @@ class BaseNNConfig(object):
     @property
     def max_out(self):
         return self.data['max_out']
+
+    @property
+    def use_attention(self):
+        return self.data['use_attention']

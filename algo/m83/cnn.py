@@ -549,5 +549,11 @@ def predict(output_key, mode):
             file_obj.write('{}\n'.format(_label))
 
 
+@commandr.command('clear')
+def clear_output(output_key):
+    shutil.rmtree(data_config.output_folder(output_key))
+    shutil.rmtree(data_config.model_folder(output_key))
+
+
 if __name__ == '__main__':
     commandr.Run()

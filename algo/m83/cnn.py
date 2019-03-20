@@ -10,7 +10,7 @@ import shutil
 import numpy as np
 import tensorflow as tf
 from algo.lib.dataset import IndexIterator, SimpleIndexIterator
-from algo.lib.evaluate93 import basic_evaluate
+from algo.lib.evaluate import basic_evaluate
 from algo.model.const import *
 from algo.model.train_config import TrainConfig
 from algo.lib.common import print_evaluation, load_lookup_table2, tokenized_to_tid_list
@@ -203,6 +203,8 @@ def train(text_version='ek', label_version=None, config_path='c83.yaml'):
     :param config_path: string
     :return:
     """
+    pos_label = 1 if label_version == 'A' else None
+
     config_data = yaml.load(open(config_path))
 
     output_key = '{}_{}_{}'.format(NNModel.name, text_version, int(time.time()))
@@ -309,7 +311,7 @@ def train(text_version='ek', label_version=None, config_path='c83.yaml'):
                 labels_gold += dataset[LABEL_GOLD][batch_index].tolist()
 
             labels_predict, labels_gold = labels_predict[:n_sample], labels_gold[:n_sample]
-            res = basic_evaluate(gold=labels_gold, pred=labels_predict)
+            res = basic_evaluate(gold=labels_gold, pred=labels_predict, pos_label=pos_label)
             print_evaluation(res)
             eval_history[TRAIN].append(res)
 
@@ -344,7 +346,7 @@ def train(text_version='ek', label_version=None, config_path='c83.yaml'):
                     labels_gold += dataset[LABEL_GOLD][batch_index].tolist()
 
                 labels_predict, labels_gold = labels_predict[:n_sample], labels_gold[:n_sample]
-                res = basic_evaluate(gold=labels_gold, pred=labels_predict)
+                res = basic_evaluate(gold=labels_gold, pred=labels_predict, pos_label=pos_label)
                 eval_history[VALID].append(res)
                 print_evaluation(res)
 
@@ -372,7 +374,7 @@ def train(text_version='ek', label_version=None, config_path='c83.yaml'):
                 labels_predict += res[LABEL_PREDICT].tolist()
                 labels_gold += _dataset[LABEL_GOLD][batch_index].tolist()
             labels_predict, labels_gold = labels_predict[:_n_sample], labels_gold[:_n_sample]
-            res = basic_evaluate(gold=labels_gold, pred=labels_predict)
+            res = basic_evaluate(gold=labels_gold, pred=labels_predict, pos_label=pos_label)
             eval_history[TEST].append(res)
             print('TEST')
             print_evaluation(res)
@@ -427,7 +429,7 @@ def train(text_version='ek', label_version=None, config_path='c83.yaml'):
             hidden_feats = hidden_feats[:n_sample]
 
             if mode == TEST:
-                res = basic_evaluate(gold=labels_gold, pred=labels_predict)
+                res = basic_evaluate(gold=labels_gold, pred=labels_predict, pos_label=pos_label)
                 best_res[TEST] = res
 
             # 导出隐藏层

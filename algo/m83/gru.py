@@ -184,7 +184,7 @@ def custom_sampling(dataset):
 
 
 feed_key = {
-    TRAIN: [LABEL_GOLD, TID, ],
+    TRAIN: [LABEL_GOLD, TID, SEQ_LEN, ],
     TEST: [TID, ],
 }
 

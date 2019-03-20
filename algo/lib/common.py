@@ -8,15 +8,15 @@ keys = [ACCURACY, PRECISION, RECALL, F1_SCORE]
 
 def print_evaluation(res):
     values = list(map(res.get, keys))
-    print(','.join(keys))
-    print(','.join(list(map(lambda _v: '{:.4f}'.format(_v), values))))
+    print(' '.join(keys))
+    print(' '.join(list(map(lambda _v: '{:.4f}'.format(_v), values))))
 
 
 def print_evaluation_0(res):
     keys_ = [PRECISION_0, RECALL_0, ]
     values = list(map(res.get, keys_))
-    print(','.join(keys_))
-    print(','.join(list(map(str, values))))
+    print(' '.join(keys_))
+    print(' '.join(list(map(str, values))))
 
 
 def tid_dropout(tids, dropout_keep_rate):

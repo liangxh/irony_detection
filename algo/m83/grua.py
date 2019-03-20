@@ -16,7 +16,7 @@ from algo.model.train_config import TrainConfig
 from algo.lib.common import print_evaluation, load_lookup_table2, tokenized_to_tid_list
 from algo.model.nn_config import BaseNNConfig
 from algo.nn.base import BaseNNModel
-from algo.nn.common import dense, cnn, rnn_cell
+from algo.nn.common import dense, cnn, rnn_cell, attention
 from algo.nn.common.common import add_gaussian_noise_layer, build_dropout_keep_prob
 from dataset.common.const import *
 from dataset.common.load import *
@@ -42,7 +42,7 @@ class NNConfig(BaseNNConfig):
 
 
 class NNModel(BaseNNModel):
-    name = 'lstm'
+    name = 'grua'
 
     def build_neural_network(self, lookup_table):
         test_mode = tf.placeholder(tf.int8, None, name=TEST_MODE)
@@ -70,13 +70,15 @@ class NNModel(BaseNNModel):
         else:
             raise Exception('unknown embedding noise type: {}'.format(self.config.embedding_noise_type))
 
-        with tf.variable_scope('lstm'):
-            _, last_state = tf.nn.dynamic_rnn(
-                rnn_cell.build_lstm(self.config.rnn_dim, dropout_keep_prob=dropout_keep_prob),
+        with tf.variable_scope('gru'):
+            outputs, last_state = tf.nn.dynamic_rnn(
+                rnn_cell.build_gru(self.config.rnn_dim, dropout_keep_prob=dropout_keep_prob),
                 inputs=embedded, sequence_length=seq_len, dtype=tf.float32
             )
 
-        dense_input = tf.concat([last_state[0], ], axis=1, name=HIDDEN_FEAT)
+        attention_output, _ = attention.build(outputs, self.config.attention_dim)
+
+        dense_input = tf.concat([last_state, ], axis=1, name=HIDDEN_FEAT)
         dense_input = tf.nn.dropout(dense_input, keep_prob=dropout_keep_prob)
 
         l2_component = None

@@ -78,7 +78,7 @@ class NNModel(BaseNNModel):
 
         attention_output, _ = attention.build(outputs, self.config.attention_dim)
 
-        dense_input = tf.concat([last_state, ], axis=1, name=HIDDEN_FEAT)
+        dense_input = tf.concat([attention_output, ], axis=1, name=HIDDEN_FEAT)
         dense_input = tf.nn.dropout(dense_input, keep_prob=dropout_keep_prob)
 
         l2_component = None

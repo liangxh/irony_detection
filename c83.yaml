@@ -5,7 +5,7 @@ word:
   min_tf: 2.
 
 nn:
-  seq_len: 30
+  seq_len: 70
   embedding:
     trainable: False
     noise_stddev: 0.1
@@ -44,4 +44,4 @@ train:
   batch_size: 100
   early_stop_metric: precision
   train_sampling: False
-  use_class_weights: False
+  use_class_weights: True

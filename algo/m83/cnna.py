@@ -74,7 +74,7 @@ class NNModel(BaseNNModel):
             cnn_output = cnn.build2(embedded, self.config.filter_num, self.config.kernel_size)
             last_state = cnn.max_pooling(cnn_output)
 
-            att, _ = attention.build_w_mask(cnn_output, self.config.attention_dim, seq_len)
+            att, _ = attention.build(mask_by_seq_len(cnn_output, seq_len), self.config.attention_dim)
 
         dense_input = tf.concat([last_state, att], axis=1, name=HIDDEN_FEAT)
         dense_input = tf.nn.dropout(dense_input, keep_prob=dropout_keep_prob)

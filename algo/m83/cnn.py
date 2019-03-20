@@ -16,8 +16,8 @@ from algo.model.train_config import TrainConfig
 from algo.lib.common import print_evaluation, load_lookup_table2, tokenized_to_tid_list
 from algo.model.nn_config import BaseNNConfig
 from algo.nn.base import BaseNNModel
-from algo.nn.common import dense, cnn
-from algo.nn.common.common import add_gaussian_noise_layer, build_dropout_keep_prob
+from algo.nn.common import dense, cnn, attention
+from algo.nn.common.common import add_gaussian_noise_layer, build_dropout_keep_prob, mask_by_seq_len
 from dataset.common.const import *
 from dataset.common.load import *
 from dataset.semeval2018_task3.config import config as data_config
@@ -72,7 +72,13 @@ class NNModel(BaseNNModel):
 
         with tf.variable_scope('cnn'):
             cnn_output = cnn.build2(embedded, self.config.filter_num, self.config.kernel_size)
+
+            cnn_output = mask_by_seq_len(cnn_output, seq_len)
+
             last_state = cnn.max_pooling(cnn_output)
+
+            if self.config.use_attention:
+                last_state = attention.build(cnn_output, self.config.attention_dim)
 
         dense_input = tf.concat([last_state, ], axis=1, name=HIDDEN_FEAT)
         dense_input = tf.nn.dropout(dense_input, keep_prob=dropout_keep_prob)
@@ -182,8 +188,8 @@ def custom_sampling(dataset):
 
 
 feed_key = {
-    TRAIN: [LABEL_GOLD, TID, ],
-    TEST: [TID, ],
+    TRAIN: [LABEL_GOLD, TID, SEQ_LEN, ],
+    TEST: [TID, SEQ_LEN, ],
 }
 
 fetch_key = {

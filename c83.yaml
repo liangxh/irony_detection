@@ -12,7 +12,7 @@ nn:
     noise_type: gaussian
     dropout_keep_prob: 0.9
   rnn:
-    dim: 50
+    dim: 150
   attention:
     dim: 50
   cnn:
@@ -30,7 +30,7 @@ nn:
       l2: 0.2
   max_out: #[6, 2, 2, 2]
   learning_rate:
-    init: 0.005
+    init: 0.01
     decay_steps: 2
     decay_rate: 0.9
   l2_reg_lambda: 0.2
@@ -43,6 +43,6 @@ train:
   epoch: 200
   valid_rate: 0.1
   batch_size: 100
-  early_stop_metric: precision
+  early_stop_metric: f1
   train_sampling: False
-  use_class_weights: True
+  use_class_weights: False

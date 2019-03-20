@@ -75,7 +75,7 @@ class NNModel(BaseNNModel):
                 rnn_cell.build_lstm(self.config.rnn_dim, dropout_keep_prob=dropout_keep_prob),
                 inputs=embedded, sequence_length=seq_len, dtype=tf.float32
             )
-            last_state = [0]
+            last_state = last_state[0]
 
         if self.config.use_attention:
             last_state, _ = attention.build(outputs, self.config.attention_dim)

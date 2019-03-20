@@ -41,7 +41,7 @@ def argmax(value_list):
 
 
 @commandr.command
-def main(dataset_key, label_version, ensemble_mode, config_path='config_ensemble.yaml', build_analysis=False):
+def main(label_version, ensemble_mode='mv', config_path='e83.yaml', build_analysis=False):
     """
     [Usage]
     python algo/ensemble.py main -d semeval2018_task3 -l A -e mv
@@ -54,6 +54,7 @@ def main(dataset_key, label_version, ensemble_mode, config_path='config_ensemble
     :param build_analysis: bool
     :return: 
     """
+    dataset_key = 'semeval2018_task3'
     output_key = 'ensemble_{}_{}'.format(ensemble_mode, int(time.time()))
 
     pos_label = None

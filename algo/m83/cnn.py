@@ -135,7 +135,7 @@ def to_nn_input(tid_list, max_seq_len):
     return tid_list, seq_len
 
 
-def load_dataset(mode, vocab_id_mapping, max_seq_len, sampling=False, with_label=True, label_version=None):
+def load_dataset(mode, vocab_id_mapping, max_seq_len, sampling=False, label_map=None, with_label=True, label_version=None):
     dataset = dict()
     tid_list = tokenized_to_tid_list(
         load_tokenized_list(data_config.path(mode, TEXT, EK)),
@@ -147,6 +147,17 @@ def load_dataset(mode, vocab_id_mapping, max_seq_len, sampling=False, with_label
     if with_label:
         label_path = data_config.path(mode, LABEL, label_version)
         label_list = load_label_list(label_path)
+
+        if label_map is not None:
+            new_tid_list = list()
+            new_label_list = list()
+            for tid, label in zip(tid_list, label_list):
+                if label in label_map:
+                    new_tid_list.append(tid)
+                    new_label_list.append(label_map[label])
+            dataset[TID] = new_label_list
+            label_list = new_label_list
+
         dataset[LABEL_GOLD] = np.asarray(label_list)
 
     if sampling:
@@ -248,11 +259,11 @@ def train(text_version='ek', label_version=None, config_path='c83.yaml'):
     datasets[TRAIN], output_dim = load_dataset(
         mode=TRAIN, vocab_id_mapping=vocab_id_mapping,
         max_seq_len=nn_config.seq_len, sampling=train_config.train_sampling,
-        label_version=label_version
+        label_version=label_version, label_map=train_config.label_map
     )
     datasets[TEST], _ = load_dataset(
         mode=TEST, vocab_id_mapping=vocab_id_mapping, max_seq_len=nn_config.seq_len,
-        label_version=label_version
+        label_version=label_version, label_map=train_config.label_map
     )
 
     # 初始化数据集的检索
@@ -289,6 +300,7 @@ def train(text_version='ek', label_version=None, config_path='c83.yaml'):
     max_no_update_count = 10
 
     eval_history = {TRAIN: list(), VALID: list(), TEST: list()}
+    best_epoch = None
 
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
@@ -325,6 +337,7 @@ def train(text_version='ek', label_version=None, config_path='c83.yaml'):
 
             if train_config.valid_rate == 0.:
                 if best_res[TRAIN] is None or res[early_stop_metric] > best_res[TRAIN][early_stop_metric]:
+                    best_epoch = epoch
                     best_res[TRAIN] = res
                     no_update_count[TRAIN] = 0
                     saver.save(sess, save_path=model_output_prefix, global_step=global_step)
@@ -358,6 +371,7 @@ def train(text_version='ek', label_version=None, config_path='c83.yaml'):
 
                 # Early Stop
                 if best_res[VALID] is None or res[early_stop_metric] > best_res[VALID][early_stop_metric]:
+                    best_epoch = epoch
                     saver.save(sess, save_path=model_output_prefix, global_step=global_step)
                     best_res[VALID] = res
                     no_update_count[VALID] = 0
@@ -404,13 +418,10 @@ def train(text_version='ek', label_version=None, config_path='c83.yaml'):
         nn.set_graph(tf.get_default_graph())
 
         for mode in [TRAIN, TEST]:
-            if mode == TRAIN and train_config.train_sampling:
-                dataset, _ = load_dataset(
-                    mode=TRAIN, vocab_id_mapping=vocab_id_mapping,
-                    max_seq_len=nn_config.seq_len, sampling=False, label_version=label_version
-                )
-            else:
-                dataset = datasets[mode]
+            dataset, _ = load_dataset(
+                mode=TRAIN, vocab_id_mapping=vocab_id_mapping,
+                max_seq_len=nn_config.seq_len, label_version=label_version,
+            )
             index_iterator = SimpleIndexIterator.from_dataset(dataset)
             n_sample = index_iterator.n_sample()
 
@@ -438,14 +449,16 @@ def train(text_version='ek', label_version=None, config_path='c83.yaml'):
                 res = basic_evaluate(gold=labels_gold, pred=labels_predict, pos_label=pos_label)
                 best_res[TEST] = res
 
-            # 导出隐藏层
-            with open(data_config.output_path(output_key, mode, HIDDEN_FEAT), 'w') as file_obj:
-                for _feat in hidden_feats:
-                    file_obj.write('\t'.join(map(str, _feat)) + '\n')
+            # # 导出隐藏层
+            # with open(data_config.output_path(output_key, mode, HIDDEN_FEAT), 'w') as file_obj:
+            #     for _feat in hidden_feats:
+            #         file_obj.write('\t'.join(map(str, _feat)) + '\n')
+
             # 导出预测的label
             with open(data_config.output_path(output_key, mode, LABEL_PREDICT), 'w') as file_obj:
                 for _label in labels_predict:
                     file_obj.write('{}\n'.format(_label))
+            # 导出预测的y
             with open(data_config.output_path(output_key, mode, PROB_PREDICT), 'w') as file_obj:
                 for _prob in prob_predict:
                     file_obj.write('\t'.join(map(str, _prob)) + '\n')
@@ -453,8 +466,13 @@ def train(text_version='ek', label_version=None, config_path='c83.yaml'):
     for mode in [TRAIN, VALID, TEST]:
         if mode == VALID and train_config.valid_rate == 0.:
             continue
-        res = best_res[mode]
+
         print(mode)
+
+        res = eval_history[mode][best_epoch]
+        print_evaluation(res)
+
+        res = best_res[mode]
         print_evaluation(res)
         for col in res[CONFUSION_MATRIX]:
             print(','.join(map(str, col)))
@@ -530,7 +548,7 @@ def predict(output_key, mode):
 
     dataset = load_dataset(
         mode=mode, vocab_id_mapping=vocab_id_mapping,
-        max_seq_len=nn_config.seq_len, sampling=False, with_label=False
+        max_seq_len=nn_config.seq_len, with_label=False
     )
     index_iterator = SimpleIndexIterator.from_dataset(dataset)
     n_sample = index_iterator.n_sample()

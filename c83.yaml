@@ -42,6 +42,9 @@ nn:
   binary_classification: False
 
 train:
+  # label_map: {0: 0, 1: 1, 2: 1, 3: 1}
+  # label_map: {0: 0, 1: 1, 2: 2, 3: 3}
+
   epoch: 200
   valid_rate: 0.1
   batch_size: 100

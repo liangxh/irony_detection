@@ -37,3 +37,7 @@ class TrainConfig(object):
     @property
     def train_sampling(self):
         return self.data['train_sampling']
+
+    @property
+    def label_map(self):
+        return self.data.get('label_map')

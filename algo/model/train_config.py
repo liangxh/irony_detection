@@ -38,10 +38,8 @@ class TrainConfig(object):
     def train_sampling(self):
         return self.data['train_sampling']
 
-    @property
-    def label_map(self):
-        key = self.data.get('label_key')
+    def label_map(self, key):
         if key is None:
             return None
         else:
-            return self.data.get('label_map', dict())[key]
+            return self.data['label_map'][key]

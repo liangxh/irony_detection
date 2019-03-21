@@ -210,7 +210,7 @@ fetch_key = {
 
 
 @commandr.command
-def train(text_version='ek', label_version=None, config_path='c83.yaml'):
+def train(text_version='ek', label_version=None, label_key=None, config_path='c83.yaml'):
     """
     python -m algo.main93_v2 train
     python3 -m algo.main93_v2 train -c config_ntua93.yaml
@@ -226,7 +226,7 @@ def train(text_version='ek', label_version=None, config_path='c83.yaml'):
 
     output_key = '{}_{}_{}'.format(NNModel.name, text_version, int(time.time()))
     if label_version is not None:
-        output_key = '{}_{}'.format(label_version, output_key)
+        output_key = '{}{}_{}'.format(label_version, '' if label_key is None else label_key, output_key)
     print('OUTPUT_KEY: {}'.format(output_key))
 
     # 准备输出路径的文件夹
@@ -259,11 +259,11 @@ def train(text_version='ek', label_version=None, config_path='c83.yaml'):
     datasets[TRAIN], output_dim = load_dataset(
         mode=TRAIN, vocab_id_mapping=vocab_id_mapping,
         max_seq_len=nn_config.seq_len, sampling=train_config.train_sampling,
-        label_version=label_version, label_map=train_config.label_map
+        label_version=label_version, label_map=train_config.label_map(label_key)
     )
     datasets[TEST], _ = load_dataset(
         mode=TEST, vocab_id_mapping=vocab_id_mapping, max_seq_len=nn_config.seq_len,
-        label_version=label_version, label_map=train_config.label_map
+        label_version=label_version, label_map=train_config.label_map(label_key)
     )
 
     # 初始化数据集的检索
@@ -467,6 +467,9 @@ def train(text_version='ek', label_version=None, config_path='c83.yaml'):
 
         json.dump(res, open(data_config.output_path(output_key, mode, EVALUATION), 'w'))
         print()
+
+    print(eval_history[TEST][best_epoch])
+    print()
 
     test_score_list = map(lambda _item: _item['f1'], eval_history[TEST])
     print('best test f1 reached: {}'.format(max(test_score_list)))

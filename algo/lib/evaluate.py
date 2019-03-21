@@ -53,7 +53,7 @@ def basic_evaluate(gold, pred, pos_label=None):
         recall = sum(recall_components) / dim
         f1 = sum(f1_components) / dim
 
-    return {
+    res = {
         ACCURACY: accuracy,
         PRECISION: precision, RECALL: recall, F1_SCORE: f1,
         PRECISION_COMPONENTS: precision_components,
@@ -61,14 +61,24 @@ def basic_evaluate(gold, pred, pos_label=None):
         F1_SCORE_COMPONENTS: f1_components,
         CONFUSION_MATRIX: matrix.tolist()
     }
+    for i, v in enumerate(precision_components):
+        res['{}_{}'.format(PRECISION, i)] = v
+
+    for i, v in enumerate(recall_components):
+        res['{}_{}'.format(RECALL, i)] = v
+
+    for i, v in enumerate(f1_components):
+        res['{}_{}'.format(F1_SCORE, i)] = v
+
+    return res
 
 
 if __name__ == '__main__':
     gold = [0, 0, 1, 1, 1, 2, 2, 2, 2]
     pred = [2, 0, 0, 1, 1, 0, 1, 2, 2]
-    res = basic_evaluate(gold, pred)
-    print(res)
+    t_res = basic_evaluate(gold, pred)
+    print(t_res)
     print()
 
-    res = basic_evaluate(gold, pred, pos_label=0)
-    print(res)
+    t_res = basic_evaluate(gold, pred, pos_label=0)
+    print(t_res)

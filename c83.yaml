@@ -16,7 +16,7 @@ nn:
   rnns: [150, 150]
   use_attention: True
   attention:
-    dim: 32
+    dim: 64
   cnn:
     kernel_size: 5
     filter_num: 128

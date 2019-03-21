@@ -418,7 +418,7 @@ def train(text_version='ek', label_version=None, config_path='c83.yaml'):
         nn.set_graph(tf.get_default_graph())
 
         for mode in [TRAIN, TEST]:
-            dataset, _ = load_dataset(
+            dataset = load_dataset(
                 mode=TRAIN, vocab_id_mapping=vocab_id_mapping,
                 max_seq_len=nn_config.seq_len, with_label=False
             )

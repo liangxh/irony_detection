@@ -15,7 +15,7 @@ def build(ph_input, filter_num, kernel_size, activation=None):
     return h
 
 
-def build2(ph_input, filter_num, kernel_size, regularizer=None):
+def build2(ph_input, filter_num, kernel_size, bias=False, regularizer=None):
     conv = tf.layers.conv1d(
         ph_input,
         filters=filter_num,
@@ -24,7 +24,12 @@ def build2(ph_input, filter_num, kernel_size, regularizer=None):
         padding='same',
         kernel_regularizer=regularizer
     )
-    h = tf.nn.relu(conv)
+
+    if not bias:
+        h = tf.nn.relu(conv)
+    else:
+        b = tf.Variable(tf.constant(0.1, shape=[filter_num]))
+        h = tf.nn.relu(conv + b)
     return h
 
 

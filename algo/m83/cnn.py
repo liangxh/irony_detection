@@ -155,7 +155,7 @@ def load_dataset(mode, vocab_id_mapping, max_seq_len, sampling=False, label_map=
                 if label in label_map:
                     new_tid_list.append(tid)
                     new_label_list.append(label_map[label])
-            dataset[TID] = new_label_list
+            dataset[TID] = new_tid_list
             label_list = new_label_list
 
         dataset[LABEL_GOLD] = np.asarray(label_list)

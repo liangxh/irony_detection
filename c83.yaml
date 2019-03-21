@@ -12,9 +12,9 @@ nn:
     noise_type: gaussian
     dropout_keep_prob: 0.9
   rnn:
-    dim: 50
+    dim: 150
   rnns: [150, 150]
-  use_attention: False
+  use_attention: True
   attention:
     dim: 32
   cnn:

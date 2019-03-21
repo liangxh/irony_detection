@@ -461,6 +461,8 @@ def train(text_version='ek', label_version=None, config_path='c83.yaml'):
         res = best_res[mode]
         print(mode)
         print_evaluation(res)
+        for col in res[CONFUSION_MATRIX]:
+            print(','.join(map(str, col)))
 
         json.dump(res, open(data_config.output_path(output_key, mode, EVALUATION), 'w'))
         print()

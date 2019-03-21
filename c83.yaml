@@ -13,6 +13,7 @@ nn:
     dropout_keep_prob: 0.9
   rnn:
     dim: 50
+  rnns: [150, 150]
   use_attention: False
   attention:
     dim: 32

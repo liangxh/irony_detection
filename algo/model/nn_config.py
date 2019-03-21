@@ -82,3 +82,7 @@ class BaseNNConfig(object):
     @property
     def use_attention(self):
         return self.data['use_attention']
+
+    @property
+    def rnns(self):
+        return self.data['rnns']

@@ -17,7 +17,7 @@ from algo.lib.common import print_evaluation, load_lookup_table2, tokenized_to_t
 from algo.model.nn_config import BaseNNConfig
 from algo.nn.base import BaseNNModel
 from algo.nn.common import dense, cnn, rnn_cell, attention
-from algo.nn.common.common import add_gaussian_noise_layer, build_dropout_keep_prob, mask_by_seq_len
+from algo.nn.common.common import add_gaussian_noise_layer, build_dropout_keep_prob
 from dataset.common.const import *
 from dataset.common.load import *
 from dataset.semeval2018_task3.config import config as data_config
@@ -83,8 +83,6 @@ class NNModel(BaseNNModel):
                     cell_bw.zero_state(self.config.batch_size, tf.float32)
                 )
                 outputs = tf.concat(outputs, axis=-1)
-                outputs = mask_by_seq_len(outputs, seq_len)
-
                 last_state = tf.concat([states[0] for states in output_states], axis=-1)
 
         if self.config.use_attention:

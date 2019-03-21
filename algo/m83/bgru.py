@@ -80,7 +80,6 @@ class NNModel(BaseNNModel):
                 cell_bw.zero_state(self.config.batch_size, tf.float32)
             )
             outputs = tf.concat(outputs, axis=-1)
-            outputs = mask_by_seq_len(outputs, seq_len)
             last_state = tf.concat(output_states, axis=-1)
 
         if self.config.use_attention:

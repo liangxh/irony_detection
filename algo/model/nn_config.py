@@ -86,3 +86,9 @@ class BaseNNConfig(object):
     @property
     def rnns(self):
         return self.data['rnns']
+
+    def cnn_filter_num(self, idx=0):
+        return self.data['cnns'][idx]['filter_num']
+
+    def cnn_kernel_size(self, idx=0):
+        return self.data['cnns'][idx]['kernel_size']

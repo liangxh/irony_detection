@@ -418,10 +418,13 @@ def train(text_version='ek', label_version=None, config_path='c83.yaml'):
         nn.set_graph(tf.get_default_graph())
 
         for mode in [TRAIN, TEST]:
-            dataset, _ = load_dataset(
-                mode=TRAIN, vocab_id_mapping=vocab_id_mapping,
-                max_seq_len=nn_config.seq_len, label_version=label_version,
-            )
+            if mode == TRAIN and train_config.train_sampling:
+                dataset, _ = load_dataset(
+                    mode=TRAIN, vocab_id_mapping=vocab_id_mapping,
+                    max_seq_len=nn_config.seq_len, sampling=False, label_version=label_version
+                )
+            else:
+                dataset = datasets[mode]
             index_iterator = SimpleIndexIterator.from_dataset(dataset)
             n_sample = index_iterator.n_sample()
 

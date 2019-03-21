@@ -418,19 +418,15 @@ def train(text_version='ek', label_version=None, config_path='c83.yaml'):
         nn.set_graph(tf.get_default_graph())
 
         for mode in [TRAIN, TEST]:
-            if mode == TRAIN and train_config.train_sampling:
-                dataset, _ = load_dataset(
-                    mode=TRAIN, vocab_id_mapping=vocab_id_mapping,
-                    max_seq_len=nn_config.seq_len, sampling=False, label_version=label_version
-                )
-            else:
-                dataset = datasets[mode]
+            dataset, _ = load_dataset(
+                mode=TRAIN, vocab_id_mapping=vocab_id_mapping,
+                max_seq_len=nn_config.seq_len, with_label=False
+            )
             index_iterator = SimpleIndexIterator.from_dataset(dataset)
             n_sample = index_iterator.n_sample()
 
             prob_predict = list()
             labels_predict = list()
-            labels_gold = list()
             hidden_feats = list()
 
             for batch_index in index_iterator.iterate(batch_size, shuffle=False):
@@ -440,22 +436,15 @@ def train(text_version='ek', label_version=None, config_path='c83.yaml'):
                 prob_predict += res[PROB_PREDICT].tolist()
                 labels_predict += res[LABEL_PREDICT].tolist()
                 hidden_feats += res[HIDDEN_FEAT].tolist()
-                if LABEL_GOLD in dataset:
-                    labels_gold += dataset[LABEL_GOLD][batch_index].tolist()
 
             prob_predict = prob_predict[:n_sample]
             labels_predict = labels_predict[:n_sample]
-            labels_gold = labels_gold[:n_sample]
             hidden_feats = hidden_feats[:n_sample]
 
-            if mode == TEST:
-                res = basic_evaluate(gold=labels_gold, pred=labels_predict, pos_label=pos_label)
-                best_res[TEST] = res
-
-            # # 导出隐藏层
-            # with open(data_config.output_path(output_key, mode, HIDDEN_FEAT), 'w') as file_obj:
-            #     for _feat in hidden_feats:
-            #         file_obj.write('\t'.join(map(str, _feat)) + '\n')
+            # 导出隐藏层
+            with open(data_config.output_path(output_key, mode, HIDDEN_FEAT), 'w') as file_obj:
+                for _feat in hidden_feats:
+                    file_obj.write('\t'.join(map(str, _feat)) + '\n')
 
             # 导出预测的label
             with open(data_config.output_path(output_key, mode, LABEL_PREDICT), 'w') as file_obj:
@@ -471,11 +460,7 @@ def train(text_version='ek', label_version=None, config_path='c83.yaml'):
             continue
 
         print(mode)
-
         res = eval_history[mode][best_epoch]
-        print_evaluation(res)
-
-        res = best_res[mode]
         print_evaluation(res)
         for col in res[CONFUSION_MATRIX]:
             print(','.join(map(str, col)))

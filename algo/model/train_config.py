@@ -40,4 +40,8 @@ class TrainConfig(object):
 
     @property
     def label_map(self):
-        return self.data.get('label_map')
+        key = self.data.get('label_key')
+        if key is None:
+            return None
+        else:
+            return self.data.get('label_map', dict())[key]

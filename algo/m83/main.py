@@ -132,13 +132,14 @@ def train(model_name, label_version=None, label_key=None, config_path='c83.yaml'
     :param config_path: string
     :return:
     """
+    text_version = 'ek'
     pos_label = 1 if label_version == 'A' else None
 
     config_data = yaml.load(open(config_path))
 
     NNModel = getattr(importlib.import_module('algo.m83.{}'.format(model_name)), 'NNModel')
 
-    output_key = '{}_{}_{}'.format(NNModel.name, 'ek', int(time.time()))
+    output_key = '{}_{}_{}'.format(NNModel.name, text_version, int(time.time()))
     if label_version is not None:
         output_key = '{}{}_{}'.format(label_version, '' if label_key is None else label_key, output_key)
     print('OUTPUT_KEY: {}'.format(output_key))

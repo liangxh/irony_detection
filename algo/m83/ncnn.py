@@ -73,12 +73,11 @@ class NNModel(BaseNNModel):
         with tf.variable_scope('cnn'):
             cnn_output = cnn.build2(
                 embedded, filter_num=self.config.cnn_filter_num(0), kernel_size=self.config.cnn_kernel_size(0))
-            cnn_output = tf.nn.dropout(cnn_output, dropout_keep_prob)
             cnn_output = cnn.build2(
                 cnn_output, filter_num=self.config.cnn_filter_num(1), kernel_size=self.config.cnn_kernel_size(1))
-            last_state = cnn.max_pooling(cnn_output)
+            # last_state = cnn.max_pooling(cnn_output)
 
-        last_states = [last_state, ]
+        last_states = []  # [last_state, ]
         if self.config.use_attention:
             att, _ = attention.build(cnn_output, self.config.attention_dim)
             last_states.append(att)

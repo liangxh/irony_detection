@@ -317,6 +317,7 @@ def train(model_name, label_version=None, label_key=None, config_path='c83.yaml'
             print_evaluation(res)
 
             if best_res[TEST] is None or res[F1_SCORE] > best_res[TEST][F1_SCORE]:
+                best_res[TEST] = res
                 best_epoch_test = epoch
 
             if no_update_count[TRAIN] >= max_no_update_count:

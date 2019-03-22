@@ -211,12 +211,13 @@ def train(model_name, label_version=None, label_key=None, config_path='c83.yaml'
 
     model_output_prefix = data_config.model_path(key=output_key) + '/model'
 
-    best_res = {mode: None for mode in [TRAIN, VALID]}
+    best_res = {mode: None for mode in [TRAIN, VALID, TEST]}
     no_update_count = {mode: 0 for mode in [TRAIN, VALID]}
     max_no_update_count = 10
 
     eval_history = {TRAIN: list(), VALID: list(), TEST: list()}
     best_epoch = None
+    best_epoch_test = None
 
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
@@ -315,6 +316,9 @@ def train(model_name, label_version=None, label_key=None, config_path='c83.yaml'
             print('TEST')
             print_evaluation(res)
 
+            if best_res[TEST] is None or res[F1_SCORE] > best_res[TEST][F1_SCORE]:
+                best_epoch_test = epoch
+
             if no_update_count[TRAIN] >= max_no_update_count:
                 break
 
@@ -371,6 +375,25 @@ def train(model_name, label_version=None, label_key=None, config_path='c83.yaml'
                 for _prob in prob_predict:
                     file_obj.write('\t'.join(map(str, _prob)) + '\n')
 
+    print('====== best epoch test ======')
+
+    for mode in [TRAIN, VALID, TEST]:
+        if mode == VALID and train_config.valid_rate == 0.:
+            continue
+
+        print(mode)
+        res = eval_history[mode][best_epoch_test]
+        print_evaluation(res)
+        for col in res[CONFUSION_MATRIX]:
+            print(','.join(map(str, col)))
+
+        json.dump(res, open(data_config.output_path(output_key, mode, EVALUATION), 'w'))
+        print()
+
+    print(eval_history[TEST][best_epoch_test])
+    print()
+
+    print('====== best epoch valid ======')
     for mode in [TRAIN, VALID, TEST]:
         if mode == VALID and train_config.valid_rate == 0.:
             continue

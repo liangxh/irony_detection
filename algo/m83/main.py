@@ -216,8 +216,8 @@ def train(model_name, label_version=None, label_key=None, config_path='c83.yaml'
     max_no_update_count = 10
 
     eval_history = {TRAIN: list(), VALID: list(), TEST: list()}
-    best_epoch = None
-    best_epoch_test = None
+    best_epoch = -1
+    best_epoch_test = -1
 
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())

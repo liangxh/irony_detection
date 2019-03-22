@@ -471,7 +471,7 @@ def show_config(output_key):
 @commandr.command('eval')
 def show_eval(output_key):
     for mode in [TEST]:
-        res = json.loads(open(data_config.output_path(output_key, mode, EVALUATION), 'r'))
+        res = json.load(open(data_config.output_path(output_key, mode, EVALUATION), 'r'))
         print(mode)
         print_evaluation(res)
         for col in res[CONFUSION_MATRIX]:

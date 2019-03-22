@@ -28,6 +28,10 @@ class Config(object):
         return self.data['components']
 
     @property
+    def components_b(self):
+        return self.data['components_b']
+
+    @property
     def components_b2(self):
         return self.data['components_b2']
 
@@ -102,7 +106,7 @@ def main(config_path='e83.yaml'):
     config = Config(data=config_data)
 
     for mode in [TRAIN, TEST]:
-        b_result = combine(output_keys=config.components, mode=mode)
+        b_result = combine(output_keys=config.components_b, mode=mode)
         b_vote = list(map(lambda _item: _item[0], b_result))
 
         b2_result = combine(output_keys=config.components_b2, mode=mode)

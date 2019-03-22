@@ -253,7 +253,8 @@ def train(model_name, label_version=None, label_key=None, config_path='c83.yaml'
             global_step = tf.train.global_step(sess, nn.var(GLOBAL_STEP))
 
             if train_config.valid_rate == 0.:
-                if best_res[TRAIN] is None or res[early_stop_metric] > best_res[TRAIN][early_stop_metric]:
+                if best_epoch <= 10 and (
+                                best_res[TRAIN] is None or res[early_stop_metric] > best_res[TRAIN][early_stop_metric]):
                     best_epoch = epoch
                     best_res[TRAIN] = res
                     no_update_count[TRAIN] = 0
@@ -287,7 +288,8 @@ def train(model_name, label_version=None, label_key=None, config_path='c83.yaml'
                 print_evaluation(res)
 
                 # Early Stop
-                if best_res[VALID] is None or res[early_stop_metric] > best_res[VALID][early_stop_metric]:
+                if best_epoch <= 10 and (
+                                best_res[VALID] is None or res[early_stop_metric] > best_res[VALID][early_stop_metric]):
                     best_epoch = epoch
                     saver.save(sess, save_path=model_output_prefix, global_step=global_step)
                     best_res[VALID] = res

@@ -375,7 +375,7 @@ def train(model_name, label_version=None, label_key=None, config_path='c83.yaml'
                 for _prob in prob_predict:
                     file_obj.write('\t'.join(map(str, _prob)) + '\n')
 
-    print('====== best epoch test ======')
+    print('====== best epoch test: {} ======'.format(best_epoch_test))
 
     for mode in [TRAIN, VALID, TEST]:
         if mode == VALID and train_config.valid_rate == 0.:
@@ -387,13 +387,10 @@ def train(model_name, label_version=None, label_key=None, config_path='c83.yaml'
         for col in res[CONFUSION_MATRIX]:
             print(','.join(map(str, col)))
 
-        json.dump(res, open(data_config.output_path(output_key, mode, EVALUATION), 'w'))
-        print()
-
     print(eval_history[TEST][best_epoch_test])
     print()
 
-    print('====== best epoch valid ======')
+    print('====== best epoch valid: {} ======'.format(best_epoch))
     for mode in [TRAIN, VALID, TEST]:
         if mode == VALID and train_config.valid_rate == 0.:
             continue

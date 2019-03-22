@@ -129,6 +129,7 @@ def train(model_name, label_version=None, label_key=None, config_path='c83.yaml'
 
     :param model_name: string
     :param label_version: string
+    :param label_key: string
     :param config_path: string
     :return:
     """
@@ -390,59 +391,6 @@ def train(model_name, label_version=None, label_key=None, config_path='c83.yaml'
     print('best test f1 reached: {}'.format(max(test_score_list)))
 
     print('OUTPUT_KEY: {}'.format(output_key))
-
-
-@commandr.command('test')
-def live_test(output_key):
-    config_path = data_config.output_path(output_key, ALL, CONFIG)
-    config_data = yaml.load(open(config_path))
-    nn_config = NNConfig(config_data)
-    vocab_id_mapping = json.load(open(data_config.output_path(output_key, ALL, VOCAB_ID_MAPPING), 'r'))
-
-    with tf.Session() as sess:
-        prefix_checkpoint = tf.train.latest_checkpoint(data_config.model_path(key=output_key))
-        saver = tf.train.import_meta_graph('{}.meta'.format(prefix_checkpoint))
-        saver.restore(sess, prefix_checkpoint)
-
-        nn = BaseNNModel(config=None)
-        nn.set_graph(tf.get_default_graph())
-
-        fetches = {_key: nn.var(_key) for _key in [LABEL_PREDICT, PROB_PREDICT]}
-        while True:
-            res = input('input: ')
-            if res == 'quit':
-                break
-
-            turns = res.strip().split('|')
-            if len(turns) != 3:
-                print('invalid turns')
-                continue
-
-            tokens_list = list()
-            for turn in turns:
-                tokens = re.sub('\s+', ' ', turn.strip()).split(' ')
-                tokens_list.append(tokens)
-
-            placeholder = [[]] * (nn_config.batch_size - 1)
-            tid_list_0 = tokenized_to_tid_list([tokens_list[0], ] + placeholder, vocab_id_mapping)
-            tid_list_1 = tokenized_to_tid_list([tokens_list[1], ] + placeholder, vocab_id_mapping)
-            tid_list_2 = tokenized_to_tid_list([tokens_list[2], ] + placeholder, vocab_id_mapping)
-
-            tid_0 = np.asarray(zero_pad_seq_list(tid_list_0, nn_config.seq_len))
-            tid_1 = np.asarray(zero_pad_seq_list(tid_list_1, nn_config.seq_len))
-            tid_2 = np.asarray(zero_pad_seq_list(tid_list_2, nn_config.seq_len))
-
-            feed_dict = {
-                nn.var(TID_0): tid_0,
-                nn.var(TID_1): tid_1,
-                nn.var(TID_2): tid_2,
-                nn.var(TEST_MODE): 1
-            }
-            res = sess.run(fetches=fetches, feed_dict=feed_dict)
-            label = res[LABEL_PREDICT][0]
-            prob = res[PROB_PREDICT][0]
-            print('label: {}'.format(label))
-            print('prob: {}'.format(prob))
 
 
 @commandr.command('pred')

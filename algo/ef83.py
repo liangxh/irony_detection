@@ -23,21 +23,11 @@ class Config(object):
     def __init__(self, data):
         self.data = data
 
-    @property
-    def components(self):
-        return self.data['components']
-
-    @property
-    def components_b(self):
-        return self.data['components_b']
-
-    @property
-    def components_b2(self):
-        return self.data['components_b2']
-
-    @property
-    def components_b3(self):
-        return self.data['components_b3']
+    def components(self, key=None):
+        if key is None:
+            return self.data['components']
+        else:
+            return self.data['components_{}'.format(key)]
 
     @property
     def others(self):
@@ -106,10 +96,10 @@ def main(config_path='e83.yaml'):
     config = Config(data=config_data)
 
     for mode in [TRAIN, TEST]:
-        b_result = combine(output_keys=config.components_b, mode=mode)
+        b_result = combine(output_keys=config.components('b'), mode=mode)
         b_vote = list(map(lambda _item: _item[0], b_result))
 
-        b2_result = combine(output_keys=config.components_b2, mode=mode)
+        b2_result = combine(output_keys=config.components('b2'), mode=mode)
         b2_vote = list(map(lambda _item: _item[0], b2_result))
 
         last_vote = list()
@@ -122,7 +112,7 @@ def main(config_path='e83.yaml'):
                 label = 2
             last_vote.append(label)
 
-        b3_result = combine(output_keys=config.components_b3, mode=mode)
+        b3_result = combine(output_keys=config.components('b3'), mode=mode)
         b3_vote = list(map(lambda _item: _item[0], b3_result))
 
         labels_predict = list()
@@ -143,6 +133,47 @@ def main(config_path='e83.yaml'):
         print_evaluation(res)
         for col in res[CONFUSION_MATRIX]:
             print(','.join(map(str, col)))
+
+
+@commandr.command
+def m2(config_path='e83.yaml'):
+    """
+    [Usage]
+    python3 -m algo.ensemble93 main -e mv --build-analysis
+
+    :param config_path:
+    :return:
+    """
+    config_data = yaml.load(open(config_path))
+    config = Config(data=config_data)
+
+    for mode in [TRAIN, TEST]:
+        labels_gold = load_label_list(data_config.path(mode, LABEL, 'B'))
+
+        b_result = combine(output_keys=config.components(), mode=mode)
+        b_vote = list(map(lambda _item: _item[0], b_result))
+
+        b0_result = list()
+        b0_vote = list()
+
+        last_vote = b_vote
+
+        for i in [1, 2, 3]:
+            b0_result[i] = combine(output_keys=config.components('b0{}'.format(i)), mode=mode)
+            b0_vote[i] = list(map(lambda _item: _item[0], b0_result[i]))
+
+            new_vote = list()
+            for l_v, b0_v in zip(last_vote, b0_vote[i]):
+                if l_vote in {0, i}:
+                    new_vote.append(b0_v)
+            last_vote = new_vote
+
+            res = basic_evaluate(gold=labels_gold, pred=new_vote)
+
+            print('{} - {}'.format(mode, i))
+            print_evaluation(res)
+            for col in res[CONFUSION_MATRIX]:
+                print(','.join(map(str, col)))
 
 
 if __name__ == '__main__':

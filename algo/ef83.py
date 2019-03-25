@@ -228,8 +228,9 @@ def m3(config_path='e83.yaml'):
 
             new_vote = list()
             for l_v, b0_res in zip(last_vote, b0_result[i]):
+                this_vote = 0 if b0_res[0] == 0 else i
                 if l_v in {0, i} and b0_res[1] >= thr:
-                    new_vote.append(i)
+                    new_vote.append(this_vote)
                 else:
                     new_vote.append(l_v)
             last_vote = new_vote

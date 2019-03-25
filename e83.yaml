@@ -63,18 +63,18 @@ components_b02:
   - Bb02_nblstm_ek_1553496656
   - Bb02_nblstm_ek_1553497549
 
-thr_b03: 3
+thr_b03: 2
 components_b03:
   - Bb03_gru_ek_1553498349
   - Bb03_gru_ek_1553498356
-  - Bb03_bgru_ek_1553498459
+  #- Bb03_bgru_ek_1553498459
   - Bb03_gru_ek_1553498587
   #- Bb03_cnn_ek_1553500207
   #- Bb03_cnn_ek_1553500198
-  - Bb03_cnn_ek_1553500286
-  - Bb03_cnn_ek_1553500285
-  - Bb03_cnn_ek_1553500424
-  - Bb03_cnn_ek_1553500482
+  #- Bb03_cnn_ek_1553500286
+  #- Bb03_cnn_ek_1553500285
+  #- Bb03_cnn_ek_1553500424
+  #- Bb03_cnn_ek_1553500482
 
 tri:
   enabled: True

@@ -147,7 +147,7 @@ def m2(config_path='e83.yaml'):
     config_data = yaml.load(open(config_path))
     config = Config(data=config_data)
 
-    for mode in [TRAIN, ]:
+    for mode in [TEST, ]:
         labels_gold = load_label_list(data_config.path(mode, LABEL, 'B'))
 
         b_result = combine(output_keys=config.components(), mode=mode)

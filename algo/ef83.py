@@ -244,7 +244,7 @@ def m3(config_path='e83.yaml'):
 
 
 @commandr.command
-def m3(config_path='e83a.yaml', thr=1):
+def m3a(config_path='e83a.yaml', thr=1):
     """
     [Usage]
     python3 -m algo.ensemble93 main -e mv --build-analysis

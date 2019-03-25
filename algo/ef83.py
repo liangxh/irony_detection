@@ -147,7 +147,7 @@ def m2(config_path='e83.yaml'):
     config_data = yaml.load(open(config_path))
     config = Config(data=config_data)
 
-    for mode in [TRAIN, TEST]:
+    for mode in [TRAIN, ]:
         labels_gold = load_label_list(data_config.path(mode, LABEL, 'B'))
 
         b_result = combine(output_keys=config.components(), mode=mode)
@@ -157,6 +157,13 @@ def m2(config_path='e83.yaml'):
         b0_vote = dict()
 
         last_vote = b_vote
+
+        res = basic_evaluate(gold=labels_gold, pred=new_vote)
+
+        print('{}'.format(mode))
+        print_evaluation(res)
+        for col in res[CONFUSION_MATRIX]:
+            print(','.join(map(str, col)))
 
         for i in [1, 2, 3]:
             b0_result[i] = combine(output_keys=config.components('b0{}'.format(i)), mode=mode)

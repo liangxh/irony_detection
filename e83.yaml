@@ -46,7 +46,7 @@ components_b3:
   - Bb3_nbgru_ek_1553237917
   - Bb3_nbgru_ek_1553238379
 
-thr_b01: 3
+thr_b01: 5
 components_b01:
   - Bb01_nblstm_ek_1553486190
   - Bb01_nblstm_ek_1553486188

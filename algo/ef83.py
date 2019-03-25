@@ -158,7 +158,7 @@ def m2(config_path='e83.yaml'):
 
         last_vote = b_vote
 
-        res = basic_evaluate(gold=labels_gold, pred=new_vote)
+        res = basic_evaluate(gold=labels_gold, pred=last_vote)
 
         print('{}'.format(mode))
         print_evaluation(res)

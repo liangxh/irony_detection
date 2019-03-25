@@ -166,6 +166,8 @@ def m2(config_path='e83.yaml'):
             for l_v, b0_v in zip(last_vote, b0_vote[i]):
                 if l_v in {0, i}:
                     new_vote.append(b0_v)
+                else:
+                    new_vote.append(l_v)
             last_vote = new_vote
 
             res = basic_evaluate(gold=labels_gold, pred=new_vote)

@@ -1,0 +1,21 @@
+components:
+  #- A_gru_ek_1553070254
+  #- A_gru_ek_1553074900
+  #- A_bgru_ek_1553075855
+  #- A_bgru_ek_1553068355
+
+  #- A_cnn_ek_1553066753
+  #- A_cnn_ek_1553066986
+  #- A_cnna_ek_1553067122
+  #- A_cnn_ek_1553067505
+
+  #- A_cnn_ek_1553068846
+  #- A_cnn_ek_1553069517
+  #- A_cnn_ek_1553081210
+
+  - A_lstm_ek_1553071939
+  - A_lstm_ek_1553081507
+  - A_lstm_ek_1553075765
+  - A_blstm_ek_1553075473
+  - A_blstm_ek_1553081391
+  - A_blstm_ek_1553072435

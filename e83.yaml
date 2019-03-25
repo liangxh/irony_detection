@@ -20,6 +20,8 @@ components:
   #- A_blstm_ek_1553081391
   #- A_blstm_ek_1553072435
   - B_nblstm_ek_1553485519
+  - B_nblstm_ek_1553151906
+  - B_blstm_ek_1553138786
 
 components_b:
   - A_lstm_ek_1553071939

@@ -243,5 +243,36 @@ def m3(config_path='e83.yaml'):
                 print(','.join(map(str, col)))
 
 
+@commandr.command
+def m3(config_path='e83a.yaml', thr=1):
+    """
+    [Usage]
+    python3 -m algo.ensemble93 main -e mv --build-analysis
+
+    :param config_path:
+    :return:
+    """
+    thr = int(thr)
+    config_data = yaml.load(open(config_path))
+    config = Config(data=config_data)
+
+    for mode in [TEST, ]:
+        labels_gold = load_label_list(data_config.path(mode, LABEL, 'A'))
+
+        b_result = combine(output_keys=config.components(), mode=mode)
+        new_vote = list()
+        for r in b_result:
+            if r[0] == 1 and r[0] >= thr:
+                new_vote.append(1)
+            else:
+                new_vote.append(0)
+        res = basic_evaluate(gold=labels_gold, pred=new_vote)
+
+        print('{}'.format(mode))
+        print_evaluation(res)
+        for col in res[CONFUSION_MATRIX]:
+            print(','.join(map(str, col)))
+
+
 if __name__ == '__main__':
     commandr.Run()

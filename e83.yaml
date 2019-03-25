@@ -46,6 +46,7 @@ components_b3:
   - Bb3_nbgru_ek_1553237917
   - Bb3_nbgru_ek_1553238379
 
+thr_b03: 3
 components_b01:
   - Bb01_nblstm_ek_1553486190
   - Bb01_nblstm_ek_1553486188
@@ -54,6 +55,7 @@ components_b01:
   - Bb01_nblstm_ek_1553487705
   - Bb01_nblstm_ek_1553487708
 
+thr_b03: 3
 components_b02:
   - Bb02_nblstm_ek_1553496193
   - Bb02_nblstm_ek_1553496329
@@ -61,6 +63,7 @@ components_b02:
   - Bb02_nblstm_ek_1553496656
   - Bb02_nblstm_ek_1553497549
 
+thr_b03: 3
 components_b03:
   - Bb03_gru_ek_1553498349
   - Bb03_gru_ek_1553498356

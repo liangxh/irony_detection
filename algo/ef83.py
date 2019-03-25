@@ -29,6 +29,12 @@ class Config(object):
         else:
             return self.data['components_{}'.format(key)]
 
+    def thr(self, key=None):
+        if key is None:
+            return self.data['thr']
+        else:
+            return self.data['thr_{}'.format(key)]
+
     @property
     def others(self):
         return self.data['others']['components']
@@ -173,6 +179,57 @@ def m2(config_path='e83.yaml'):
             for l_v, b0_v in zip(last_vote, b0_vote[i]):
                 if l_v in {0, i}:
                     new_vote.append(b0_v)
+                else:
+                    new_vote.append(l_v)
+            last_vote = new_vote
+
+            res = basic_evaluate(gold=labels_gold, pred=new_vote)
+
+            print('{} - {}'.format(mode, i))
+            print_evaluation(res)
+            for col in res[CONFUSION_MATRIX]:
+                print(','.join(map(str, col)))
+
+
+@commandr.command
+def m3(config_path='e83.yaml'):
+    """
+    [Usage]
+    python3 -m algo.ensemble93 main -e mv --build-analysis
+
+    :param config_path:
+    :return:
+    """
+    config_data = yaml.load(open(config_path))
+    config = Config(data=config_data)
+
+    for mode in [TEST, ]:
+        labels_gold = load_label_list(data_config.path(mode, LABEL, 'B'))
+
+        b_result = combine(output_keys=config.components(), mode=mode)
+        b_vote = list(map(lambda _item: _item[0], b_result))
+
+        b0_result = dict()
+        b0_vote = dict()
+
+        last_vote = b_vote
+
+        res = basic_evaluate(gold=labels_gold, pred=last_vote)
+
+        print('{}'.format(mode))
+        print_evaluation(res)
+        for col in res[CONFUSION_MATRIX]:
+            print(','.join(map(str, col)))
+
+        for i in [1, 2, 3]:
+            key = 'b0{}'.format(i)
+            thr = config.thr(key)
+            b0_result[i] = combine(output_keys=config.components(key), mode=mode)
+
+            new_vote = list()
+            for l_v, b0_res in zip(last_vote, b0_result[i]):
+                if l_v in {0, i} and b0_res[1] >= thr:
+                    new_vote.append(i)
                 else:
                     new_vote.append(l_v)
             last_vote = new_vote

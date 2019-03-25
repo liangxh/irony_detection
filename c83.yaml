@@ -47,7 +47,7 @@ train:
   batch_size: 100
   early_stop_metric: f1
   train_sampling: False
-  use_class_weights: True
+  use_class_weights: False
   label_map:
     b: {0: 0, 1: 1, 2: 1, 3: 1}
     b2: {1: 0, 2: 1, 3: 1}

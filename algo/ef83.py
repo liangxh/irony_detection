@@ -153,8 +153,8 @@ def m2(config_path='e83.yaml'):
         b_result = combine(output_keys=config.components(), mode=mode)
         b_vote = list(map(lambda _item: _item[0], b_result))
 
-        b0_result = list()
-        b0_vote = list()
+        b0_result = dict()
+        b0_vote = dict()
 
         last_vote = b_vote
 
@@ -164,7 +164,7 @@ def m2(config_path='e83.yaml'):
 
             new_vote = list()
             for l_v, b0_v in zip(last_vote, b0_vote[i]):
-                if l_vote in {0, i}:
+                if l_v in {0, i}:
                     new_vote.append(b0_v)
             last_vote = new_vote
 

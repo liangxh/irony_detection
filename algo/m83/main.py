@@ -342,7 +342,7 @@ def train(model_name, label_version=None, label_key=None, config_path='c83.yaml'
 
         for mode in [TRAIN, TEST]:
             dataset = load_dataset(
-                mode=TRAIN, vocab_id_mapping=vocab_id_mapping,
+                mode=mode, vocab_id_mapping=vocab_id_mapping,
                 max_seq_len=nn_config.seq_len, with_label=False
             )
             index_iterator = SimpleIndexIterator.from_dataset(dataset)

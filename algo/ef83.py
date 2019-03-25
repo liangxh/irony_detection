@@ -262,7 +262,7 @@ def m3a(config_path='e83a.yaml', thr=1):
         b_result = combine(output_keys=config.components(), mode=mode)
         new_vote = list()
         for r in b_result:
-            if r[0] == 1 and r[0] >= thr:
+            if r[0] == 1 and r[1] >= thr:
                 new_vote.append(1)
             else:
                 new_vote.append(0)

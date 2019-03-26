@@ -70,7 +70,7 @@ def argmax(value_list):
     return idx, max_value
 
 
-def combine(output_keys, mode):
+def combine(output_keys, mode, full_output=False):
     dim = 0
     label_lists = list()
     for output_key in output_keys:
@@ -80,13 +80,19 @@ def combine(output_keys, mode):
         dim = max(dim, max(label_list) + 1)
 
     res = list()
+    counts = list()
     for votes in zip(*label_lists):
         count = [0] * dim
         for v in votes:
             count[v] += 1
         vote, vote_count = argmax(count)
         res.append((vote, vote_count))
-    return res
+        counts.append(count)
+
+    if not full_output:
+        return res
+    else:
+        return res, counts
 
 
 @commandr.command
@@ -269,11 +275,11 @@ def m3a(target=0, thr=1, config_path='e83a.yaml'):
 
         last_vote = new_vote
         output_keys = config.components('b')
-        b_result = combine(output_keys=output_keys, mode=mode)
+        b_result, counts = combine(output_keys=output_keys, mode=mode, full_output=True)
         new_vote = list()
-        for r, l_v in zip(b_result, last_vote):
-            if r[0] != 0 and r[1] == output_keys:
-                new_vote.append(1)
+        for count, l_v in zip(counts, last_vote):
+            if count[0] <= 1:
+                new_vote.append(0)
             else:
                 new_vote.append(l_v)
         res = basic_evaluate(gold=labels_gold, pred=new_vote)

@@ -244,7 +244,7 @@ def m3(config_path='e83.yaml'):
 
 
 @commandr.command
-def m3a(config_path='e83a.yaml', thr=1):
+def m3a(target=0, thr=1, config_path='e83a.yaml'):
     """
     [Usage]
     python3 -m algo.ensemble93 main -e mv --build-analysis
@@ -252,6 +252,7 @@ def m3a(config_path='e83a.yaml', thr=1):
     :param config_path:
     :return:
     """
+    target = int(target)
     thr = int(thr)
     config_data = yaml.load(open(config_path))
     config = Config(data=config_data)
@@ -262,10 +263,10 @@ def m3a(config_path='e83a.yaml', thr=1):
         b_result = combine(output_keys=config.components(), mode=mode)
         new_vote = list()
         for r in b_result:
-            if r[0] == 1 and r[1] >= thr:
-                new_vote.append(1)
+            if r[0] == target and r[1] >= thr:
+                new_vote.append(target)
             else:
-                new_vote.append(0)
+                new_vote.append(1 - target)
         res = basic_evaluate(gold=labels_gold, pred=new_vote)
 
         print('{}'.format(mode))

@@ -245,13 +245,6 @@ def m3(config_path='e83.yaml'):
 
 @commandr.command
 def m3a(target=0, thr=1, config_path='e83a.yaml'):
-    """
-    [Usage]
-    python3 -m algo.ensemble93 main -e mv --build-analysis
-
-    :param config_path:
-    :return:
-    """
     target = int(target)
     thr = int(thr)
     config_data = yaml.load(open(config_path))

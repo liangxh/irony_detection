@@ -267,6 +267,21 @@ def m3a(target=0, thr=1, config_path='e83a.yaml'):
         for col in res[CONFUSION_MATRIX]:
             print(','.join(map(str, col)))
 
+        last_vote = new_vote
+        output_keys = config.components('b')
+        b_result = combine(output_keys=output_keys, mode=mode)
+        new_vote = list()
+        for r, l_v in zip(b_result, last_vote):
+            if r[0] != 0 and r[1] == output_keys:
+                new_vote.append(1)
+            else:
+                new_vote.append(l_v)
+        res = basic_evaluate(gold=labels_gold, pred=new_vote)
+        print('{}'.format(mode))
+        print_evaluation(res)
+        for col in res[CONFUSION_MATRIX]:
+            print(','.join(map(str, col)))
+
 
 if __name__ == '__main__':
     commandr.Run()

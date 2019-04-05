@@ -435,5 +435,12 @@ def clear_output(output_key):
     shutil.rmtree(data_config.model_folder(output_key))
 
 
+@commandr.command('conf')
+def show_config(output_key):
+    path = data_config.output_path(output_key, ALL, CONFIG)
+    print(open(path).read())
+    print(path)
+
+
 if __name__ == '__main__':
     commandr.Run()

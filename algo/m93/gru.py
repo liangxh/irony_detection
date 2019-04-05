@@ -56,8 +56,8 @@ class NNModel(BaseNNModel):
 
             last_states.append(last_state)
 
+        last_states = list(map(lambda _state: tf.nn.dropout(_state, keep_prob=dropout_keep_prob), last_states))
         dense_input = tf.concat(last_states, axis=1, name=HIDDEN_FEAT)
-        dense_input = tf.nn.dropout(dense_input, keep_prob=dropout_keep_prob)
 
         l2_component = None
         for conf in self.config.dense_layers:

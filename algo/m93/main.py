@@ -198,6 +198,7 @@ def train(model_name, label_version=None, config_path='c93f.yaml'):
     max_no_update_count = 10
 
     eval_history = {TRAIN: list(), VALID: list(), TEST: list()}
+    best_epoch = -1
 
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
@@ -233,7 +234,9 @@ def train(model_name, label_version=None, config_path='c93f.yaml'):
             global_step = tf.train.global_step(sess, nn.var(GLOBAL_STEP))
 
             if train_config.valid_rate == 0.:
-                if best_res[TRAIN] is None or res[early_stop_metric] > best_res[TRAIN][early_stop_metric]:
+                if best_epoch <= 10 or (
+                        best_res[TRAIN] is None or res[early_stop_metric] > best_res[TRAIN][early_stop_metric]):
+                    best_epoch = epoch
                     best_res[TRAIN] = res
                     no_update_count[TRAIN] = 0
                     saver.save(sess, save_path=model_output_prefix, global_step=global_step)
@@ -266,7 +269,9 @@ def train(model_name, label_version=None, config_path='c93f.yaml'):
                 print_evaluation(res)
 
                 # Early Stop
-                if best_res[VALID] is None or res[early_stop_metric] > best_res[VALID][early_stop_metric]:
+                if best_epoch <= 10 or (
+                        best_res[VALID] is None or res[early_stop_metric] > best_res[VALID][early_stop_metric]):
+                    best_epoch = epoch
                     saver.save(sess, save_path=model_output_prefix, global_step=global_step)
                     best_res[VALID] = res
                     no_update_count[VALID] = 0

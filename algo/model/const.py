@@ -48,3 +48,6 @@ TID_2 = 'tid_2'
 SEQ_LEN_0 = 'seq_len_0'
 SEQ_LEN_1 = 'seq_len_1'
 SEQ_LEN_2 = 'seq_len_2'
+
+TID_ = [TID_0, TID_1, TID_2]
+SEQ_LEN_ = [SEQ_LEN_0, SEQ_LEN_1, SEQ_LEN_2]

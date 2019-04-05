@@ -13,6 +13,8 @@ nn:
     dropout_keep_prob: 0.9
   rnn:
     dim: 50
+  use_attention: True
+  #use_attention: False
   attention:
     dim: 50
   cnn:

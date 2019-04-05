@@ -15,6 +15,7 @@ nn:
     dim: 150
   rnns: [150, 150]
   use_attention: True
+  #use_attention: False
   attention:
     dim: 64
   cnn:

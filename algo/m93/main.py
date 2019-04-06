@@ -47,7 +47,7 @@ def to_nn_input(tid_list, max_seq_len):
     return tid_list, seq_len
 
 
-def load_dataset(mode, vocab_id_mapping, max_seq_len, sampling=False, with_label=True, label_version=None):
+def load_dataset(mode, vocab_id_mapping, max_seq_len, sampling=False, label_map=None, with_label=True, label_version=None):
     modes = mode if isinstance(mode, list) else [mode, ]
 
     dataset = dict()
@@ -65,6 +65,19 @@ def load_dataset(mode, vocab_id_mapping, max_seq_len, sampling=False, with_label
         for mode in modes:
             label_path = data_config.path(mode, LABEL, label_version)
             label_list += load_label_list(label_path)
+
+        if label_map is not None:
+            new_tid_list_ = [list() for _ in range(3)]
+            new_label_list = list()
+            for idx, label in enumerate(label_list):
+                if label in label_map:
+                    for i in range(3):
+                        new_tid_list_[i].append(dataset[TID_[i]][idx])
+                    new_label_list.append(label_map[label])
+            for i in range(3):
+                dataset[TID_[i]] = new_tid_list_[i]
+            label_list = new_label_list
+
         dataset[LABEL_GOLD] = label_list
 
     if sampling:
@@ -114,7 +127,7 @@ fetch_key = {
 
 
 @commandr.command
-def train(model_name, label_version=None, config_path='c93f.yaml'):
+def train(model_name, label_version=None, label_key=None, config_path='c93f.yaml'):
     """
     python -m algo.main93_v2 train
     python3 -m algo.main93_v2 train -c config_ntua93.yaml
@@ -162,11 +175,19 @@ def train(model_name, label_version=None, config_path='c93f.yaml'):
     datasets = dict()
     datasets[TRAIN], output_dim = load_dataset(
         mode=[TRAIN, TEST], vocab_id_mapping=vocab_id_mapping, max_seq_len=nn_config.seq_len,
-        label_version=label_version, sampling=train_config.train_sampling
+        label_version=label_version, sampling=train_config.train_sampling,
+        label_map=train_config.label_map(label_key)
     )
+    datasets[TEST], _ = load_dataset(
+        mode=FINAL, vocab_id_mapping=vocab_id_mapping, max_seq_len=nn_config.seq_len,
+        label_version=label_version, sampling=train_config.train_sampling,
+        label_map=train_config.label_map(label_key)
+    )
+
     # 初始化数据集的检索
     index_iterators = {
         TRAIN: IndexIterator.from_dataset(datasets[TRAIN]),
+        TEST: IndexIterator.from_dataset(datasets[TEST])
     }
     # 按配置将训练数据切割成训练集和验证集
     index_iterators[TRAIN].split_train_valid(train_config.valid_rate)
@@ -193,12 +214,13 @@ def train(model_name, label_version=None, config_path='c93f.yaml'):
 
     model_output_prefix = data_config.model_path(key=output_key) + '/model'
 
-    best_res = {mode: None for mode in [TRAIN, VALID]}
+    best_res = {mode: None for mode in [TRAIN, VALID, TEST]}
     no_update_count = {mode: 0 for mode in [TRAIN, VALID]}
     max_no_update_count = 10
 
     eval_history = {TRAIN: list(), VALID: list(), TEST: list()}
     best_epoch = -1
+    best_epoch_test = -1
 
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
@@ -278,6 +300,31 @@ def train(model_name, label_version=None, config_path='c93f.yaml'):
                 else:
                     no_update_count[VALID] += 1
 
+            # eval test
+            _mode = TEST
+            _dataset = datasets[_mode]
+            _index_iterator = SimpleIndexIterator.from_dataset(_dataset)
+            _n_sample = _index_iterator.n_sample()
+
+            labels_predict = list()
+            labels_gold = list()
+            for batch_index in _index_iterator.iterate(batch_size, shuffle=False):
+                feed_dict = {nn.var(_key): _dataset[_key][batch_index] for _key in feed_key[TEST]}
+                feed_dict[nn.var(TEST_MODE)] = 1
+                res = sess.run(fetches=fetches[TEST], feed_dict=feed_dict)
+
+                labels_predict += res[LABEL_PREDICT].tolist()
+                labels_gold += _dataset[LABEL_GOLD][batch_index].tolist()
+            labels_predict, labels_gold = labels_predict[:_n_sample], labels_gold[:_n_sample]
+            res = basic_evaluate(gold=labels_gold, pred=labels_predict)
+            eval_history[TEST].append(res)
+            print('TEST')
+            print_evaluation(res)
+
+            if best_res[TEST] is None or res[F1_SCORE] > best_res[TEST][F1_SCORE]:
+                best_res[TEST] = res
+                best_epoch_test = epoch
+
             if no_update_count[TRAIN] >= max_no_update_count:
                 break
 
@@ -288,8 +335,8 @@ def train(model_name, label_version=None, config_path='c93f.yaml'):
 
     json.dump(eval_history, open(data_config.output_path(output_key, 'eval', 'json'), 'w'))
 
-    labels_predict_ = dict()
-    labels_gold_ = dict()
+    labels_predict_final = None
+    labels_gold_final = load_label_list(data_config.path(FINAL, LABEL))
 
     with tf.Session() as sess:
         prefix_checkpoint = tf.train.latest_checkpoint(data_config.model_path(key=output_key))
@@ -299,16 +346,15 @@ def train(model_name, label_version=None, config_path='c93f.yaml'):
         nn = BaseNNModel(config=None)
         nn.set_graph(tf.get_default_graph())
         for mode in [TRAIN, TEST, FINAL]:
-            dataset, _ = load_dataset(
-                mode=mode, vocab_id_mapping=vocab_id_mapping, max_seq_len=nn_config.seq_len,
-                label_version=label_version
+            dataset = load_dataset(
+                mode=mode, vocab_id_mapping=vocab_id_mapping,
+                max_seq_len=nn_config.seq_len, with_label=False
             )
             index_iterator = SimpleIndexIterator.from_dataset(dataset)
             n_sample = index_iterator.n_sample()
 
             prob_predict = list()
             labels_predict = list()
-            labels_gold = list()
 
             for batch_index in index_iterator.iterate(batch_size, shuffle=False):
                 feed_dict = {nn.var(_key): dataset[_key][batch_index] for _key in feed_key[TEST]}
@@ -316,14 +362,12 @@ def train(model_name, label_version=None, config_path='c93f.yaml'):
                 res = sess.run(fetches=fetches[TEST], feed_dict=feed_dict)
                 prob_predict += res[PROB_PREDICT].tolist()
                 labels_predict += res[LABEL_PREDICT].tolist()
-                labels_gold += dataset[LABEL_GOLD][batch_index].tolist()
 
             prob_predict = prob_predict[:n_sample]
             labels_predict = labels_predict[:n_sample]
-            labels_gold = labels_gold[:n_sample]
 
-            labels_predict_[mode] = labels_predict
-            labels_gold_[mode] = labels_gold
+            if mode == FINAL:
+                labels_predict_final = labels_predict
 
             # 导出预测的label
             with open(data_config.output_path(output_key, mode, LABEL_PREDICT), 'w') as file_obj:
@@ -333,32 +377,55 @@ def train(model_name, label_version=None, config_path='c93f.yaml'):
                 for _prob in prob_predict:
                     file_obj.write('\t'.join(map(str, _prob)) + '\n')
 
-    print('VALID')
-    res = best_res[VALID]
-    print_evaluation(res)
-    for col in res[CONFUSION_MATRIX]:
-        print(','.join(map(str, col)))
+    print('====== best epoch test: {} ======'.format(best_epoch_test))
+
+    for mode in [TRAIN, VALID, TEST]:
+        if mode == VALID and train_config.valid_rate == 0.:
+            continue
+
+        print(mode)
+        res = eval_history[mode][best_epoch_test]
+        print_evaluation(res)
+        for col in res[CONFUSION_MATRIX]:
+            print(','.join(map(str, col)))
+
+    print(eval_history[TEST][best_epoch_test])
     print()
 
-    print('TRAIN + TEST')
-    res = basic_evaluate(
-        gold=labels_gold_[TRAIN] + labels_gold_[TEST],
-        pred=labels_predict_[TRAIN] + labels_predict_[TEST]
-    )
-    print_evaluation(res)
-    for col in res[CONFUSION_MATRIX]:
-        print(','.join(map(str, col)))
+    print('====== best epoch valid: {} ======'.format(best_epoch))
+    for mode in [TRAIN, VALID, TEST]:
+        if mode == VALID and train_config.valid_rate == 0.:
+            continue
+
+        print(mode)
+        res = eval_history[mode][best_epoch]
+        print_evaluation(res)
+        for col in res[CONFUSION_MATRIX]:
+            print(','.join(map(str, col)))
+
+        json.dump(res, open(data_config.output_path(output_key, mode, EVALUATION), 'w'))
+        print()
+
+    print(eval_history[TEST][best_epoch])
     print()
 
-    print('FINAL')
-    res = basic_evaluate(
-        gold=labels_gold_[FINAL],
-        pred=labels_predict_[FINAL]
-    )
+    print('====== label_map check ======')
+
+    label_map = train_config.label_map(label_key)
+    if label_map is not None:
+        new_gold = list()
+        new_pred = list()
+        for g, p in zip(labels_gold_final, labels_predict_final):
+            if g in label_map:
+                new_gold.append(label_map[g])
+                new_pred.append(p)
+        labels_gold_final = new_gold
+        labels_predict_final = new_pred
+
+    res = basic_evaluate(gold=labels_gold_final, pred=labels_predict_final)
     print_evaluation(res)
     for col in res[CONFUSION_MATRIX]:
         print(','.join(map(str, col)))
-    print()
 
     print('OUTPUT_KEY: {}'.format(output_key))
 

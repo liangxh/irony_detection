@@ -141,9 +141,10 @@ def train(model_name, label_version=None, label_key=None, config_path='c93f.yaml
     config_data = yaml.load(open(config_path))
     NNModel = getattr(importlib.import_module('algo.m93.{}'.format(model_name)), 'NNModel')
 
-    output_key = 'f_{}_{}_{}'.format(model_name, text_version, int(time.time()))
-    if label_version is not None:
-        output_key = '{}_{}'.format(label_version, output_key)
+    output_key = '{}_{}_{}'.format(model_name, text_version, int(time.time()))
+    if label_key is not None:
+        output_key = '{}_{}'.format(label_key, output_key)
+    output_key = 'f_{}'.format(output_key)
     print('OUTPUT_KEY: {}'.format(output_key))
 
     # 准备输出路径的文件夹

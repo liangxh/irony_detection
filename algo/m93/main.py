@@ -180,7 +180,7 @@ def train(model_name, label_version=None, label_key=None, config_path='c93f.yaml
     )
     datasets[TEST], _ = load_dataset(
         mode=FINAL, vocab_id_mapping=vocab_id_mapping, max_seq_len=nn_config.seq_len,
-        label_version=label_version, sampling=train_config.train_sampling,
+        label_version=label_version, sampling=False,
         label_map=train_config.label_map(label_key)
     )
 

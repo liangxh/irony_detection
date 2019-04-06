@@ -127,7 +127,7 @@ fetch_key = {
 
 
 @commandr.command
-def train(model_name, label_version=None, label_key=None, config_path='c93f.yaml'):
+def train(model_name, label_version=None, label_key=None, config_path='c93f.yaml', check=False):
     """
     python -m algo.main93_v2 train
     python3 -m algo.main93_v2 train -c config_ntua93.yaml
@@ -387,8 +387,10 @@ def train(model_name, label_version=None, label_key=None, config_path='c93f.yaml
         print(mode)
         res = eval_history[mode][best_epoch_test]
         print_evaluation(res)
-        for col in res[CONFUSION_MATRIX]:
-            print(','.join(map(str, col)))
+
+        if mode == TEST:
+            for col in res[CONFUSION_MATRIX]:
+                print(','.join(map(str, col)))
 
     print(eval_history[TEST][best_epoch_test])
     print()
@@ -401,8 +403,10 @@ def train(model_name, label_version=None, label_key=None, config_path='c93f.yaml
         print(mode)
         res = eval_history[mode][best_epoch]
         print_evaluation(res)
-        for col in res[CONFUSION_MATRIX]:
-            print(','.join(map(str, col)))
+
+        if mode == TEST:
+            for col in res[CONFUSION_MATRIX]:
+                print(','.join(map(str, col)))
 
         json.dump(res, open(data_config.output_path(output_key, mode, EVALUATION), 'w'))
         print()
@@ -410,23 +414,24 @@ def train(model_name, label_version=None, label_key=None, config_path='c93f.yaml
     print(eval_history[TEST][best_epoch])
     print()
 
-    print('====== label_map check ======')
+    if check:
+        print('====== label_map check ======')
 
-    label_map = train_config.label_map(label_key)
-    if label_map is not None:
-        new_gold = list()
-        new_pred = list()
-        for g, p in zip(labels_gold_final, labels_predict_final):
-            if g in label_map:
-                new_gold.append(label_map[g])
-                new_pred.append(p)
-        labels_gold_final = new_gold
-        labels_predict_final = new_pred
+        label_map = train_config.label_map(label_key)
+        if label_map is not None:
+            new_gold = list()
+            new_pred = list()
+            for g, p in zip(labels_gold_final, labels_predict_final):
+                if g in label_map:
+                    new_gold.append(label_map[g])
+                    new_pred.append(p)
+            labels_gold_final = new_gold
+            labels_predict_final = new_pred
 
-    res = basic_evaluate(gold=labels_gold_final, pred=labels_predict_final)
-    print_evaluation(res)
-    for col in res[CONFUSION_MATRIX]:
-        print(','.join(map(str, col)))
+        res = basic_evaluate(gold=labels_gold_final, pred=labels_predict_final)
+        print_evaluation(res)
+        for col in res[CONFUSION_MATRIX]:
+            print(','.join(map(str, col)))
 
     print('OUTPUT_KEY: {}'.format(output_key))
 

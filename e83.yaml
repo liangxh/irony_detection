@@ -23,32 +23,7 @@ components:
   - B_nblstm_ek_1553151906
   - B_blstm_ek_1553138786
 
-components_b:
-  - A_lstm_ek_1553071939
-  - A_lstm_ek_1553081507
-  - A_lstm_ek_1553075765
-  - A_blstm_ek_1553075473
-  - A_blstm_ek_1553081391
-  - A_blstm_ek_1553072435
-
-components_b2:
-  - Bb2_nblstm_ek_1553239642
-  - Bb2_nblstm_ek_1553240576
-  - Bb2_nblstm_ek_1553241939
-  - Bb2_nblstm_ek_1553242499
-  - Bb2_nblstm_ek_1553242987
-
-components_b3:
-  - Bb3_nblstm_ek_1553224940
-  - Bb3_nblstm_ek_1553236841
-  - Bb3_nblstm_ek_1553236837
-  - Bb3_nblstm_ek_1553237228
-  - Bb3_nblstm_ek_1553237632
-  - Bb3_nblstm_ek_1553237787
-  - Bb3_nbgru_ek_1553237917
-  - Bb3_nbgru_ek_1553238379
-
-thr_b01: 5
+thr_b01: 3
 components_b01:
   - Bb01_nblstm_ek_1553486190
   - Bb01_nblstm_ek_1553486188
@@ -67,26 +42,13 @@ components_b02:
 
 thr_b03: 2
 components_b03:
-  - Bb03_gru_ek_1553498349
-  - Bb03_gru_ek_1553498356
+  #- Bb03_gru_ek_1553498349
+  #- Bb03_gru_ek_1553498356
   #- Bb03_bgru_ek_1553498459
-  - Bb03_gru_ek_1553498587
+  #- Bb03_gru_ek_1553498587
   #- Bb03_cnn_ek_1553500207
-  #- Bb03_cnn_ek_1553500198
-  #- Bb03_cnn_ek_1553500286
-  #- Bb03_cnn_ek_1553500285
-  #- Bb03_cnn_ek_1553500424
-  #- Bb03_cnn_ek_1553500482
-
-tri:
-  enabled: True
-  min_vote: 2
-  out_vote: 10
-  components:
-
-others:
-  enabled: True
-  min_vote: 6
-  components:
-oh:
-  enabled: False
+  - Bb03_cnn_ek_1553500198
+  - Bb03_cnn_ek_1553500286
+  - Bb03_cnn_ek_1553500285
+  - Bb03_cnn_ek_1553500424
+  - Bb03_cnn_ek_1553500482

@@ -17,6 +17,7 @@ from dataset.common.const import *
 from dataset.common.load import *
 from algo.lib.common import print_evaluation, load_lookup_table, tokenized_to_tid_list, build_random_lookup_table
 from dataset.semeval2019_task3_dev.config import config as data_config
+from dataset.semeval2019_task3_dev.process import Processor, label_str
 
 MAX_WORD_SEQ_LEN = 170
 MAX_CHAR_SEQ_LEN = 170
@@ -499,6 +500,26 @@ def export_wrong(output_key):
                 print('\t{}'.format(sample))
 
     print(max_seq_len)
+
+
+@commandr.command
+def export_error(filename):
+    dataset = Processor.load_origin(filename)
+
+    path = data_config.path(FINAL, LABEL)
+    gold = load_label_list(path)
+    wrong = defaultdict(lambda: defaultdict(lambda: list()))
+
+    for g, sample in zip(gold, dataset):
+        p = sample[-1]
+        if p != g:
+            wrong[g][p].append(sample[0] + ' | ' + sample[1] + ' | ' + sample[2])
+
+    for _g in range(4):
+        for _p in range(4):
+            print('{}->{}'.format(label_str[_g], label_str[_p]))
+            for sample in wrong[_g][_p]:
+                print('\t{}'.format(sample))
 
 
 if __name__ == '__main__':

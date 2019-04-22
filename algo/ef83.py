@@ -7,7 +7,7 @@ from algo.model.const import *
 from dataset.semeval2018_task3.config import config as data_config
 from dataset.common.const import *
 from dataset.common.load import *
-from algo.lib.evaluate93 import basic_evaluate
+from algo.lib.evaluate import basic_evaluate
 from algo.lib.common import print_evaluation
 
 MAJORITY_VOTING = 'mv'
@@ -247,6 +247,8 @@ def m3(config_path='e83.yaml'):
             print_evaluation(res)
             for col in res[CONFUSION_MATRIX]:
                 print(','.join(map(str, col)))
+
+        open('latest_ef83.label', 'w').write('\n'.join(list(map(str, last_vote))))
 
 
 @commandr.command

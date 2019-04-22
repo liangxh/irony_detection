@@ -10,6 +10,7 @@ import shutil
 import importlib
 import numpy as np
 import tensorflow as tf
+from collections import defaultdict
 from algo.lib.dataset import IndexIterator, SimpleIndexIterator
 from algo.lib.evaluate import basic_evaluate
 from algo.model.const import *
@@ -20,6 +21,7 @@ from algo.nn.base import BaseNNModel
 from dataset.common.const import *
 from dataset.common.load import *
 from dataset.semeval2018_task3.config import config as data_config
+from dataset.semeval2018_task3.process import Processor
 
 
 class NNConfig(BaseNNConfig):
@@ -476,6 +478,29 @@ def show_eval(output_key):
         print_evaluation(res)
         for col in res[CONFUSION_MATRIX]:
             print(','.join(map(str, col)))
+
+
+@commandr.command
+def export_error(filename):
+
+    pred = load_label_list(filename)
+    dataset = Processor.load_origin_test('B')
+    wrong = defaultdict(lambda: defaultdict(lambda: list()))
+    gold = list(map(lambda _item: _item[0], dataset))
+
+    res = basic_evaluate(gold=gold, pred=pred)
+    print(res)
+
+    for p, sample in zip(pred, dataset):
+        g = sample[0]
+        if p != g:
+            wrong[g][p].append(sample[1])
+
+    for _g in range(4):
+        for _p in range(4):
+            print('{}->{}'.format(_g, _p))
+            for sample in wrong[_g][_p]:
+                print('\t{}'.format(sample))
 
 
 if __name__ == '__main__':

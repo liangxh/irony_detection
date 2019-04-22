@@ -4,7 +4,7 @@ from dataset.common.config import BaseConfig
 
 
 class Config(BaseConfig):
-    path_root = os.path.join(os.environ['HOME'], 'lab', 'SemEval2018-Task3')
+    path_root = os.path.join(os.environ['HOME'], 'lab', 'semeval2018_task3_official')
     path_datasets = os.path.join(path_root, 'datasets')
 
     path_train_root = os.path.join(path_datasets, 'train')
